@@ -15,6 +15,7 @@ import { TextHoverEffect } from "@/components/ui/text-hover-effect";
 import Image from "next/image";
 import { useState } from "react";
 import heroImage from "../components/assets/image.png";
+import logoImage from "../components/assets/logo.png";
 import { BackgroundLines } from "@/components/ui/background-lines";
 import DomeGallery from "@/components/DomeGallery";
 
@@ -114,6 +115,14 @@ export function BackgroundLinesDemo() {
         <br />
         <span className="text-neutral-800">EDUCATION</span>
       </h2>
+      <Image
+        src={logoImage}
+        alt="line1"
+        width={180}
+        height={180}
+        className="mx-auto -mt-3 block h-36 w-36 rounded-full object-cover shadow-md"
+      />
+      <br />
       <p className="max-w-xl mx-auto text-sm md:text-lg text-neutral-700 dark:text-neutral-400 text-center">
         trung tâm đào tạo năng khiếu và văn hóa, với sứ mệnh giúp học sinh phát triển toàn diện về kiến thức, kỹ năng và tư duy sáng tạo.
       </p>
