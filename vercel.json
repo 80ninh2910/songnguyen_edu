@@ -5,5 +5,15 @@
       "src": "frontend/user/next-app/package.json",
       "use": "@vercel/next"
     }
+  ],
+  "routes": [
+    {
+      "src": "^/$",
+      "dest": "/frontend/user/next-app"
+    },
+    {
+      "src": "^/(.*)$",
+      "dest": "/frontend/user/next-app/$1"
+    }
   ]
 }
