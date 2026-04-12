@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "frontend/user/next-app/package.json",
+      "use": "@vercel/next"
+    }
+  ]
+}

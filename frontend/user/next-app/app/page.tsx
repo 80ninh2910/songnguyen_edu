@@ -20,15 +20,15 @@ import logoImage from "../components/assets/logo.png";
 import background19 from "../components/assets/19.png";
 import statsMainImage from "../components/assets/21.jpg";
 import statsSubImage from "../components/assets/20.jpg";
-import tutorImage1 from "../components/assets/11.jpg";
-import tutorImage2 from "../components/assets/12.jpg";
-import tutorImage3 from "../components/assets/13.jpg";
-import tutorImage4 from "../components/assets/14.jpg";
-import tutorImage5 from "../components/assets/15.jpg";
-import tutorImage6 from "../components/assets/16.jpg";
-import tutorImage7 from "../components/assets/17.jpg";
+import tutorImage1 from "../components/assets/ninh.png";
+import tutorImage2 from "../components/assets/vinh1.jpg";
+import tutorImage3 from "../components/assets/viet.png";
+import tutorImage4 from "../components/assets/thanh.png";
+import tutorImage5 from "../components/assets/ninh.png";
+import tutorImage6 from "../components/assets/vinh1.jpg";
+import tutorImage7 from "../components/assets/viet.png";
 import { BackgroundLines } from "@/components/ui/background-lines";
-import { HeroParallax } from "@/components/ui/hero-parallax";
+import HeroParallaxDemo from "@/components/hero-parallax-demo";
 import DomeGallery from "@/components/DomeGallery";
 
 const bricolageGrotesque = Bricolage_Grotesque({
@@ -561,104 +561,6 @@ function TutorClassSection() {
     </section>
   );
 }
-export function HeroParallaxDemo() {
-  return <HeroParallax products={products} />;
-}
-export const products = [
-  {
-    title: "Moonbeam",
-    link: "https://gomoonbeam.com",
-    thumbnail:
-      "https://www.aceternity.com/images/products/thumbnails/new/moonbeam.png",
-  },
-  {
-    title: "Cursor",
-    link: "https://cursor.so",
-    thumbnail:
-      "https://www.aceternity.com/images/products/thumbnails/new/cursor.png",
-  },
-  {
-    title: "Rogue",
-    link: "https://userogue.com",
-    thumbnail:
-      "https://www.aceternity.com/images/products/thumbnails/new/rogue.png",
-  },
- 
-  {
-    title: "Editorially",
-    link: "https://editorially.org",
-    thumbnail:
-      "https://www.aceternity.com/images/products/thumbnails/new/editorially.png",
-  },
-  {
-    title: "Editrix AI",
-    link: "https://editrix.ai",
-    thumbnail:
-      "https://www.aceternity.com/images/products/thumbnails/new/editrix.png",
-  },
-  {
-    title: "Pixel Perfect",
-    link: "https://app.pixelperfect.quest",
-    thumbnail:
-      "https://www.aceternity.com/images/products/thumbnails/new/pixelperfect.png",
-  },
- 
-  {
-    title: "Algochurn",
-    link: "https://algochurn.com",
-    thumbnail:
-      "https://www.aceternity.com/images/products/thumbnails/new/algochurn.png",
-  },
-  {
-    title: "Aceternity UI",
-    link: "https://ui.aceternity.com",
-    thumbnail:
-      "https://www.aceternity.com/images/products/thumbnails/new/aceternityui.png",
-  },
-  {
-    title: "Tailwind Master Kit",
-    link: "https://tailwindmasterkit.com",
-    thumbnail:
-      "https://www.aceternity.com/images/products/thumbnails/new/tailwindmasterkit.png",
-  },
-  {
-    title: "SmartBridge",
-    link: "https://smartbridgetech.com",
-    thumbnail:
-      "https://www.aceternity.com/images/products/thumbnails/new/smartbridge.png",
-  },
-  {
-    title: "Renderwork Studio",
-    link: "https://renderwork.studio",
-    thumbnail:
-      "https://www.aceternity.com/images/products/thumbnails/new/renderwork.png",
-  },
- 
-  {
-    title: "Creme Digital",
-    link: "https://cremedigital.com",
-    thumbnail:
-      "https://www.aceternity.com/images/products/thumbnails/new/cremedigital.png",
-  },
-  {
-    title: "Golden Bells Academy",
-    link: "https://goldenbellsacademy.com",
-    thumbnail:
-      "https://www.aceternity.com/images/products/thumbnails/new/goldenbellsacademy.png",
-  },
-  {
-    title: "Invoker Labs",
-    link: "https://invoker.lol",
-    thumbnail:
-      "https://www.aceternity.com/images/products/thumbnails/new/invoker.png",
-  },
-  {
-    title: "E Free Invoice",
-    link: "https://efreeinvoice.com",
-    thumbnail:
-      "https://www.aceternity.com/images/products/thumbnails/new/efreeinvoice.png",
-  },
-];
 function CountingSection() {
   const [inView, setInView] = useState(false);
   const sectionRef = useRef<HTMLElement | null>(null);

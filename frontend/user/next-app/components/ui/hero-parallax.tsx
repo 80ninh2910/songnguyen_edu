@@ -57,7 +57,7 @@ export const HeroParallax = ({
   return (
     <div
       ref={ref}
-      className="h-[300vh] py-40 overflow-hidden bg-[linear-gradient(180deg,#f9f7f2_0%,#f5f3ef_40%,#f7f6f3_100%)] antialiased relative flex flex-col self-auto [perspective:1000px] [transform-style:preserve-3d]"
+      className="h-[300vh] py-40 overflow-hidden bg-[linear-gradient(180deg,#eef7ff_0%,#e3f1ff_45%,#d9ebff_100%)] antialiased relative flex flex-col self-auto [perspective:1000px] [transform-style:preserve-3d]"
     >
       <Header />
       <motion.div
@@ -103,13 +103,43 @@ export const HeroParallax = ({
 
 export const Header = () => {
   return (
-    <div className="max-w-7xl relative mx-auto py-20 md:py-40 px-4 w-full  left-0 top-0">
-      <h1 className="text-2xl md:text-7xl font-bold dark:text-white">
-        BÀI VIẾT VỀ<br /> SONG NGUYEN EDUCATION
-      </h1>
-      <p className="max-w-2xl text-base md:text-xl mt-8 dark:text-neutral-200">
+    <div className="max-w-7xl relative mx-auto py-20 md:py-40 px-4 w-full left-0 top-0">
+      <motion.h1
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.7 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+        className="relative flex flex-wrap items-center gap-4 text-3xl font-extrabold tracking-tight md:gap-6 md:text-7xl"
+      >
+        <span className="text-[#1f3a8a]">SONG NGUYEN EDUCATION</span>
+
+        <span className="relative inline-flex rotate-[4deg] items-center rounded-full bg-[#ff0c0c] px-10 py-3 text-white md:px-14 md:py-4">
+          BÀI VIẾT
+          <svg
+            className="absolute -right-8 -top-6 h-12 w-12 text-sky-500 md:h-16 md:w-16"
+            viewBox="0 0 64 64"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M32 4v14M32 46v14M4 32h14M46 32h14M11 11l10 10M43 43l10 10M53 11 43 21M21 43 11 53"
+              stroke="currentColor"
+              strokeWidth="4.5"
+              strokeLinecap="round"
+            />
+          </svg>
+        </span>
+      </motion.h1>
+
+      <motion.p
+        initial={{ opacity: 0, y: 16 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.7 }}
+        transition={{ duration: 0.6, delay: 0.15, ease: "easeOut" }}
+        className="max-w-2xl text-base md:text-xl mt-8 font-medium leading-8 text-[#334155]"
+      >
         SONG NGUYEN EDUCATION giúp phụ huynh tìm được gia sư phù hợp đồng hành cùng con trên hành trình tri thức
-      </p>
+      </motion.p>
     </div>
   );
 };
@@ -134,17 +164,17 @@ export const ProductCard = ({
         y: -20,
       }}
       key={product.title}
-      className="group/product h-96 w-[30rem] relative shrink-0"
+      className="group/product h-96 w-[30rem] relative shrink-0 overflow-hidden rounded-2xl bg-white/75"
     >
       <a
         href={product.link}
-        className="block group-hover/product:shadow-2xl "
+        className="block h-full w-full p-2 group-hover/product:shadow-2xl"
       >
         <img
           src={product.thumbnail}
           height="600"
           width="600"
-          className="object-cover object-left-top absolute h-full w-full inset-0"
+          className="h-full w-full object-contain object-center"
           alt={product.title}
         />
       </a>
