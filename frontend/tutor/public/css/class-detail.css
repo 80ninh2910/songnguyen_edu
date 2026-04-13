@@ -1,0 +1,136 @@
+/* ===== Class Detail Specific ===== */
+.top-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 40px; background: #fff; border-bottom: 1px solid #e5e7eb;
+}
+.nav-brand { font-size: 16px; font-weight: 800; color: #3B82F6; font-family: 'Manrope', sans-serif; }
+.nav-links { display: flex; gap: 24px; align-items: center; }
+.nav-links a { font-size: 14px; color: #6b7280; text-decoration: none; font-weight: 500; transition: color 0.2s; }
+.nav-links a:hover { color: #3B82F6; }
+.nav-links a.active { color: #3B82F6; font-weight: 700; text-decoration: underline; text-underline-offset: 4px; }
+.nav-right { display: flex; align-items: center; gap: 14px; }
+.nav-icon {
+    width: 36px; height: 36px; display: flex; align-items: center;
+    justify-content: center; border-radius: 10px; color: #6b7280;
+    cursor: pointer; transition: all 0.2s;
+}
+.nav-icon:hover { background: #eff6ff; color: #3B82F6; }
+.nav-avatar {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: linear-gradient(135deg, #3B82F6, #5870D5);
+    display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 14px; font-weight: 600;
+}
+.page-container { max-width: 1100px; margin: 0 auto; padding: 32px 40px; }
+.course-badges { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.badge-approved {
+    padding: 4px 14px; border-radius: 20px; font-size: 11px; font-weight: 700;
+    background: #3B82F6; color: #fff; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.course-id { font-size: 13px; color: #9ca3af; font-weight: 500; }
+.course-title { font-size: 32px; font-weight: 800; line-height: 1.2; margin-bottom: 12px; max-width: 550px; font-family: 'Manrope', sans-serif; }
+.course-desc { font-size: 15px; color: #6b7280; line-height: 1.6; max-width: 550px; margin-bottom: 28px; }
+.detail-grid { display: grid; grid-template-columns: 1fr 300px; gap: 24px; }
+.left-col { display: flex; flex-direction: column; gap: 24px; }
+.right-col { display: flex; flex-direction: column; gap: 20px; }
+.schedule-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.card h3 { font-size: 16px; font-weight: 700; margin-bottom: 4px; font-family: 'Manrope', sans-serif; }
+.card .subtitle { font-size: 12px; color: #9ca3af; margin-bottom: 16px; }
+.schedule-card { position: relative; }
+.calendar-icon { position: absolute; top: 20px; right: 20px; color: #9ca3af; font-size: 16px; cursor: pointer; }
+.schedule-chart { display: flex; align-items: flex-end; gap: 18px; height: 110px; padding-top: 10px; }
+.chart-group { display: flex; gap: 4px; align-items: flex-end; }
+.bar { width: 20px; border-radius: 4px; background: #e5e7eb; transition: height 0.3s; }
+.bar.active { background: #3B82F6; }
+.avail-badge {
+    position: absolute; top: 16px; left: 16px;
+    padding: 3px 10px; border-radius: 12px; font-size: 10px; font-weight: 700;
+    background: #dcfce7; color: #16a34a; text-transform: uppercase;
+}
+.avail-circle {
+    width: 140px; height: 140px; border-radius: 50%;
+    background: conic-gradient(#3B82F6 0deg 240deg, #e5e7eb 240deg 360deg);
+    display: flex; align-items: center; justify-content: center; margin: 0 auto 12px;
+}
+.avail-inner {
+    width: 110px; height: 110px; border-radius: 50%; background: #fff;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.avail-number { font-size: 36px; font-weight: 800; color: #3B82F6; line-height: 1; font-family: 'Manrope', sans-serif; }
+.avail-total { font-size: 14px; color: #9ca3af; }
+.avail-sub { font-size: 12px; color: #9ca3af; text-align: center; }
+.info-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.info-chip { background: #fff; border-radius: 14px; border: 1px solid #e5e7eb; padding: 16px; display: flex; align-items: center; gap: 14px; }
+.info-chip-icon {
+    width: 42px; height: 42px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0;
+}
+.info-chip-icon.avatar-icon { background: linear-gradient(135deg, #3B82F6, #5870D5); color: rgba(255,255,255,0.9); }
+.info-chip-icon.resource-icon { background: #eff6ff; color: #3B82F6; }
+.info-chip-icon.campus-icon { background: #dcfce7; color: #16a34a; }
+.chip-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: #9ca3af; font-weight: 600; }
+.chip-value { font-size: 14px; font-weight: 700; margin-top: 2px; font-family: 'Manrope', sans-serif; }
+.chip-sub { font-size: 11px; color: #9ca3af; }
+.req-section { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.req-block h3 { font-size: 17px; font-weight: 700; margin-bottom: 16px; padding-left: 14px; border-left: 3px solid #3B82F6; }
+.req-list { display: flex; flex-direction: column; gap: 12px; }
+.req-item { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: #6b7280; line-height: 1.5; }
+.req-dot { width: 8px; height: 8px; border-radius: 50%; background: #3B82F6; flex-shrink: 0; margin-top: 6px; }
+.clarification { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
+.clar-icon {
+    width: 36px; height: 36px; border-radius: 50%; background: #eff6ff;
+    display: flex; align-items: center; justify-content: center; color: #3B82F6; font-size: 14px;
+}
+.clar-text h4 { font-size: 14px; font-weight: 700; }
+.clar-text p { font-size: 12px; color: #9ca3af; }
+
+/* Enrollment Card */
+.enroll-card { background: #fff; border-radius: 16px; border: 1px solid #e5e7eb; padding: 24px; text-align: center; }
+.enroll-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #9ca3af; font-weight: 600; margin-bottom: 8px; }
+.enroll-price { font-size: 36px; font-weight: 800; margin-bottom: 4px; font-family: 'Manrope', sans-serif; }
+.enroll-price span { font-size: 16px; font-weight: 500; color: #9ca3af; }
+.enroll-status {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 0; border-top: 1px solid #f3f4f6; border-bottom: 1px solid #f3f4f6; margin: 16px 0;
+}
+.enroll-status-label { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 500; }
+.enroll-status-value { font-size: 13px; font-weight: 600; color: #ef4444; text-transform: uppercase; }
+.status-preview { margin-bottom: 18px; }
+.status-preview-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: #d1d5db; font-weight: 600; margin-bottom: 8px; }
+.status-badges { display: flex; gap: 8px; justify-content: center; }
+.mini-badge { padding: 4px 12px; border-radius: 16px; font-size: 11px; font-weight: 600; }
+.mini-badge.pending { background: #fef3c7; color: #d97706; }
+.mini-badge.approved { background: #dcfce7; color: #16a34a; }
+.mini-badge.rejected { background: #fee2e2; color: #ef4444; }
+.btn-register {
+    width: 100%; padding: 14px; border-radius: 12px; background: #3B82F6; color: #fff;
+    border: none; font-size: 15px; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: all 0.2s; font-family: 'Inter', sans-serif; margin-bottom: 12px;
+}
+.btn-register:hover { background: #2563eb; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59,130,246,0.3); }
+.btn-download {
+    width: 100%; padding: 12px; border-radius: 12px; background: #fff; color: #3B82F6;
+    border: none; font-size: 14px; font-weight: 700; cursor: pointer; font-family: 'Inter', sans-serif;
+}
+.btn-download:hover { background: #eff6ff; }
+
+/* Protocol Card */
+.protocol-card { background: linear-gradient(135deg, #3B82F6, #5870D5); border-radius: 16px; padding: 24px; color: #fff; }
+.protocol-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.protocol-item { background: rgba(255,255,255,0.12); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+.protocol-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,0.6); font-weight: 600; margin-bottom: 6px; }
+.protocol-value { font-size: 13px; line-height: 1.5; color: rgba(255,255,255,0.9); }
+
+/* Footer */
+.footer {
+    border-top: 1px solid #e5e7eb; margin-top: 40px; padding: 24px 40px;
+    display: flex; align-items: center; justify-content: space-between; background: #fff;
+}
+.footer-left { font-size: 12px; color: #9ca3af; }
+.footer-links { display: flex; gap: 24px; }
+.footer-links a {
+    font-size: 11px; color: #9ca3af; text-decoration: none;
+    text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
+}
+.footer-links a:hover { color: #3B82F6; }
