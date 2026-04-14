@@ -8,9 +8,21 @@ import {
   MotionValue,
 } from "motion/react";
 
+type Product = {
+  title: string;
+  link: string;
+  thumbnail: string;
+};
 
+type HeroParallaxProps = {
+  products: Product[];
+};
 
-export const HeroParallax = () => null;
+export const HeroParallax = ({ products }: HeroParallaxProps) => {
+  // Keep this component minimal while still accepting typed data from callers.
+  if (!products.length) return null;
+  return null;
+};
 
 export const Header = () => {
   return (
@@ -59,11 +71,7 @@ export const ProductCard = ({
   product,
   translate,
 }: {
-  product: {
-    title: string;
-    link: string;
-    thumbnail: string;
-  };
+  product: Product;
   translate: MotionValue<number>;
 }) => {
   return (
