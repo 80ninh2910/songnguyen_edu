@@ -1,0 +1,59 @@
+/* ===== My Classes Specific ===== */
+.page-header {
+    display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px;
+}
+.tabs {
+    display: flex; gap: 4px; background: #F9FAFB; border-radius: 12px; padding: 4px;
+    border: 1px solid #e5e7eb;
+}
+.tab {
+    padding: 8px 18px; border-radius: 10px; font-size: 13px; font-weight: 500;
+    color: #9ca3af; cursor: pointer; transition: all 0.2s; border: none;
+    background: none; font-family: 'Inter', sans-serif;
+}
+.tab:hover { color: #3B82F6; }
+.tab.active { background: #fff; color: #3B82F6; font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
+/* Class List */
+.class-list { background: #fff; border-radius: 16px; border: 1px solid #e5e7eb; overflow: hidden; }
+.class-item {
+    display: flex; align-items: center; padding: 20px 24px;
+    border-bottom: 1px solid #f3f4f6; transition: background 0.2s;
+}
+.class-item:last-child { border-bottom: none; }
+.class-item:hover { background: #fafbfc; }
+.class-thumb {
+    width: 64px; height: 64px; border-radius: 12px;
+    background: linear-gradient(135deg, #3B82F6, #5870D5);
+    flex-shrink: 0; margin-right: 18px;
+    display: flex; align-items: center; justify-content: center; overflow: hidden;
+}
+.class-thumb i { font-size: 24px; color: rgba(255,255,255,0.7); }
+.class-info { flex: 1; }
+.class-name {
+    font-size: 16px; font-weight: 700; margin-bottom: 6px;
+    display: flex; align-items: center; gap: 10px; font-family: 'Manrope', sans-serif;
+}
+.class-meta { display: flex; gap: 16px; font-size: 13px; color: #9ca3af; }
+.class-meta span { display: flex; align-items: center; gap: 6px; }
+.class-meta i { font-size: 12px; }
+.class-actions { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+.btn-action {
+    padding: 8px 20px; border-radius: 10px; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif; border: 1px solid;
+}
+.btn-action.join { background: #3B82F6; color: #fff; border-color: #3B82F6; }
+.btn-action.join:hover { background: #2563eb; box-shadow: 0 4px 12px rgba(59,130,246,0.3); }
+.btn-action.review { background: #fff; color: #9ca3af; border-color: #e5e7eb; }
+.btn-action.review:hover { border-color: #3B82F6; color: #3B82F6; }
+.btn-action.reschedule { background: #fff; color: #6b7280; border-color: #e5e7eb; }
+.btn-action.reschedule:hover { border-color: #3B82F6; color: #3B82F6; }
+
+/* Load More */
+.load-more { text-align: center; padding: 24px; }
+.load-more button {
+    background: none; border: none; color: #3B82F6; font-size: 14px; font-weight: 700;
+    cursor: pointer; font-family: 'Inter', sans-serif; padding: 10px 24px;
+    border-radius: 10px; transition: all 0.2s;
+}
+.load-more button:hover { background: #eff6ff; }
