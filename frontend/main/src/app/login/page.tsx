@@ -132,7 +132,7 @@ export default function LoginPage() {
             </button>
 
             <div className="signup-link">
-              Chưa có tài khoản? <Link href="#">Đăng ký làm gia sư</Link>
+              Chưa có tài khoản? <Link href="/user">Đăng ký làm gia sư</Link>
             </div>
           </form>
         </div>
