@@ -1,0 +1,200 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  TUTOR
+}
+
+enum TutorStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ClassStatus {
+  OPEN
+  ASSIGNED
+  CLOSED
+}
+
+enum RequestStatus {
+  PENDING
+  CONVERTED
+  REJECTED
+}
+
+enum ApplicationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum PaymentStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+}
+
+model Admin {
+  id                String         @id @default(uuid())
+  email             String         @unique
+  fullName          String         @map("full_name")
+  passwordHash      String         @map("password_hash")
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
+  approvedTutors    Tutor[]        @relation("TutorApprovedBy")
+  processedRequests ClassRequest[] @relation("RequestProcessedBy")
+  createdClasses    Class[]        @relation("ClassCreatedBy")
+  assignedClasses   ClassAssignment[]
+  reviewedPayments  Payment[]      @relation("PaymentReviewedBy")
+
+  @@map("admins")
+}
+
+model Tutor {
+  id             String      @id @default(uuid())
+  email          String      @unique
+  fullName       String      @map("full_name")
+  passwordHash   String?     @map("password_hash")
+  status         TutorStatus @default(PENDING)
+  rejectReason   String?     @map("reject_reason")
+  subjects       String[]    @default([])
+  districts      String[]    @default([])
+  approvedAt     DateTime?   @map("approved_at")
+  approvedById   String?     @map("approved_by_id")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  approvedBy     Admin?      @relation("TutorApprovedBy", fields: [approvedById], references: [id])
+  applications   ClassApplication[]
+  assignments    ClassAssignment[]
+  payments       Payment[]
+
+  @@index([status])
+  @@index([subjects], type: Gin)
+  @@map("tutors")
+}
+
+model ClassRequest {
+  id            String       @id @default(uuid())
+  parentName    String       @map("parent_name")
+  parentPhone   String       @map("parent_phone")
+  parentEmail   String?      @map("parent_email")
+  subject       String
+  grade         String
+  district      String
+  budgetPerHour Int          @map("budget_per_hour")
+  note          String?
+  status        RequestStatus @default(PENDING)
+  processedAt   DateTime?     @map("processed_at")
+  processedById String?       @map("processed_by_id")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  processedBy   Admin?        @relation("RequestProcessedBy", fields: [processedById], references: [id])
+  classes       Class[]
+
+  @@index([status])
+  @@map("class_requests")
+}
+
+model Class {
+  id              String           @id @default(uuid())
+  title           String
+  subject         String
+  grade           String
+  district        String
+  feePerHour      Int              @map("fee_per_hour")
+  schedule        String?
+  status          ClassStatus      @default(OPEN)
+  sourceRequestId String?          @map("source_request_id")
+  createdById     String           @map("created_by_id")
+  closedAt        DateTime?        @map("closed_at")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  sourceRequest   ClassRequest?    @relation(fields: [sourceRequestId], references: [id])
+  createdBy       Admin            @relation("ClassCreatedBy", fields: [createdById], references: [id])
+  applications    ClassApplication[]
+  assignment      ClassAssignment?
+
+  @@index([status])
+  @@index([status, subject, district])
+  @@map("classes")
+}
+
+model ClassApplication {
+  id        String            @id @default(uuid())
+  classId   String            @map("class_id")
+  tutorId   String            @map("tutor_id")
+  status    ApplicationStatus @default(PENDING)
+  note      String?
+  createdAt DateTime          @default(now()) @map("created_at")
+  updatedAt DateTime          @updatedAt @map("updated_at")
+
+  class     Class             @relation(fields: [classId], references: [id], onDelete: Cascade)
+  tutor     Tutor             @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+
+  @@unique([classId, tutorId])
+  @@index([classId])
+  @@index([tutorId])
+  @@map("class_applications")
+}
+
+model ClassAssignment {
+  id           String   @id @default(uuid())
+  classId      String   @unique @map("class_id")
+  tutorId      String   @map("tutor_id")
+  assignedById String   @map("assigned_by_id")
+  note         String?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  class        Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  tutor        Tutor    @relation(fields: [tutorId], references: [id])
+  assignedBy   Admin    @relation(fields: [assignedById], references: [id])
+
+  @@index([tutorId])
+  @@map("class_assignments")
+}
+
+model Payment {
+  id           String        @id @default(uuid())
+  tutorId      String        @map("tutor_id")
+  amount       Int
+  billImageUrl String        @map("bill_image_url")
+  status       PaymentStatus @default(PENDING)
+  note         String?
+  reviewedById String?       @map("reviewed_by_id")
+  reviewedAt   DateTime?     @map("reviewed_at")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  tutor        Tutor         @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+  reviewedBy   Admin?        @relation("PaymentReviewedBy", fields: [reviewedById], references: [id])
+
+  @@index([status])
+  @@map("payments")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String   @map("actor_id")
+  actorName  String   @map("actor_name")
+  action     String
+  targetType String   @map("target_type")
+  targetId   String   @map("target_id")
+  payload    Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([actorId])
+  @@index([targetType, targetId])
+  @@index([createdAt(sort: Desc)])
+  @@map("audit_logs")
+}
