@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  TUTOR
+}
+
+enum TutorStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Admin {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  fullName     String    @map("full_name")
+  passwordHash String    @map("password_hash")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  approvedTutors Tutor[] @relation("TutorApprovedBy")
+
+  @@map("admins")
+}
+
+model Tutor {
+  id           String      @id @default(uuid())
+  email        String      @unique
+  fullName     String      @map("full_name")
+  passwordHash String?     @map("password_hash")
+  status       TutorStatus @default(PENDING)
+  approvedAt   DateTime?   @map("approved_at")
+  approvedById String?     @map("approved_by_id")
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  approvedBy   Admin?      @relation("TutorApprovedBy", fields: [approvedById], references: [id])
+
+  @@index([status])
+  @@map("tutors")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String   @map("actor_id")
+  actorName  String   @map("actor_name")
+  action     String
+  targetType String   @map("target_type")
+  targetId   String   @map("target_id")
+  payload    Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([actorId])
+  @@index([targetType, targetId])
+  @@index([createdAt(sort: Desc)])
+  @@map("audit_logs")
+}
