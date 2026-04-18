@@ -64,6 +64,30 @@ export default function NavbarDemo() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeProcessModal, setActiveProcessModal] = useState<ProcessType | null>(null);
 
+  useEffect(() => {
+    // Handle cross-page navigation smooth scroll with precise offset
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.get('scrollTo') === 'tutor-register-section' || window.location.hash === '#tutor-register-section') {
+      // Small delay to ensure React hydration and image layout shifting is completed
+      setTimeout(() => {
+        const element = document.getElementById('tutor-register-section');
+        if (element) {
+          // Use a fixed offset for the sticky navbar (120px provides safe spacing)
+          const navbarHeight = 120;
+          const elementPosition = element.getBoundingClientRect().top + window.scrollY;
+          
+          window.scrollTo({
+            top: elementPosition - navbarHeight,
+            behavior: 'smooth'
+          });
+          
+          // Clean the URL to avoid jumping on subsequent manual reloads
+          window.history.replaceState({}, document.title, '/');
+        }
+      }, 400); 
+    }
+  }, []);
+
   return (
     <div className="relative w-full">
       <Navbar>
@@ -828,8 +852,8 @@ function TutorRegistrationClassSection({
   return (
     <section
       ref={sectionRef}
-      id="tutor-register"
-      className="relative"
+      id="tutor-register-section"
+      className="relative scroll-mt-[100px]"
     >
       <div className={`relative mx-auto w-full max-w-7xl ${beVietnamPro.className}`}>
         <article
