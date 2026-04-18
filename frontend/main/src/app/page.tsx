@@ -55,10 +55,6 @@ export default function NavbarDemo() {
       name: "Tìm gia sư",
       link: "#Tutors",
     },
-    {
-      name: "Về chúng tôi",
-      link: "#features",
-    },
   ];
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -97,7 +93,6 @@ export default function NavbarDemo() {
           <NavItems items={navItems} />
           <div className="flex items-center gap-4">
             <NavbarButton href="/login" variant="secondary">Login</NavbarButton>
-            <NavbarButton variant="primary">Book a call</NavbarButton>
           </div>
         </NavBody>
 
@@ -133,13 +128,6 @@ export default function NavbarDemo() {
                 className="w-full"
               >
                 Login
-              </NavbarButton>
-              <NavbarButton
-                onClick={() => setIsMobileMenuOpen(false)}
-                variant="primary"
-                className="w-full"
-              >
-                Book a call
               </NavbarButton>
             </div>
           </MobileNavMenu>
