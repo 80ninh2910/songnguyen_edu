@@ -31,6 +31,7 @@ interface NavItemsProps {
   }[];
   className?: string;
   onItemClick?: () => void;
+  activePath?: string;
 }
 
 interface MobileNavProps {
@@ -115,7 +116,7 @@ export const NavBody = ({ children, className, visible }: NavBodyProps) => {
   );
 };
 
-export const NavItems = ({ items, className, onItemClick }: NavItemsProps) => {
+export const NavItems = ({ items, className, onItemClick, activePath }: NavItemsProps) => {
   const [hovered, setHovered] = useState<number | null>(null);
 
   return (
@@ -126,23 +127,30 @@ export const NavItems = ({ items, className, onItemClick }: NavItemsProps) => {
         className,
       )}
     >
-      {items.map((item, idx) => (
-        <a
-          onMouseEnter={() => setHovered(idx)}
-          onClick={onItemClick}
-          className="relative px-4 py-2 text-black"
-          key={`link-${idx}`}
-          href={item.link}
-        >
-          {hovered === idx && (
-            <motion.div
-              layoutId="hovered"
-              className="absolute inset-0 h-full w-full rounded-full bg-gray-100"
-            />
-          )}
-          <span className="relative z-20">{item.name}</span>
-        </a>
-      ))}
+      {items.map((item, idx) => {
+        const isActive = activePath === item.link;
+
+        return (
+          <a
+            onMouseEnter={() => setHovered(idx)}
+            onClick={onItemClick}
+            className={cn(
+              "relative rounded-full px-4 py-2",
+              isActive ? "bg-red-600 text-white" : "text-black",
+            )}
+            key={`link-${idx}`}
+            href={item.link}
+          >
+            {hovered === idx && !isActive && (
+              <motion.div
+                layoutId="hovered"
+                className="absolute inset-0 h-full w-full rounded-full bg-gray-100"
+              />
+            )}
+            <span className="relative z-20">{item.name}</span>
+          </a>
+        );
+      })}
     </motion.div>
   );
 };
@@ -235,7 +243,7 @@ export const MobileNavToggle = ({
 export const NavbarLogo = () => {
   return (
     <a
-      href="#"
+      href="/"
       className="relative z-20 mr-4 flex items-center space-x-2 px-2 py-1 text-sm font-normal text-black"
     >
       <Image
@@ -245,7 +253,7 @@ export const NavbarLogo = () => {
         height={36}
         className="rounded-full object-cover"
       />
-      <span className="font-medium text-black">SONG NGUYEN EDU</span>
+      <span className="hidden font-medium text-black xl:inline">SONG NGUYEN EDU</span>
     </a>
   );
 };

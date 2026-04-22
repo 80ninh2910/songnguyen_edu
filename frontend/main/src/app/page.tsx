@@ -1,15 +1,4 @@
 "use client";
-import {
-  Navbar,
-  NavBody,
-  NavItems,
-  MobileNav,
-  NavbarLogo,
-  NavbarButton,
-  MobileNavHeader,
-  MobileNavToggle,
-  MobileNavMenu,
-} from "@/components/ui/resizable-navbar";
 import { TextHoverEffect } from "@/components/ui/text-hover-effect";
 import Image from "next/image";
 import { Be_Vietnam_Pro, Bricolage_Grotesque } from "next/font/google";
@@ -42,22 +31,6 @@ const beVietnamPro = Be_Vietnam_Pro({
 type ProcessType = "parent" | "tutor";
 
 export default function NavbarDemo() {
-  const navItems = [
-    {
-      name: "Trang chủ",
-      link: "#Main",
-    },
-    {
-      name: "Học phí",
-      link: "#pricing",
-    },
-    {
-      name: "Tìm gia sư",
-      link: "#Tutors",
-    },
-  ];
-
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeProcessModal, setActiveProcessModal] = useState<ProcessType | null>(null);
 
   useEffect(() => {
@@ -86,53 +59,6 @@ export default function NavbarDemo() {
 
   return (
     <div className="relative w-full">
-      <Navbar>
-        {/* Desktop Navigation */}
-        <NavBody>
-          <NavbarLogo />
-          <NavItems items={navItems} />
-          <div className="flex items-center gap-4">
-            <NavbarButton href="/login" variant="secondary">Login</NavbarButton>
-          </div>
-        </NavBody>
-
-        {/* Mobile Navigation */}
-        <MobileNav>
-          <MobileNavHeader>
-            <NavbarLogo />
-            <MobileNavToggle
-              isOpen={isMobileMenuOpen}
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            />
-          </MobileNavHeader>
-
-          <MobileNavMenu
-            isOpen={isMobileMenuOpen}
-            onClose={() => setIsMobileMenuOpen(false)}
-          >
-            {navItems.map((item, idx) => (
-              <a
-                key={`mobile-link-${idx}`}
-                href={item.link}
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="relative text-black"
-              >
-                <span className="block">{item.name}</span>
-              </a>
-            ))}
-            <div className="flex w-full flex-col gap-4">
-              <NavbarButton
-                href="/login"
-                onClick={() => setIsMobileMenuOpen(false)}
-                variant="primary"
-                className="w-full"
-              >
-                Login
-              </NavbarButton>
-            </div>
-          </MobileNavMenu>
-        </MobileNav>
-      </Navbar>
       <BackgroundLinesDemo />
       <TemplateContentSection />
       {/* ĐÃ XÓA: Hệ Thống Gia Sư & Giáo Viên section theo yêu cầu */}
