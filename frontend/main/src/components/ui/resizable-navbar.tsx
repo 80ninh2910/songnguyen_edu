@@ -94,7 +94,7 @@ export const NavBody = ({ children, className, visible }: NavBodyProps) => {
         boxShadow: visible
           ? "0 0 24px rgba(34, 42, 53, 0.06), 0 1px 1px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(34, 42, 53, 0.04), 0 0 4px rgba(34, 42, 53, 0.08), 0 16px 68px rgba(47, 48, 55, 0.05), 0 1px 0 rgba(255, 255, 255, 0.1) inset"
           : "none",
-        width: visible ? "40%" : "100%",
+        width: visible ? "max-content" : "100%",
         y: visible ? 20 : 0,
       }}
       transition={{
@@ -102,11 +102,8 @@ export const NavBody = ({ children, className, visible }: NavBodyProps) => {
         stiffness: 200,
         damping: 50,
       }}
-      style={{
-        minWidth: "800px",
-      }}
       className={cn(
-        "relative z-[60] mx-auto hidden w-full max-w-7xl flex-row items-center justify-between self-start rounded-full bg-transparent px-4 py-2 lg:flex",
+        "relative z-[60] mx-auto hidden w-full max-w-7xl flex-row items-center justify-between gap-8 self-start rounded-full bg-transparent px-8 py-2 lg:flex",
         visible && "bg-white/90",
         className,
       )}
@@ -123,7 +120,7 @@ export const NavItems = ({ items, className, onItemClick, activePath }: NavItems
     <motion.div
       onMouseLeave={() => setHovered(null)}
       className={cn(
-        "absolute inset-0 hidden flex-1 flex-row items-center justify-center space-x-2 text-sm font-medium text-black transition duration-200 hover:text-zinc-900 lg:flex lg:space-x-2",
+        "hidden flex-row items-center justify-center gap-8 text-sm font-medium text-black transition duration-200 lg:flex",
         className,
       )}
     >
@@ -135,7 +132,7 @@ export const NavItems = ({ items, className, onItemClick, activePath }: NavItems
             onMouseEnter={() => setHovered(idx)}
             onClick={onItemClick}
             className={cn(
-              "relative rounded-full px-4 py-2",
+              "relative rounded-full px-4 py-2 whitespace-nowrap shrink-0",
               isActive ? "bg-red-600 text-white" : "text-black",
             )}
             key={`link-${idx}`}
@@ -244,7 +241,7 @@ export const NavbarLogo = () => {
   return (
     <a
       href="/"
-      className="relative z-20 mr-4 flex items-center space-x-2 px-2 py-1 text-sm font-normal text-black"
+      className="relative z-20 mr-4 flex shrink-0 items-center space-x-2 px-2 py-1 text-sm font-normal text-black whitespace-nowrap"
     >
       <Image
         src={logoImage}
@@ -253,7 +250,7 @@ export const NavbarLogo = () => {
         height={36}
         className="rounded-full object-cover"
       />
-      <span className="hidden font-medium text-black xl:inline">SONG NGUYEN EDU</span>
+      <span className="hidden whitespace-nowrap font-medium text-black lg:inline shrink-0">SONG NGUYEN EDU</span>
     </a>
   );
 };
