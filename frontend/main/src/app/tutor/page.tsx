@@ -107,12 +107,7 @@ export default function Dashboard() {
         ))}
       </div>
 
-      <div className="article-banner">
-        <div className="label">Tạp Chí SONG NGUYEN EDU</div>
-        <h2>Làm Chủ Phương Pháp Giảng Dạy Số 2024</h2>
-        <p>Khám phá hướng dẫn mới nhất về thu hút học sinh thông qua mô hình học tập kết hợp và kỹ thuật bảng trắng nâng cao.</p>
-        <button className="btn-read-article">Đọc Bài Viết <i className="fas fa-arrow-right"></i></button>
-      </div>
+
     </>
   );
 }

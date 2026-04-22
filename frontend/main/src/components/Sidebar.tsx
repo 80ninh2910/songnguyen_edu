@@ -47,7 +47,7 @@ export default function Sidebar() {
       </nav>
       <div className="sidebar-bottom">
         <button className="btn-new-lesson"><i className="fas fa-plus"></i> Bài Giảng Mới</button>
-        <Link href="#"><i className="fas fa-question-circle"></i> Trung Tâm Hỗ Trợ</Link>
+
         <a href="#" onClick={handleLogout} className="logout-btn"><i className="fas fa-sign-out-alt"></i> Đăng Xuất</a>
       </div>
     </aside>

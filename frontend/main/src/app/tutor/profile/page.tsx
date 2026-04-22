@@ -7,6 +7,7 @@ export default function Profile() {
   const [isCertModalOpen, setCertModalOpen] = useState(false);
   const [editingCertIndex, setEditingCertIndex] = useState<number | null>(null);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [avatarFileName, setAvatarFileName] = useState<string | null>(null);
 
   const { profile, setProfile } = useProfile();
 
@@ -248,8 +249,45 @@ export default function Profile() {
             </div>
             <form onSubmit={handleUpdate} className="modal-body">
               <div className="form-group">
-                <label>Ảnh Đại Diện (Avatar)</label>
-                <input type="file" name="avatar" accept="image/*" className="form-input" style={{ padding: '10px 0' }} />
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Ảnh Đại Diện (Avatar)</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <label 
+                    htmlFor="avatar-upload" 
+                    style={{
+                      background: '#f1f5f9',
+                      border: '1px solid #cbd5e1',
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      color: '#334155',
+                      fontWeight: '500',
+                      transition: 'background 0.2s',
+                      whiteSpace: 'nowrap'
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.background = '#e2e8f0'}
+                    onMouseOut={(e) => e.currentTarget.style.background = '#f1f5f9'}
+                  >
+                    Chọn tệp
+                  </label>
+                  <span style={{ fontSize: '14px', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {avatarFileName || 'Không có tệp nào được chọn'}
+                  </span>
+                  <input 
+                    id="avatar-upload"
+                    type="file" 
+                    name="avatar" 
+                    accept="image/*" 
+                    style={{ display: 'none' }} 
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        setAvatarFileName(e.target.files[0].name);
+                      } else {
+                        setAvatarFileName(null);
+                      }
+                    }}
+                  />
+                </div>
               </div>
               
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>

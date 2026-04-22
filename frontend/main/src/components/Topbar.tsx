@@ -35,7 +35,7 @@ export default function Topbar() {
         <input type="text" placeholder="Tìm kiếm lớp học..." />
       </div>
       <div className="topbar-right">
-        <Link href="#" className="support-link">Hỗ Trợ</Link>
+
         <div className="topbar-icon" style={{ position: 'relative' }} ref={notifRef}>
           <div onClick={handleNotifClick} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
             <i className="fas fa-bell"></i>
@@ -67,7 +67,7 @@ export default function Topbar() {
             </div>
           )}
         </div>
-        <div className="topbar-icon"><i className="fas fa-cog"></i></div>
+
         {profile.avatarUrl ? (
           <img src={profile.avatarUrl} alt="Avatar" className="avatar" style={{ width: '40px', height: '40px', borderRadius: '12px', objectFit: 'cover', padding: 0 }} />
         ) : (
