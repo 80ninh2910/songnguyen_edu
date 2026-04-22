@@ -1,4 +1,5 @@
 'use client';
+import './login.css';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -31,20 +32,7 @@ export default function LoginPage() {
   };
 
   return (
-    <>
-      <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap"
-          rel="stylesheet"
-        />
-        <link
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-          rel="stylesheet"
-        />
-        <link rel="stylesheet" href="/css/login.css" />
-      </head>
-
-      <div className="login-page">
+    <div className="login-page">
         <div className="login-card">
           {/* Header */}
           <div className="login-header">
@@ -137,6 +125,5 @@ export default function LoginPage() {
           </form>
         </div>
       </div>
-    </>
   );
 }
