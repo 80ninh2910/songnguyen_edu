@@ -18,6 +18,8 @@ export default function SiteNavbar() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+  const shouldHideNavbar = pathname?.startsWith("/tutor") || pathname?.startsWith("/admin");
+
   const navItems = useMemo(
     () => [
       { name: "Học phí", link: "/hoc-phi" },
@@ -30,6 +32,10 @@ export default function SiteNavbar() {
   );
 
   const isLoginActive = pathname === "/login";
+
+  if (shouldHideNavbar) {
+    return null;
+  }
 
   return (
     <Navbar>
