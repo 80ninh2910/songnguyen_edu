@@ -91,3 +91,11 @@
     font-family: 'Inter', sans-serif;
 }
 .btn-read-article:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+
+/* ===== Mobile Responsive (Dashboard) ===== */
+@media (max-width: 1023px) {
+    .status-cards { grid-template-columns: 1fr; }
+    .quick-actions { grid-template-columns: 1fr; }
+    .article-banner { padding: 32px 24px; }
+    .article-banner h2 { font-size: 24px; }
+}

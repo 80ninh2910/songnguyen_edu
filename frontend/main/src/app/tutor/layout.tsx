@@ -1,5 +1,4 @@
-import Sidebar from '@/components/Sidebar';
-import Topbar from '@/components/Topbar';
+import TutorLayoutWrapper from '@/components/TutorLayoutWrapper';
 import { ProfileProvider } from '@/context/ProfileContext';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
@@ -16,13 +15,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         />
         <link rel="stylesheet" href="/css/global.css" />
       </head>
-      <div className="layout">
-        <Sidebar />
-        <main className="main-content">
-          <Topbar />
-          <div className="page-content">{children}</div>
-        </main>
-      </div>
+      <TutorLayoutWrapper>
+        {children}
+      </TutorLayoutWrapper>
     </ProfileProvider>
   );
 }

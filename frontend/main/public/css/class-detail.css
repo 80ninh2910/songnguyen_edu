@@ -134,3 +134,15 @@
     text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600;
 }
 .footer-links a:hover { color: #3B82F6; }
+
+/* ===== Mobile Responsive (Class Detail) ===== */
+@media (max-width: 1023px) {
+    .page-container { padding: 16px; }
+    .detail-grid { grid-template-columns: 1fr; }
+    .top-nav { padding: 16px 20px; }
+    .nav-links { display: none; /* Hide top nav links on mobile if sidebar is used */ }
+    .course-title { font-size: 24px; }
+    .info-row { grid-template-columns: 1fr; }
+    .req-section { grid-template-columns: 1fr; }
+    .footer { flex-direction: column; gap: 16px; padding: 24px 20px; text-align: center; }
+}

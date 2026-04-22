@@ -2,7 +2,12 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-export default function Sidebar() {
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
 
   const handleLogout = (e: React.MouseEvent) => {
@@ -26,24 +31,25 @@ export default function Sidebar() {
     }
 
     // 3. Clean redirect to homepage
-    // We use window.location.replace instead of router.replace to force a full hard reload.
-    // This is required to prevent CSS leakage because the tutor layout injects a global 
-    // <link rel="stylesheet" href="/css/global.css" /> into the <head> which Next.js 
-    // router soft-navigation does not cleanly remove, causing the homepage layout to break.
     window.location.replace('/');
   };
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${isOpen ? 'sidebar--open' : ''}`}>
       <div className="sidebar-brand">
         <h2>SONG NGUYEN EDU</h2>
         <span>Cổng Gia Sư Cao Cấp</span>
+        {onClose && (
+          <button className="sidebar-close" onClick={onClose}>
+            <i className="fas fa-times"></i>
+          </button>
+        )}
       </div>
       <nav className="sidebar-nav">
-        <Link href="/tutor" className={pathname === '/tutor' ? 'active' : ''}><i className="fas fa-th-large"></i> Bảng Điều Khiển</Link>
-        <Link href="/tutor/class-list" className={pathname === '/tutor/class-list' ? 'active' : ''}><i className="fas fa-chalkboard"></i> Danh Sách Lớp</Link>
-        <Link href="/tutor/my-classes" className={pathname === '/tutor/my-classes' ? 'active' : ''}><i className="fas fa-graduation-cap"></i> Lớp Của Tôi</Link>
-        <Link href="/tutor/profile" className={pathname === '/tutor/profile' ? 'active' : ''}><i className="fas fa-user"></i> Hồ Sơ</Link>
+        <Link href="/tutor" className={pathname === '/tutor' ? 'active' : ''} onClick={onClose}><i className="fas fa-th-large"></i> Bảng Điều Khiển</Link>
+        <Link href="/tutor/class-list" className={pathname === '/tutor/class-list' ? 'active' : ''} onClick={onClose}><i className="fas fa-chalkboard"></i> Danh Sách Lớp</Link>
+        <Link href="/tutor/my-classes" className={pathname === '/tutor/my-classes' ? 'active' : ''} onClick={onClose}><i className="fas fa-graduation-cap"></i> Lớp Của Tôi</Link>
+        <Link href="/tutor/profile" className={pathname === '/tutor/profile' ? 'active' : ''} onClick={onClose}><i className="fas fa-user"></i> Hồ Sơ</Link>
       </nav>
       <div className="sidebar-bottom">
         <button className="btn-new-lesson"><i className="fas fa-plus"></i> Bài Giảng Mới</button>

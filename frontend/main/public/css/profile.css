@@ -150,3 +150,14 @@
     border: none; font-weight: 600; cursor: pointer; transition: all 0.2s;
 }
 .btn-primary:hover { background: #2563eb; }
+
+/* ===== Mobile Responsive (Profile) ===== */
+@media (max-width: 1023px) {
+    .profile-grid { grid-template-columns: 1fr; }
+    .bottom-grid { grid-template-columns: 1fr; }
+    .bottom-right-grid { grid-template-columns: 1fr; }
+    .info-grid { grid-template-columns: 1fr; }
+    .cred-list { flex-direction: column; }
+    .profile-stats { flex-wrap: wrap; gap: 16px; }
+    .modal-content { width: 90%; max-width: 400px; }
+}
