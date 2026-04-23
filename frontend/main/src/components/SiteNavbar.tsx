@@ -18,7 +18,10 @@ export default function SiteNavbar() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const shouldHideNavbar = pathname?.startsWith("/tutor") || pathname?.startsWith("/admin");
+  const shouldHideNavbar =
+    pathname?.startsWith("/tutor") ||
+    pathname?.startsWith("/admin") ||
+    pathname === "/login";
 
   const navItems = useMemo(
     () => [
