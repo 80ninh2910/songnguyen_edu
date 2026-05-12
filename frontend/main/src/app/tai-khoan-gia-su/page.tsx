@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import "./dashboard.css";
 
 export default function Dashboard() {
   const userName = 'Nguyễn';
@@ -31,8 +32,6 @@ export default function Dashboard() {
 
   return (
     <>
-      <link rel="stylesheet" href="/css/dashboard.css" />
-      
       <div className="welcome-section">
         <h1>Xin chào, {userName}</h1>
         <p>{greeting}</p>
