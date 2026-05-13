@@ -38,15 +38,15 @@ const contactItems = [
 
 export default function PublicContactDock() {
   const pathname = usePathname();
-  const shouldHideDock = pathname?.startsWith("/tutor") || pathname?.startsWith("/admin");
+  const shouldHideDock = pathname?.startsWith("/tai-khoan-gia-su") || pathname?.startsWith("/admin");
 
   if (shouldHideDock) {
     return null;
   }
 
   return (
-    <aside className="fixed left-4 top-1/2 z-50 -translate-y-1/2 rounded-[28px] bg-[rgba(0,0,0,0.8)] p-2 shadow-[rgba(0,0,0,0.22)_3px_5px_30px_0px] backdrop-blur-[20px]">
-      <ul className="flex flex-col gap-2">
+    <aside className="fixed left-4 top-1/2 z-50 -translate-y-1/2 rounded-[28px] bg-[rgba(0,0,0,0.8)] p-2 shadow-[rgba(0,0,0,0.22)_3px_5px_30px_0px] backdrop-blur-[20px] max-[480px]:left-auto max-[480px]:right-3 max-[480px]:top-auto max-[480px]:bottom-4 max-[480px]:translate-y-0">
+      <ul className="flex flex-col gap-2 max-[480px]:gap-1.5">
         {contactItems.map((item) => (
           <li key={item.key}>
             <a
@@ -54,7 +54,7 @@ export default function PublicContactDock() {
               target={item.key === "phone" ? undefined : "_blank"}
               rel={item.key === "phone" ? undefined : "noreferrer"}
               aria-label={item.label}
-              className={`flex h-12 w-12 items-center justify-center rounded-full text-white transition-transform duration-200 hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0071e3] ${item.bgClass}`}
+              className={`flex h-12 w-12 items-center justify-center rounded-full text-white transition-transform duration-200 hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0071e3] max-[480px]:h-10 max-[480px]:w-10 ${item.bgClass}`}
             >
               {item.icon}
             </a>

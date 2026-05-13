@@ -24,7 +24,7 @@ export default function LoginPage() {
 
     if (email && password) {
       // Login thành công → chuyển sang Tutor Dashboard
-      router.push('/tutor');
+      router.push('/tai-khoan-gia-su');
     } else {
       setError('Vui lòng nhập đầy đủ thông tin đăng nhập.');
       setIsLoading(false);

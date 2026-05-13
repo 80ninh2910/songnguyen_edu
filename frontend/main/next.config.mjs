@@ -19,12 +19,22 @@ const nextConfig = {
 			},
 			{
 				source: "/khu-vuc-gia-su",
-				destination: "/tutor",
+				destination: "/tai-khoan-gia-su",
 				permanent: true,
 			},
 			{
 				source: "/khu-vuc-gia-su/:path*",
-				destination: "/tutor/:path*",
+				destination: "/tai-khoan-gia-su/:path*",
+				permanent: true,
+			},
+			{
+				source: "/tutor",
+				destination: "/tai-khoan-gia-su",
+				permanent: true,
+			},
+			{
+				source: "/tutor/:path*",
+				destination: "/tai-khoan-gia-su/:path*",
 				permanent: true,
 			},
 		];

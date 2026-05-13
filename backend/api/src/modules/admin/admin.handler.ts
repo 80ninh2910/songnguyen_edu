@@ -11,11 +11,13 @@ import {
   AssignClassBodySchema,
   ConfirmPaymentBodySchema,
   ConvertRequestBodySchema,
+  CreateTutorBodySchema,
   CreateClassBodySchema,
   IdParamSchema,
   RejectPaymentBodySchema,
   RejectRequestBodySchema,
   RejectTutorBodySchema,
+  UpdateTutorBodySchema,
   UpdateClassBodySchema,
 } from "./admin.schema.js";
 
@@ -61,6 +63,25 @@ export async function getTutorByIdHandler(
 ): Promise<void> {
   const { id } = IdParamSchema.parse(request.params);
   const result = await adminService.getTutorById(id);
+  void reply.send(success(result));
+}
+
+export async function createTutorHandler(
+  request: FastifyRequest,
+  reply: FastifyReply,
+): Promise<void> {
+  const body = CreateTutorBodySchema.parse(request.body);
+  const result = await adminService.createTutor(getActor(request), body);
+  void reply.send(success(result));
+}
+
+export async function updateTutorHandler(
+  request: FastifyRequest,
+  reply: FastifyReply,
+): Promise<void> {
+  const { id } = IdParamSchema.parse(request.params);
+  const body = UpdateTutorBodySchema.parse(request.body);
+  const result = await adminService.updateTutor(getActor(request), id, body);
   void reply.send(success(result));
 }
 

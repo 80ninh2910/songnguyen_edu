@@ -19,7 +19,7 @@ export default function SiteNavbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const shouldHideNavbar =
-    pathname?.startsWith("/tutor") ||
+    pathname?.startsWith("/tai-khoan-gia-su") ||
     pathname?.startsWith("/admin") ||
     pathname === "/dang-nhap-gia-su";
 

@@ -92,11 +92,11 @@ export default function NavbarDemo() {
 export function BackgroundLinesDemo() {
   return (
     <BackgroundLines
-      className="flex items-center justify-center w-full flex-col px-4"
+      className="flex w-full flex-col items-center justify-center px-4"
       bottomBackgroundImage={background19.src}
     >
-      <div className="px-2 pb-28 md:pb-36">
-        <h2 className="text-center text-2xl md:text-4xl lg:text-7xl font-sans py-2 md:py-10 relative z-20 font-bold tracking-tight">
+      <div className="px-2 pb-8 md:pb-36">
+        <h2 className="text-center text-2xl font-sans py-2 font-bold tracking-tight relative z-20 max-[360px]:text-[20px] md:py-10 md:text-4xl lg:text-7xl">
           <span className="text-red-600">SONG NGUYEN</span>
           <br />
           <span className="text-neutral-800">EDUCATION</span>
@@ -106,24 +106,24 @@ export function BackgroundLinesDemo() {
           alt="line1"
           width={180}
           height={180}
-          className="mx-auto -mt-3 block h-36 w-36 rounded-full object-cover shadow-md"
+          className="mx-auto -mt-2 block h-28 w-28 rounded-full object-cover shadow-md max-[360px]:h-24 max-[360px]:w-24 md:-mt-3 md:h-36 md:w-36"
         />
         <br />
-        <p className="max-w-xl mx-auto text-sm md:text-lg text-neutral-700 dark:text-neutral-400 text-center">
+        <p className="mx-auto max-w-xl text-center text-sm text-neutral-700 dark:text-neutral-400 max-[360px]:text-xs md:text-lg">
           trung tâm đào tạo năng khiếu và văn hóa, với sứ mệnh giúp học sinh phát triển toàn diện về kiến thức, kỹ năng và tư duy sáng tạo.
         </p>
       </div>
 
-      <div className={`${beVietnamPro.className} absolute inset-x-4 bottom-0 z-30 md:bottom-1`}>
+      <div className={`${beVietnamPro.className} static z-30 mt-6 md:absolute md:inset-x-4 md:bottom-1 md:mt-0`}>
         <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-3 md:grid-cols-[1fr_2.2fr_1fr] md:gap-4">
           <button
             type="button"
-            className="w-full rounded-2xl bg-[linear-gradient(180deg,rgba(232,41,53,0.88)_0%,rgba(217,31,43,0.84)_55%,rgba(191,23,34,0.8)_100%)] px-6 py-3.5 text-sm font-semibold tracking-[-0.01em] text-white backdrop-blur-xl transition-transform duration-300 ease-out hover:scale-[1.04] active:scale-[0.98]"
+            className="w-full rounded-2xl bg-[linear-gradient(180deg,rgba(232,41,53,0.88)_0%,rgba(217,31,43,0.84)_55%,rgba(191,23,34,0.8)_100%)] px-6 py-3.5 text-sm font-semibold tracking-[-0.01em] text-white backdrop-blur-xl transition-transform duration-300 ease-out hover:scale-[1.04] active:scale-[0.98] max-[360px]:px-4 max-[360px]:py-3 max-[360px]:text-xs"
           >
             Tôi là phụ huynh tìm gia sư
           </button>
 
-          <div className="flex min-h-14 items-center justify-center overflow-hidden rounded-full bg-[linear-gradient(180deg,rgba(255,255,255,0.95)_0%,rgba(241,246,255,0.9)_100%)] px-6 py-3.5 text-center text-sm font-medium tracking-[-0.01em] text-[#3a3a3c] backdrop-blur-xl transition-transform duration-300 ease-out hover:scale-[1.02] md:text-base">
+          <div className="flex min-h-14 items-center justify-center overflow-hidden rounded-full bg-[linear-gradient(180deg,rgba(255,255,255,0.95)_0%,rgba(241,246,255,0.9)_100%)] px-6 py-3.5 text-center text-sm font-medium tracking-[-0.01em] text-[#3a3a3c] backdrop-blur-xl transition-transform duration-300 ease-out hover:scale-[1.02] max-[360px]:px-4 max-[360px]:py-3 max-[360px]:text-[11px] md:text-base">
             Cơ sở 1: Số 3 TA 15, Phường Thới An, TP.HCM
             <br />
             Cơ sở 2: 27/31 Đường số 9, Phường An Hội Đông, TP.HCM
@@ -131,7 +131,7 @@ export function BackgroundLinesDemo() {
 
           <button
             type="button"
-            className="w-full rounded-2xl bg-[linear-gradient(180deg,rgba(232,41,53,0.88)_0%,rgba(217,31,43,0.84)_55%,rgba(191,23,34,0.8)_100%)] px-6 py-3.5 text-sm font-semibold tracking-[-0.01em] text-white backdrop-blur-xl transition-transform duration-300 ease-out hover:scale-[1.04] active:scale-[0.98]"
+            className="w-full rounded-2xl bg-[linear-gradient(180deg,rgba(232,41,53,0.88)_0%,rgba(217,31,43,0.84)_55%,rgba(191,23,34,0.8)_100%)] px-6 py-3.5 text-sm font-semibold tracking-[-0.01em] text-white backdrop-blur-xl transition-transform duration-300 ease-out hover:scale-[1.04] active:scale-[0.98] max-[360px]:px-4 max-[360px]:py-3 max-[360px]:text-xs"
           >
             Tôi là gia sư tìm lớp
           </button>
@@ -411,10 +411,10 @@ function TutorMatchingClassSection({
             inView ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"
           }`}
         >
-          <h2 className="text-4xl font-black uppercase tracking-[0.02em] text-[#17367b] md:text-[45px]">
+          <h2 className="text-4xl font-black uppercase tracking-[0.02em] text-[#17367b] max-[360px]:text-3xl md:text-[45px]">
             PHỤ HUYNH TÌM GIA SƯ
           </h2>
-          <p className="mt-2 max-w-[56ch] text-xl italic leading-9 text-[#1f3f86] md:text-2xl">
+          <p className="mt-2 max-w-[56ch] text-xl italic leading-9 text-[#1f3f86] max-[360px]:text-base max-[360px]:leading-7 md:text-2xl">
             SONG NGUYEN EDUCATION giúp phụ huynh tìm được gia sư phù hợp đồng hành cùng con trên hành trình tri thức
           </p>
           <button
@@ -556,7 +556,7 @@ function TutorMatchingClassSection({
                     Các buổi trong tuần học viên có thể học
                   </p>
                   <div className="mt-3 rounded-2xl border border-white/70 bg-white/75 p-4">
-                    <div className="grid grid-cols-7 gap-2">
+                    <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
                       {weekDays.map((day) => {
                         const isActive = activeWeekdays.includes(day.key);
                         return (
@@ -564,7 +564,7 @@ function TutorMatchingClassSection({
                             key={day.key}
                             type="button"
                             onClick={() => toggleWeekday(day.key)}
-                            className={`rounded-xl px-2 py-3 text-center text-sm font-bold transition-all duration-300 md:text-base ${
+                            className={`rounded-xl px-2 py-3 text-center text-sm font-bold transition-all duration-300 max-[360px]:text-xs md:text-base ${
                               isActive
                                 ? "bg-[#0f3b9c] text-white shadow-[0_10px_20px_rgba(15,59,156,0.28)]"
                                 : "bg-[#f3f7ff] text-[#4c6aa8] hover:-translate-y-0.5 hover:bg-[#e8f0ff]"
@@ -585,7 +585,7 @@ function TutorMatchingClassSection({
                             key={slot}
                             type="button"
                             onClick={() => toggleTimeSlot(slot)}
-                            className={`rounded-xl px-3 py-2 text-sm font-bold transition-all duration-300 ${
+                            className={`rounded-xl px-3 py-2 text-sm font-bold transition-all duration-300 max-[360px]:text-xs ${
                               active
                                 ? "bg-[#1848b5] text-white shadow-[0_8px_18px_rgba(24,72,181,0.3)]"
                                 : "bg-[#edf3ff] text-[#365ca5] hover:bg-[#dfe9ff]"
@@ -776,10 +776,10 @@ function TutorRegistrationClassSection({
             inView ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"
           }`}
         >
-          <h2 className="text-4xl font-black uppercase tracking-[0.02em] text-[#17367b] md:text-[45px]">
+          <h2 className="text-4xl font-black uppercase tracking-[0.02em] text-[#17367b] max-[360px]:text-3xl md:text-[45px]">
             GIA SƯ ĐĂNG KÝ NHẬN LỚP
           </h2>
-          <p className="mt-2 max-w-[56ch] text-xl italic leading-9 text-[#1f3f86] md:text-2xl">
+          <p className="mt-2 max-w-[56ch] text-xl italic leading-9 text-[#1f3f86] max-[360px]:text-base max-[360px]:leading-7 md:text-2xl">
             SONG NGUYEN EDUCATION giúp gia sư kết nối lớp dạy phù hợp và đồng hành hiệu quả cùng học viên
           </p>
 
@@ -899,7 +899,7 @@ function TutorRegistrationClassSection({
                     Các buổi trong tuần có thể dạy
                   </p>
                   <div className="mt-3 rounded-2xl border border-white/70 bg-white/75 p-4">
-                    <div className="grid grid-cols-7 gap-2">
+                    <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
                       {weekDays.map((day) => {
                         const isActive = activeWeekdays.includes(day.key);
                         return (
@@ -907,7 +907,7 @@ function TutorRegistrationClassSection({
                             key={day.key}
                             type="button"
                             onClick={() => toggleWeekday(day.key)}
-                            className={`rounded-xl px-2 py-3 text-center text-sm font-bold transition-all duration-300 md:text-base ${
+                            className={`rounded-xl px-2 py-3 text-center text-sm font-bold transition-all duration-300 max-[360px]:text-xs md:text-base ${
                               isActive
                                 ? "bg-[#0f3b9c] text-white shadow-[0_10px_20px_rgba(15,59,156,0.28)]"
                                 : "bg-[#f3f7ff] text-[#4c6aa8] hover:-translate-y-0.5 hover:bg-[#e8f0ff]"
@@ -1928,7 +1928,7 @@ function CountingSection() {
           <p className="mb-3 text-sm font-semibold tracking-[0.08em] text-[#6c7ea4] md:text-base">
             Thành tựu Song Nguyen Education
           </p>
-          <h2 className="max-w-[18ch] text-3xl font-extrabold leading-[1.12] text-[#112a68] md:text-5xl">
+          <h2 className="max-w-[18ch] text-3xl font-extrabold leading-[1.12] text-[#112a68] max-[360px]:text-[26px] md:text-5xl">
             Số liệu biết nói, minh chứng cho chất lượng đào tạo.
           </h2>
           <p className="mt-5 max-w-[42ch] text-base font-medium leading-8 text-[#4b5873] md:text-lg">
@@ -1980,7 +1980,7 @@ function CountingSection() {
             <div className="pointer-events-none absolute inset-x-3 bottom-3 h-32 rounded-b-[26px] bg-gradient-to-t from-[#0b2f97]/55 to-transparent" />
           </div>
 
-          <div className="absolute -bottom-7 -left-7 w-[46%] overflow-hidden rounded-[20px] border border-white/70 bg-white/85 p-2 shadow-[0_18px_36px_rgba(15,34,91,0.18)] backdrop-blur-md">
+          <div className="absolute -bottom-4 left-0 w-[60%] overflow-hidden rounded-[20px] border border-white/70 bg-white/85 p-2 shadow-[0_18px_36px_rgba(15,34,91,0.18)] backdrop-blur-md md:-bottom-7 md:-left-7 md:w-[46%]">
             <Image
               src={statsSubImage}
               alt="Gia su huong dan hoc vien"

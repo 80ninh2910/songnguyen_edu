@@ -46,10 +46,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         )}
       </div>
       <nav className="sidebar-nav">
-        <Link href="/tutor" className={pathname === '/tutor' ? 'active' : ''} onClick={onClose}><i className="fas fa-th-large"></i> Bảng Điều Khiển</Link>
-        <Link href="/tutor/class-list" className={pathname === '/tutor/class-list' ? 'active' : ''} onClick={onClose}><i className="fas fa-chalkboard"></i> Danh Sách Lớp</Link>
-        <Link href="/tutor/my-classes" className={pathname === '/tutor/my-classes' ? 'active' : ''} onClick={onClose}><i className="fas fa-graduation-cap"></i> Lớp Của Tôi</Link>
-        <Link href="/tutor/profile" className={pathname === '/tutor/profile' ? 'active' : ''} onClick={onClose}><i className="fas fa-user"></i> Hồ Sơ</Link>
+        <Link href="/tai-khoan-gia-su" className={pathname === '/tai-khoan-gia-su' ? 'active' : ''} onClick={onClose}><i className="fas fa-th-large"></i> Bảng Điều Khiển</Link>
+        <Link href="/tai-khoan-gia-su/danh-sach-lop" className={pathname === '/tai-khoan-gia-su/danh-sach-lop' ? 'active' : ''} onClick={onClose}><i className="fas fa-chalkboard"></i> Danh Sách Lớp</Link>
+        <Link href="/tai-khoan-gia-su/lop-cua-toi" className={pathname === '/tai-khoan-gia-su/lop-cua-toi' ? 'active' : ''} onClick={onClose}><i className="fas fa-graduation-cap"></i> Lớp Của Tôi</Link>
+        <Link href="/tai-khoan-gia-su/ho-so" className={pathname === '/tai-khoan-gia-su/ho-so' ? 'active' : ''} onClick={onClose}><i className="fas fa-user"></i> Hồ Sơ</Link>
       </nav>
       <div className="sidebar-bottom">
         <button className="btn-new-lesson"><i className="fas fa-plus"></i> Bài Giảng Mới</button>

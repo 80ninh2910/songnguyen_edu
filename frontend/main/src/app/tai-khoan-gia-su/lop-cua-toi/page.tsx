@@ -97,7 +97,7 @@ export default function MyClasses() {
               </div>
             </div>
             <div className="class-actions">
-              <Link href="/tutor/class-detail/SN-2024-012" className="btn-text" style={{ textDecoration: 'none' }}>Xem Chi Tiết</Link>
+              <Link href="/tai-khoan-gia-su/chi-tiet-lop/SN-2024-012" className="btn-text" style={{ textDecoration: 'none' }}>Xem Chi Tiết</Link>
               {cls.actionLabel === 'Xem Lịch Dạy' ? (
                 <button 
                   className={`btn-action ${cls.action}`} 

@@ -19,7 +19,7 @@ export const BackgroundLines = ({
   return (
     <div
       className={cn(
-        "relative isolate overflow-hidden h-[20rem] md:h-screen w-full bg-[radial-gradient(120%_80%_at_50%_100%,#dbeafe_0%,#f8fafc_45%,#ffffff_100%)]",
+        "relative isolate w-full overflow-hidden bg-[radial-gradient(120%_80%_at_50%_100%,#dbeafe_0%,#f8fafc_45%,#ffffff_100%)] min-h-[28rem] pb-10 md:h-screen md:pb-0",
         className
       )}
     >

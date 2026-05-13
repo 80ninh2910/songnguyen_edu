@@ -7,6 +7,8 @@ import {
   hashPassword,
 } from "../../common/utils/password.js";
 import { prisma } from "../../config/prisma.js";
+import { env } from "../../config/env.js";
+import { buildCacheKey, cacheService } from "../../services/cache.service.js";
 import { auditLogService } from "../../services/auditLog.service.js";
 import { emailService } from "../../services/email.service.js";
 
@@ -23,6 +25,27 @@ type DashboardStatsRow = {
   open_classes: bigint | number;
   pending_requests: bigint | number;
   pending_payments: bigint | number;
+};
+
+type MatchingRate = {
+  success: number;
+  rejected: number;
+  pending: number;
+  total: number;
+  percent: number;
+};
+
+type TopTutor = {
+  id: string;
+  fullName: string;
+  subjects: string[];
+  lessonCount: number;
+};
+
+type SystemHealthItem = {
+  service: string;
+  status: string;
+  ratio: string;
 };
 
 type LatestPaymentRow = {
@@ -62,6 +85,114 @@ function normalizeCount(value: bigint | number | null | undefined): number {
   return Number(value ?? 0);
 }
 
+async function getMatchingRate(): Promise<MatchingRate> {
+  const [total, success, rejected, pending] = await Promise.all([
+    prisma.classRequest.count(),
+    prisma.classRequest.count({ where: { status: "CONVERTED" } }),
+    prisma.classRequest.count({ where: { status: "REJECTED" } }),
+    prisma.classRequest.count({ where: { status: "PENDING" } }),
+  ]);
+
+  const percent = total > 0 ? Math.round((success / total) * 100) : 0;
+
+  return {
+    success,
+    rejected,
+    pending,
+    total,
+    percent,
+  };
+}
+
+async function getTopTutors(): Promise<TopTutor[]> {
+  const topAssignments = await prisma.classAssignment.groupBy({
+    by: ["tutorId"],
+    _count: { tutorId: true },
+    orderBy: { _count: { tutorId: "desc" } },
+    take: 3,
+  });
+
+  if (topAssignments.length === 0) {
+    return [];
+  }
+
+  const tutorIds = topAssignments.map((item) => item.tutorId);
+  const tutors = await prisma.tutor.findMany({
+    where: { id: { in: tutorIds } },
+    select: { id: true, fullName: true, subjects: true },
+  });
+
+  const tutorLookup = new Map(tutors.map((tutor) => [tutor.id, tutor]));
+
+  return topAssignments.map((row) => {
+    const tutor = tutorLookup.get(row.tutorId);
+
+    return {
+      id: row.tutorId,
+      fullName: tutor?.fullName ?? "",
+      subjects: tutor?.subjects ?? [],
+      lessonCount: normalizeCount(row._count.tutorId),
+    };
+  });
+}
+
+async function checkDatabaseHealth(): Promise<boolean> {
+  try {
+    await prisma.$queryRaw(Prisma.sql`SELECT 1`);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function checkCacheHealth(): Promise<boolean> {
+  if (!cacheService.isEnabled()) {
+    return false;
+  }
+
+  try {
+    const key = buildCacheKey("health", "ping");
+    await cacheService.set(key, "ok", 5);
+    const value = await cacheService.get(key);
+    await cacheService.del(key);
+    return value === "ok";
+  } catch {
+    return false;
+  }
+}
+
+async function getSystemHealth(): Promise<SystemHealthItem[]> {
+  const [dbHealthy, cacheHealthy] = await Promise.all([
+    checkDatabaseHealth(),
+    checkCacheHealth(),
+  ]);
+
+  const emailConfigured = Boolean(env.RESEND_API_KEY && env.EMAIL_FROM);
+
+  return [
+    {
+      service: "Dịch vụ lõi",
+      status: "Hoạt động bình thường",
+      ratio: "100%",
+    },
+    {
+      service: "Cơ sở dữ liệu",
+      status: dbHealthy ? "Hoạt động bình thường" : "Gián đoạn",
+      ratio: dbHealthy ? "100%" : "0%",
+    },
+    {
+      service: "Bộ nhớ đệm",
+      status: cacheHealthy ? "Hoạt động bình thường" : "Chưa sẵn sàng",
+      ratio: cacheHealthy ? "100%" : "0%",
+    },
+    {
+      service: "Thư điện tử",
+      status: emailConfigured ? "Sẵn sàng" : "Chưa cấu hình",
+      ratio: emailConfigured ? "100%" : "0%",
+    },
+  ];
+}
+
 function isPrismaConstraintError(error: unknown, code: string): boolean {
   return (
     typeof error === "object" &&
@@ -69,6 +200,16 @@ function isPrismaConstraintError(error: unknown, code: string): boolean {
     "code" in error &&
     (error as { code?: string }).code === code
   );
+}
+
+function getTutorOrderBy(
+  sort?: string,
+): Prisma.TutorOrderByWithRelationInput[] {
+  if (sort === "active-most" || sort === "rating") {
+    return [{ assignments: { _count: "desc" } }, { createdAt: "desc" }];
+  }
+
+  return [{ createdAt: "desc" }];
 }
 
 async function resolveActorName(actor: AdminActor): Promise<string> {
@@ -138,26 +279,36 @@ export const adminService = {
       actorName: string;
       createdAt: Date;
     }>;
+    matchingRate: MatchingRate;
+    topTutors: TopTutor[];
+    systemHealth: SystemHealthItem[];
   }> {
-    const [stats, recentAudit] = await Promise.all([
-      getDashboardStatsFromDb(),
-      prisma.auditLog.findMany({
-        take: 10,
-        orderBy: { createdAt: "desc" },
-        select: {
-          id: true,
-          action: true,
-          targetType: true,
-          targetId: true,
-          actorName: true,
-          createdAt: true,
-        },
-      }),
-    ]);
+    const [stats, recentAudit, matchingRate, topTutors, systemHealth] =
+      await Promise.all([
+        getDashboardStatsFromDb(),
+        prisma.auditLog.findMany({
+          take: 10,
+          orderBy: { createdAt: "desc" },
+          select: {
+            id: true,
+            action: true,
+            targetType: true,
+            targetId: true,
+            actorName: true,
+            createdAt: true,
+          },
+        }),
+        getMatchingRate(),
+        getTopTutors(),
+        getSystemHealth(),
+      ]);
 
     return {
       stats,
       recentAudit,
+      matchingRate,
+      topTutors,
+      systemHealth,
     };
   },
 
@@ -171,6 +322,7 @@ export const adminService = {
     subjects?: string[];
     district?: string;
     districts?: string[];
+    sort?: "newest" | "active-most" | "rating";
   }): Promise<{
     data: Array<{
       id: string;
@@ -234,12 +386,13 @@ export const adminService = {
       delete where.AND;
     }
 
+    const orderBy = getTutorOrderBy(query.sort);
     const [data, total] = await Promise.all([
       prisma.tutor.findMany({
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: "desc" },
+        orderBy,
         select: {
           id: true,
           fullName: true,
@@ -259,6 +412,209 @@ export const adminService = {
       data,
       meta: buildMeta(page, limit, total),
     };
+  },
+
+  async createTutor(
+    actor: AdminActor,
+    body: {
+      fullName: string;
+      email: string;
+      phone?: string;
+      subjects: string[];
+      districts: string[];
+    },
+  ): Promise<{ id: string }> {
+    const tempPassword = generateTempPassword();
+    const passwordHash = await hashPassword(tempPassword);
+    const actorName = await resolveActorName(actor);
+
+    try {
+      const tutor = await prisma.$transaction(async (tx: any) => {
+        const created = await tx.tutor.create({
+          data: {
+            fullName: body.fullName,
+            email: body.email,
+            phone: body.phone ?? null,
+            subjects: body.subjects,
+            districts: body.districts,
+            status: "APPROVED",
+            approvedAt: new Date(),
+            approvedById: actor.id,
+            passwordHash,
+          },
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+          },
+        });
+
+        await auditLogService.log(
+          {
+            actorId: actor.id,
+            actorName,
+            action: "CREATE_TUTOR",
+            targetType: "TUTOR",
+            targetId: created.id,
+          },
+          tx,
+        );
+
+        return created;
+      });
+
+      await emailService.sendTutorApproved(
+        tutor.email,
+        tutor.fullName,
+        tempPassword,
+      );
+
+      return { id: tutor.id };
+    } catch (error) {
+      if (isPrismaConstraintError(error, "P2002")) {
+        conflict("Tutor email already exists");
+      }
+
+      throw error;
+    }
+  },
+
+  async updateTutor(
+    actor: AdminActor,
+    tutorId: string,
+    body: {
+      fullName?: string;
+      email?: string;
+      phone?: string;
+      subjects?: string[];
+      districts?: string[];
+    },
+  ): Promise<{
+    id: string;
+    fullName: string;
+    email: string;
+    phone: string | null;
+    status: TutorApprovalStatus;
+    subjects: string[];
+    districts: string[];
+    rejectReason: string | null;
+    approvedAt: Date | null;
+    approvedBy: { id: string; fullName: string } | null;
+    createdAt: Date;
+    updatedAt: Date;
+    _count: {
+      applications: number;
+      assignments: number;
+      payments: number;
+    };
+  }> {
+    const existing = await prisma.tutor.findUnique({
+      where: { id: tutorId },
+      select: {
+        fullName: true,
+        email: true,
+        phone: true,
+        subjects: true,
+        districts: true,
+      },
+    });
+
+    if (!existing) {
+      throw new AppError("TUTOR_NOT_FOUND", 404, "Tutor not found");
+    }
+
+    const data: Prisma.TutorUpdateInput = {};
+
+    if (body.fullName !== undefined) {
+      data.fullName = body.fullName;
+    }
+
+    if (body.email !== undefined) {
+      data.email = body.email;
+    }
+
+    if (body.phone !== undefined) {
+      data.phone = body.phone ?? null;
+    }
+
+    if (body.subjects !== undefined) {
+      data.subjects = body.subjects;
+    }
+
+    if (body.districts !== undefined) {
+      data.districts = body.districts;
+    }
+
+    const actorName = await resolveActorName(actor);
+
+    try {
+      await prisma.$transaction(async (tx: any) => {
+        const result = await tx.tutor.update({
+          where: { id: tutorId },
+          data,
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            phone: true,
+            subjects: true,
+            districts: true,
+          },
+        });
+
+        await auditLogService.log(
+          {
+            actorId: actor.id,
+            actorName,
+            action: "UPDATE_TUTOR",
+            targetType: "TUTOR",
+            targetId: tutorId,
+            payload: {
+              before: existing,
+              after: {
+                fullName: result.fullName,
+                email: result.email,
+                phone: result.phone,
+                subjects: result.subjects,
+                districts: result.districts,
+              },
+            },
+          },
+          tx,
+        );
+      });
+
+      const detail = await prisma.tutor.findUnique({
+        where: { id: tutorId },
+        include: {
+          approvedBy: {
+            select: {
+              id: true,
+              fullName: true,
+            },
+          },
+          _count: {
+            select: {
+              applications: true,
+              assignments: true,
+              payments: true,
+            },
+          },
+        },
+      });
+
+      if (!detail) {
+        throw new AppError("TUTOR_NOT_FOUND", 404, "Tutor not found");
+      }
+
+      return detail;
+    } catch (error) {
+      if (isPrismaConstraintError(error, "P2002")) {
+        conflict("Tutor email already exists");
+      }
+
+      throw error;
+    }
   },
 
   async getTutorById(tutorId: string): Promise<{

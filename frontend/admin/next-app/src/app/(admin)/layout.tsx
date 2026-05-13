@@ -1,3 +1,4 @@
+import { AdminAuthGuard } from "@/components/admin/AdminAuthGuard";
 import { AdminShell } from "@/components/admin/AdminShell";
 
 export default function AdminGroupLayout({
@@ -5,5 +6,9 @@ export default function AdminGroupLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <AdminShell>{children}</AdminShell>;
+  return (
+    <AdminAuthGuard>
+      <AdminShell>{children}</AdminShell>
+    </AdminAuthGuard>
+  );
 }

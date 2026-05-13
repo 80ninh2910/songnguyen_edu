@@ -43,9 +43,9 @@ export default function ClassDetail() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
           <span className="nav-brand">SONG NGUYEN EDU</span>
           <div className="nav-links">
-            <Link href="/" className="active">Bảng Điều Khiển</Link>
-            <Link href="/tutor/class-list">Danh Sách Lớp</Link>
-            <Link href="/tutor/my-classes">Lớp Của Tôi</Link>
+            <Link href="/tai-khoan-gia-su" className="active">Bảng Điều Khiển</Link>
+            <Link href="/tai-khoan-gia-su/danh-sach-lop">Danh Sách Lớp</Link>
+            <Link href="/tai-khoan-gia-su/lop-cua-toi">Lớp Của Tôi</Link>
           </div>
         </div>
         <div className="nav-right">

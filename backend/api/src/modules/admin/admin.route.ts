@@ -14,6 +14,7 @@ import {
   confirmPaymentHandler,
   convertClassRequestHandler,
   createClassHandler,
+  createTutorHandler,
   dashboardHandler,
   dashboardStatsHandler,
   getClassByIdHandler,
@@ -30,6 +31,7 @@ import {
   rejectPaymentHandler,
   rejectTutorHandler,
   updateClassHandler,
+  updateTutorHandler,
 } from "./admin.handler.js";
 import {
   AdminListAuditLogsQuerySchema,
@@ -41,10 +43,12 @@ import {
   ConfirmPaymentBodySchema,
   ConvertRequestBodySchema,
   CreateClassBodySchema,
+  CreateTutorBodySchema,
   IdParamSchema,
   RejectPaymentBodySchema,
   RejectRequestBodySchema,
   RejectTutorBodySchema,
+  UpdateTutorBodySchema,
   UpdateClassBodySchema,
 } from "./admin.schema.js";
 
@@ -119,6 +123,27 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
     listTutorsHandler,
   );
 
+  app.post(
+    "/tutors",
+    {
+      preHandler: requireAdmin,
+      schema: {
+        tags: ["Admin"],
+        summary: "Create tutor",
+        security: [{ bearerAuth: [] }],
+        body: fromZodSchema(CreateTutorBodySchema),
+        response: {
+          200: successSchema(anyDataSchema),
+          400: errorResponseSchema,
+          401: errorResponseSchema,
+          403: errorResponseSchema,
+          409: errorResponseSchema,
+        },
+      },
+    },
+    createTutorHandler,
+  );
+
   app.get(
     "/tutors/:id",
     {
@@ -138,6 +163,29 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
       },
     },
     getTutorByIdHandler,
+  );
+
+  app.patch(
+    "/tutors/:id",
+    {
+      preHandler: requireAdmin,
+      schema: {
+        tags: ["Admin"],
+        summary: "Update tutor",
+        security: [{ bearerAuth: [] }],
+        params: fromZodSchema(IdParamSchema),
+        body: fromZodSchema(UpdateTutorBodySchema),
+        response: {
+          200: successSchema(anyDataSchema),
+          400: errorResponseSchema,
+          401: errorResponseSchema,
+          403: errorResponseSchema,
+          404: errorResponseSchema,
+          409: errorResponseSchema,
+        },
+      },
+    },
+    updateTutorHandler,
   );
 
   app.patch(

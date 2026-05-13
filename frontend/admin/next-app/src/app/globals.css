@@ -1144,6 +1144,22 @@ textarea {
   background: rgba(255, 255, 255, 0.9);
 }
 
+.pairing-user-clickable {
+  cursor: pointer;
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.pairing-user-clickable:hover {
+  box-shadow: inset 0 0 0 1px rgba(0, 88, 190, 0.2);
+}
+
+.pairing-user-clickable:focus-visible {
+  outline: 2px solid rgba(59, 130, 246, 0.5);
+  outline-offset: 2px;
+}
+
 .pairing-user-left {
   display: flex;
   align-items: center;
@@ -1179,6 +1195,18 @@ textarea {
   background: #fff;
 }
 
+.pairing-simulate {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  color: var(--on-surface-variant);
+}
+
+.pairing-simulate input {
+  accent-color: var(--primary);
+}
+
 .pairing-side {
   display: grid;
   gap: 1rem;
@@ -1212,6 +1240,155 @@ textarea {
   font-size: 0.82rem;
   margin-top: 0.55rem;
   color: var(--on-surface-variant);
+}
+
+.admin-toast-stack {
+  position: fixed;
+  top: 1.2rem;
+  right: 1.2rem;
+  z-index: 95;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.admin-toast {
+  background: #fff;
+  border-radius: 0.9rem;
+  padding: 0.7rem 0.85rem;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 16rem;
+  font-size: 0.85rem;
+}
+
+.admin-toast.success {
+  border: 1px solid rgba(22, 163, 74, 0.25);
+}
+
+.admin-toast.error {
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.admin-toast-icon {
+  color: var(--primary);
+  display: grid;
+  place-items: center;
+}
+
+.admin-toast.error .admin-toast-icon {
+  color: #ef4444;
+}
+
+.admin-toast-close {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.admin-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.48);
+  display: grid;
+  place-items: center;
+  z-index: 90;
+  padding: 1.5rem;
+}
+
+.admin-dialog {
+  width: min(44rem, 100%);
+  background: #fff;
+  border-radius: 1rem;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.24);
+  padding: 1.2rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.admin-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.admin-dialog-eyebrow {
+  margin: 0;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--outline);
+  font-weight: 700;
+}
+
+.admin-dialog-title {
+  margin: 0.35rem 0 0;
+  font-size: 1.4rem;
+}
+
+.admin-dialog-close {
+  border: 0;
+  background: var(--surface-container-low);
+  color: var(--on-surface-variant);
+  border-radius: 0.6rem;
+  width: 2.2rem;
+  height: 2.2rem;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.admin-dialog-body {
+  display: grid;
+  gap: 1rem;
+}
+
+.admin-dialog-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.admin-dialog-field {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--outline);
+  font-weight: 700;
+}
+
+.admin-dialog-field input,
+.admin-dialog-field textarea {
+  margin-top: 0.35rem;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  border-radius: 0.7rem;
+  padding: 0.6rem 0.75rem;
+  font-size: 0.85rem;
+  color: var(--on-surface);
+  font-family: inherit;
+}
+
+.admin-dialog-field textarea {
+  resize: vertical;
+}
+
+.admin-dialog-field-full {
+  grid-column: 1 / -1;
+}
+
+.admin-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
 }
 
 .payments-tabs {
@@ -1780,7 +1957,8 @@ textarea {
   .settings-input-grid,
   .audit-filter-row,
   .tutors-stats-grid,
-  .tutors-select-grid {
+  .tutors-select-grid,
+  .admin-dialog-grid {
     grid-template-columns: 1fr;
   }
 

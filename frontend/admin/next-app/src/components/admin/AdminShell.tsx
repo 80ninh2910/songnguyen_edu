@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { AdminIcon, type AdminIconName } from "@/components/admin/AdminIcon";
+import { clearAuthTokens } from "@/lib/adminAuth";
 
 type AdminNavItem = {
   href: string;
@@ -127,7 +128,11 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               <AdminIcon name="person" />
               Hồ sơ
             </Link>
-            <Link href="/login" className="admin-user-link">
+            <Link
+              href="/login"
+              className="admin-user-link"
+              onClick={() => clearAuthTokens()}
+            >
               <AdminIcon name="logout" />
               Đăng xuất
             </Link>

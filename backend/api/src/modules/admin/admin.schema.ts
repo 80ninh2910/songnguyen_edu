@@ -33,7 +33,36 @@ export const AdminListTutorsQuerySchema = PaginationQuerySchema.extend({
   subjects: CsvArraySchema.optional(),
   district: z.string().trim().min(1).optional(),
   districts: CsvArraySchema.optional(),
+  sort: z.enum(["newest", "active-most", "rating"]).optional(),
 });
+
+const TutorSubjectsSchema = z
+  .array(z.string().trim().min(1))
+  .min(1, "At least one subject is required");
+
+const TutorDistrictsSchema = z
+  .array(z.string().trim().min(1))
+  .min(1, "At least one district is required");
+
+export const CreateTutorBodySchema = z.object({
+  fullName: z.string().trim().min(3).max(200),
+  email: z.string().trim().email().max(200),
+  phone: z.string().trim().min(3).max(30).optional(),
+  subjects: TutorSubjectsSchema,
+  districts: TutorDistrictsSchema,
+});
+
+export const UpdateTutorBodySchema = z
+  .object({
+    fullName: z.string().trim().min(3).max(200).optional(),
+    email: z.string().trim().email().max(200).optional(),
+    phone: z.string().trim().min(3).max(30).optional(),
+    subjects: TutorSubjectsSchema.optional(),
+    districts: TutorDistrictsSchema.optional(),
+  })
+  .refine((value) => Object.keys(value).length > 0, {
+    message: "At least one field is required",
+  });
 
 export const RejectTutorBodySchema = z.object({
   reason: z.string().trim().min(3).max(500),

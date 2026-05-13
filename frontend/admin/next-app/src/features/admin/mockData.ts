@@ -198,6 +198,7 @@ export const tutorRecords: TutorRecord[] = [
 ];
 
 export type PairingCard = {
+  id: string;
   code: string;
   classId: string;
   title: string;
@@ -210,9 +211,13 @@ export type PairingCard = {
   target: string;
   students: Array<{ initials: string; name: string; sub: string }>;
   applicants: Array<{
+    id: string;
     initials: string;
     name: string;
     sub: string;
+    matchScore: number;
+    distanceKm: number;
+    feeMatch: number;
     selected?: boolean;
   }>;
 };
@@ -226,6 +231,7 @@ export const requestSummary = [
 
 export const requestCards: PairingCard[] = [
   {
+    id: "class-math-11",
     code: "T11",
     classId: "#LH-2041",
     title: "Toán 11",
@@ -243,20 +249,37 @@ export const requestCards: PairingCard[] = [
     ],
     applicants: [
       {
+        id: "cand-nguyen-van-an",
         initials: "VA",
         name: "Nguyễn Văn An",
         sub: "Sinh viên - KHTN • Điểm TB 3.65",
+        matchScore: 89,
+        distanceKm: 2.4,
+        feeMatch: 92,
         selected: true,
       },
       {
+        id: "cand-le-minh-tuan",
         initials: "MT",
         name: "Lê Minh Tuấn",
         sub: "Giáo viên tự do • 3 năm KN",
+        matchScore: 84,
+        distanceKm: 3.1,
+        feeMatch: 88,
       },
-      { initials: "QD", name: "Phạm Quốc Duy", sub: "Sinh viên • Bách Khoa" },
+      {
+        id: "cand-pham-quoc-duy",
+        initials: "QD",
+        name: "Phạm Quốc Duy",
+        sub: "Sinh viên • Bách Khoa",
+        matchScore: 78,
+        distanceKm: 5.6,
+        feeMatch: 81,
+      },
     ],
   },
   {
+    id: "class-physics-10",
     code: "L10",
     classId: "#LH-2842",
     title: "Lý 10",
@@ -273,15 +296,40 @@ export const requestCards: PairingCard[] = [
       { initials: "", name: "", sub: "" },
     ],
     applicants: [
-      { initials: "QT", name: "Nguyễn Quốc Thắng", sub: "Sinh viên - ĐHSP" },
-      { initials: "PH", name: "Vũ Phương Hằng", sub: "Cử nhân Vật lý" },
-      { initials: "DT", name: "Đinh Tuấn", sub: "Sinh viên • UTE" },
+      {
+        id: "cand-nguyen-quoc-thang",
+        initials: "QT",
+        name: "Nguyễn Quốc Thắng",
+        sub: "Sinh viên - ĐHSP",
+        matchScore: 86,
+        distanceKm: 2.2,
+        feeMatch: 90,
+      },
+      {
+        id: "cand-vu-phuong-hang",
+        initials: "PH",
+        name: "Vũ Phương Hằng",
+        sub: "Cử nhân Vật lý",
+        matchScore: 82,
+        distanceKm: 1.6,
+        feeMatch: 87,
+      },
+      {
+        id: "cand-dinh-tuan",
+        initials: "DT",
+        name: "Đinh Tuấn",
+        sub: "Sinh viên • UTE",
+        matchScore: 79,
+        distanceKm: 4.7,
+        feeMatch: 83,
+      },
     ],
   },
 ];
 
 export const classCards: PairingCard[] = [
   {
+    id: "class-chemistry-12",
     code: "H12",
     classId: "#LH-2043",
     title: "Hóa 12",
@@ -299,16 +347,37 @@ export const classCards: PairingCard[] = [
     ],
     applicants: [
       {
+        id: "cand-le-hai",
         initials: "LH",
         name: "Lê Hải",
         sub: "Giáo viên tự do • 5 năm KN",
+        matchScore: 92,
+        distanceKm: 1.8,
+        feeMatch: 100,
         selected: true,
       },
-      { initials: "BN", name: "Bích Ngân", sub: "Sinh viên năm 4" },
-      { initials: "DA", name: "Duy Anh", sub: "Gia sư bán thời gian" },
+      {
+        id: "cand-bich-ngan",
+        initials: "BN",
+        name: "Bích Ngân",
+        sub: "Sinh viên năm 4",
+        matchScore: 86,
+        distanceKm: 3.4,
+        feeMatch: 92,
+      },
+      {
+        id: "cand-duy-anh",
+        initials: "DA",
+        name: "Duy Anh",
+        sub: "Gia sư bán thời gian",
+        matchScore: 79,
+        distanceKm: 4.1,
+        feeMatch: 88,
+      },
     ],
   },
   {
+    id: "class-english-communication",
     code: "A9",
     classId: "#LH-1872",
     title: "Anh văn giao tiếp",
@@ -325,9 +394,33 @@ export const classCards: PairingCard[] = [
       { initials: "", name: "", sub: "" },
     ],
     applicants: [
-      { initials: "KK", name: "Khánh Kỳ", sub: "IELTS 8.0" },
-      { initials: "TL", name: "Thảo Linh", sub: "TOEIC 920" },
-      { initials: "NA", name: "Ngọc Ánh", sub: "Giáo viên THPT" },
+      {
+        id: "cand-khanh-ky",
+        initials: "KK",
+        name: "Khánh Kỳ",
+        sub: "IELTS 8.0",
+        matchScore: 90,
+        distanceKm: 2.8,
+        feeMatch: 95,
+      },
+      {
+        id: "cand-thao-linh",
+        initials: "TL",
+        name: "Thảo Linh",
+        sub: "TOEIC 920",
+        matchScore: 83,
+        distanceKm: 1.9,
+        feeMatch: 89,
+      },
+      {
+        id: "cand-ngoc-anh",
+        initials: "NA",
+        name: "Ngọc Ánh",
+        sub: "Giáo viên THPT",
+        matchScore: 87,
+        distanceKm: 3.6,
+        feeMatch: 91,
+      },
     ],
   },
 ];
