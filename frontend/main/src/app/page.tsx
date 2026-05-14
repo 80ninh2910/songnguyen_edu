@@ -89,7 +89,7 @@ export default function NavbarDemo() {
   );
 
 };
-export function BackgroundLinesDemo() {
+function BackgroundLinesDemo() {
   return (
     <BackgroundLines
       className="flex w-full flex-col items-center justify-center px-4"
