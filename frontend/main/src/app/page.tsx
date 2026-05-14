@@ -97,9 +97,9 @@ export function BackgroundLinesDemo() {
     >
       <div className="px-2 pb-8 md:pb-36">
         <h2 className="text-center text-2xl font-sans py-2 font-bold tracking-tight relative z-20 max-[360px]:text-[20px] md:py-10 md:text-4xl lg:text-7xl">
-          <span className="text-red-600">SONG NGUYEN</span>
+          <span className="text-blue-600">SONG NGUYEN</span>
           <br />
-          <span className="text-neutral-800">EDUCATION</span>
+          <span className="text-red-600">EDUCATION</span>
         </h2>
         <Image
           src={logoImage}
@@ -110,7 +110,8 @@ export function BackgroundLinesDemo() {
         />
         <br />
         <p className="mx-auto max-w-xl text-center text-sm text-neutral-700 dark:text-neutral-400 max-[360px]:text-xs md:text-lg">
-          trung tâm đào tạo năng khiếu và văn hóa, với sứ mệnh giúp học sinh phát triển toàn diện về kiến thức, kỹ năng và tư duy sáng tạo.
+          Tầm nhìn trở thành hệ thống gia sư và giáo dục uy tín, nơi chất lượng giảng dạy luôn được đặt lên hàng đầu.
+
         </p>
       </div>
 

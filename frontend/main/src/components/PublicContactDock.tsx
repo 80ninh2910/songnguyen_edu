@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 const contactItems = [
   {
     key: "phone",
-    href: "tel:1800969639",
+    href: "tel:0988 212 316",
     label: "Goi dien",
     bgClass: "bg-[#34c759]",
     icon: (
@@ -22,7 +22,7 @@ const contactItems = [
   },
   {
     key: "zalo",
-    href: "https://zalo.me/0795552910",
+    href: "https://zalo.me/0988212316",
     label: "Zalo",
     bgClass: "bg-[#0071e3]",
     icon: <span className="text-sm font-semibold tracking-[-0.02em]">Zalo</span>,
