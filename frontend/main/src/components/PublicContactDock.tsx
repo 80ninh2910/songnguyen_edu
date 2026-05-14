@@ -21,6 +21,31 @@ const contactItems = [
     ),
   },
   {
+    key: "email",
+    href: "mailto:songnguyeneducationcoltd@gmail.com",
+    gmailHref: "https://mail.google.com/mail/?view=cm&fs=1&to=songnguyeneducationcoltd@gmail.com",
+    label: "Email",
+    bgClass: "bg-[#ff6a00]",
+    icon: (
+      <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" aria-hidden="true">
+        <path
+          d="M4 7.5a2.5 2.5 0 0 1 2.5-2.5h11A2.5 2.5 0 0 1 20 7.5v9A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5v-9Z"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="m5 7.5 7 4.8 7-4.8"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    ),
+  },
+  {
     key: "zalo",
     href: "https://zalo.me/0988212316",
     label: "Zalo",
@@ -51,8 +76,21 @@ export default function PublicContactDock() {
           <li key={item.key}>
             <a
               href={item.href}
-              target={item.key === "phone" ? undefined : "_blank"}
-              rel={item.key === "phone" ? undefined : "noreferrer"}
+              target={item.key === "phone" || item.key === "email" ? undefined : "_blank"}
+              rel={item.key === "phone" || item.key === "email" ? undefined : "noreferrer"}
+              onClick={
+                item.key === "email"
+                  ? (event) => {
+                      event.preventDefault();
+                      window.location.href = item.href;
+                      window.setTimeout(() => {
+                        if (item.gmailHref) {
+                          window.open(item.gmailHref, "_blank", "noopener,noreferrer");
+                        }
+                      }, 350);
+                    }
+                  : undefined
+              }
               aria-label={item.label}
               className={`flex h-12 w-12 items-center justify-center rounded-full text-white transition-transform duration-200 hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0071e3] max-[480px]:h-10 max-[480px]:w-10 ${item.bgClass}`}
             >
