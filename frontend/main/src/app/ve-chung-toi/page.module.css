@@ -174,6 +174,7 @@
   position: relative;
   display: grid;
   place-items: center;
+  justify-items: end;
 }
 
 .imageCard {
@@ -185,10 +186,12 @@
   background: #ffffff;
   box-shadow: 0 20px 48px rgba(15, 47, 119, 0.18);
   border: 1px solid rgba(15, 47, 119, 0.12);
+  margin-left: 32px;
 }
 
 .imageCard :global(img) {
   object-fit: cover;
+  object-position: 65% center;
 }
 
 .infoBadge {
@@ -239,6 +242,11 @@
 
   .heroVisual {
     order: -1;
+    justify-items: center;
+  }
+
+  .imageCard {
+    margin-left: 0;
   }
 }
 
