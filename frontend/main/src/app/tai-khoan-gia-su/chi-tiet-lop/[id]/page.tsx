@@ -37,8 +37,6 @@ export default function ClassDetail() {
 
   return (
     <>
-      <link rel="stylesheet" href="/css/class-detail.css" />
-
       <nav className="top-nav">
         <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
           <span className="nav-brand">SONG NGUYEN EDU</span>
