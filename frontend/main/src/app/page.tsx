@@ -29,50 +29,36 @@ const beVietnamPro = Be_Vietnam_Pro({
 });
 
 type ProcessType = "parent" | "tutor";
+type SignupType = "parent" | "tutor-free" | "tutor-trained";
 
 export default function NavbarDemo() {
   const [activeProcessModal, setActiveProcessModal] = useState<ProcessType | null>(null);
+  const [activeSignupModal, setActiveSignupModal] = useState<SignupType | null>(null);
 
   useEffect(() => {
-    // Handle cross-page navigation smooth scroll with precise offset
+    // Handle cross-page navigation to tutor registration
     const searchParams = new URLSearchParams(window.location.search);
     if (searchParams.get('scrollTo') === 'tutor-register-section' || window.location.hash === '#tutor-register-section') {
-      // Small delay to ensure React hydration and image layout shifting is completed
       setTimeout(() => {
-        const element = document.getElementById('tutor-register-section');
-        if (element) {
-          // Use a fixed offset for the sticky navbar (120px provides safe spacing)
-          const navbarHeight = 120;
-          const elementPosition = element.getBoundingClientRect().top + window.scrollY;
-          
-          window.scrollTo({
-            top: elementPosition - navbarHeight,
-            behavior: 'smooth'
-          });
-          
-          // Clean the URL to avoid jumping on subsequent manual reloads
-          window.history.replaceState({}, document.title, '/');
-        }
-      }, 400); 
+        setActiveSignupModal("tutor-free");
+        window.history.replaceState({}, document.title, '/');
+      }, 200);
     }
   }, []);
 
   return (
     <div className="relative w-full">
-      <BackgroundLinesDemo />
-      <TemplateContentSection />
-      <AboutAndProcessSection />
+      <BackgroundLinesDemo
+        onOpenParent={() => setActiveSignupModal("parent")}
+        onOpenTutor={() => setActiveSignupModal("tutor-free")}
+      />
+      <TemplateContentSection
+        onOpenTutorTrained={() => setActiveSignupModal("tutor-trained")}
+      />
+      <AboutAndProcessSection
+        onOpenSignup={(type) => setActiveSignupModal(type)}
+      />
       {/* ĐÃ XÓA: Hệ Thống Gia Sư & Giáo Viên section theo yêu cầu */}
-      <section className="bg-[#edf2f8] px-4 py-10 md:px-8 md:py-12">
-        <div className="mx-auto grid w-full max-w-[1600px] grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-8">
-          <div className="min-w-0">
-            <TutorMatchingClassSection onOpenProcessModal={() => setActiveProcessModal("parent")} />
-          </div>
-          <div className="min-w-0">
-            <TutorRegistrationClassSection onOpenProcessModal={() => setActiveProcessModal("tutor")} />
-          </div>
-        </div>
-      </section>
       {/* Đã xóa div.relative.z-20... (phần học viên xuất sắc) theo yêu cầu */}
       {/* <DomeGallerySection /> đã bị xóa theo yêu cầu */}
       <TutorClassSection />
@@ -83,13 +69,25 @@ export default function NavbarDemo() {
         type={activeProcessModal}
         onClose={() => setActiveProcessModal(null)}
       />
+      <RegistrationModal
+        activeType={activeSignupModal}
+        onClose={() => setActiveSignupModal(null)}
+        onOpenProcessModal={(type) => setActiveProcessModal(type)}
+        onSwitchType={(type) => setActiveSignupModal(type)}
+      />
 
       {/* Navbar */}
     </div>
   );
 
 };
-function BackgroundLinesDemo() {
+function BackgroundLinesDemo({
+  onOpenParent,
+  onOpenTutor,
+}: {
+  onOpenParent: () => void;
+  onOpenTutor: () => void;
+}) {
   return (
     <BackgroundLines
       className="flex w-full flex-col items-center justify-center px-4"
@@ -119,6 +117,7 @@ function BackgroundLinesDemo() {
         <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-3 md:grid-cols-[1fr_2.2fr_1fr] md:gap-4">
           <button
             type="button"
+            onClick={onOpenParent}
             className="w-full rounded-2xl bg-[linear-gradient(180deg,rgba(232,41,53,0.88)_0%,rgba(217,31,43,0.84)_55%,rgba(191,23,34,0.8)_100%)] px-6 py-3.5 text-sm font-semibold tracking-[-0.01em] text-white backdrop-blur-xl transition-transform duration-300 ease-out hover:scale-[1.04] active:scale-[0.98] max-[360px]:px-4 max-[360px]:py-3 max-[360px]:text-xs"
           >
             Tôi là phụ huynh tìm gia sư
@@ -132,6 +131,7 @@ function BackgroundLinesDemo() {
 
           <button
             type="button"
+            onClick={onOpenTutor}
             className="w-full rounded-2xl bg-[linear-gradient(180deg,rgba(232,41,53,0.88)_0%,rgba(217,31,43,0.84)_55%,rgba(191,23,34,0.8)_100%)] px-6 py-3.5 text-sm font-semibold tracking-[-0.01em] text-white backdrop-blur-xl transition-transform duration-300 ease-out hover:scale-[1.04] active:scale-[0.98] max-[360px]:px-4 max-[360px]:py-3 max-[360px]:text-xs"
           >
             Tôi là gia sư tìm lớp
@@ -142,7 +142,11 @@ function BackgroundLinesDemo() {
   );
 }
 
-function TemplateContentSection() {
+function TemplateContentSection({
+  onOpenTutorTrained,
+}: {
+  onOpenTutorTrained: () => void;
+}) {
   return (
     <>
       <section className={`bg-[#d8dee8] px-6 py-14 md:px-12 md:py-16 ${beVietnamPro.className}`}>
@@ -230,7 +234,13 @@ function TemplateContentSection() {
                 <li>Chứng chỉ đào tạo Song Nguyen</li>
                 <li>Kỹ năng sư phạm chuyên nghiệp</li>
               </ul>
-              <button className="mt-8 w-full rounded-xl bg-[linear-gradient(135deg,#0053cc_0%,#779dff_100%)] py-3 text-sm font-bold text-white shadow-[0_14px_28px_rgba(0,83,204,0.28)]">Đăng ký ngay</button>
+              <button
+                type="button"
+                onClick={onOpenTutorTrained}
+                className="mt-8 w-full rounded-xl bg-[linear-gradient(135deg,#0053cc_0%,#779dff_100%)] py-3 text-sm font-bold text-white shadow-[0_14px_28px_rgba(0,83,204,0.28)]"
+              >
+                Đăng ký ngay
+              </button>
             </div>
 
             <div className="rounded-[28px] border border-white bg-white/85 p-8 shadow-[0_16px_40px_rgba(0,41,108,0.08)]">
@@ -255,13 +265,153 @@ function TemplateContentSection() {
 
 // HeroSection đã bị xóa theo yêu cầu
 
-function TutorMatchingClassSection({
+
+function RegistrationModal({
+  activeType,
+  onClose,
+  onOpenProcessModal,
+  onSwitchType,
+}: {
+  activeType: SignupType | null;
+  onClose: () => void;
+  onOpenProcessModal: (type: ProcessType) => void;
+  onSwitchType: (type: SignupType) => void;
+}) {
+  const handleOpenProcess = (type: ProcessType) => {
+    onOpenProcessModal(type);
+  };
+  useEffect(() => {
+    if (!activeType) return;
+
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleEsc);
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", handleEsc);
+    };
+  }, [activeType, onClose]);
+
+  if (!activeType) return null;
+
+  const headerMap: Record<SignupType, { title: string; desc: string; badge: string }> = {
+    parent: {
+      title: "Đăng ký lớp cho phụ huynh",
+      desc: "Gửi yêu cầu học tập nhanh chóng để được tư vấn trong 24h.",
+      badge: "Phụ huynh",
+    },
+    "tutor-free": {
+      title: "Gia sư tự do đăng ký nhận lớp",
+      desc: "Phù hợp cho sinh viên hoặc gia sư tự do muốn nhận lớp linh hoạt.",
+      badge: "Gia sư tự do",
+    },
+    "tutor-trained": {
+      title: "Gia sư đào tạo đăng ký ứng tuyển",
+      desc: "Chương trình đào tạo bài bản, ưu tiên ghép lớp chất lượng.",
+      badge: "Gia sư đào tạo",
+    },
+  };
+
+  const header = headerMap[activeType];
+
+  return (
+    <div
+      className="fixed inset-0 z-[140] flex items-start justify-center overflow-y-auto bg-[#071737]/60 px-4 py-8 backdrop-blur-sm"
+      role="presentation"
+      onClick={onClose}
+    >
+      <div
+        className={`relative w-full max-w-4xl overflow-hidden rounded-[28px] border border-[#d6e1fb] bg-white shadow-[0_30px_90px_rgba(4,16,50,0.4)] ${beVietnamPro.className} animate-[fadeInModal_.3s_ease-out]`}
+        onClick={(event) => event.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label={header.title}
+      >
+        <div className="flex flex-col gap-6 border-b border-[#e5edff] bg-[linear-gradient(120deg,#f7f9ff_0%,#ffffff_55%,#f6f9ff_100%)] px-5 py-5 md:px-7">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <span className="inline-flex rounded-full bg-[#103a9c] px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-white">
+                {header.badge}
+              </span>
+              <h3 className="mt-3 text-2xl font-black text-[#122a5c] md:text-3xl">
+                {header.title}
+              </h3>
+              <p className="mt-2 text-sm leading-7 text-[#4e6186] md:text-base">
+                {header.desc}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-2xl font-bold text-[#1d4aa8] shadow-sm transition-all duration-200 hover:bg-[#eaf1ff]"
+              aria-label="Đóng popup"
+            >
+              ×
+            </button>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            {(
+              [
+                { key: "parent" as const, label: "Phụ huynh" },
+                { key: "tutor-free" as const, label: "Gia sư tự do" },
+                { key: "tutor-trained" as const, label: "Gia sư đào tạo" },
+              ] as const
+            ).map((item) => (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => onSwitchType(item.key)}
+                className={`rounded-2xl border px-4 py-3 text-sm font-bold transition-all duration-300 md:text-base ${
+                  activeType === item.key
+                    ? "border-[#1b4fb6] bg-[#1b4fb6] text-white shadow-[0_12px_28px_rgba(27,79,182,0.3)]"
+                    : "border-[#d8e3fb] bg-white text-[#243b72] hover:border-[#8fb1ff]"
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="px-5 py-6 md:px-7">
+          {activeType === "parent" ? (
+            <ParentRegistrationForm onOpenProcessModal={() => handleOpenProcess("parent")} />
+          ) : (
+            <TutorRegistrationForm
+              track={activeType === "tutor-free" ? "free" : "trained"}
+              onOpenProcessModal={() => handleOpenProcess("tutor")}
+            />
+          )}
+        </div>
+
+        <style jsx>{`
+          @keyframes fadeInModal {
+            from {
+              opacity: 0;
+              transform: translateY(16px) scale(0.98);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0) scale(1);
+            }
+          }
+        `}</style>
+      </div>
+    </div>
+  );
+}
+
+function ParentRegistrationForm({
   onOpenProcessModal,
 }: {
   onOpenProcessModal: () => void;
 }) {
-  const [inView, setInView] = useState(false);
-  const sectionRef = useRef<HTMLElement | null>(null);
   const [studentForm, setStudentForm] = useState({
     phone: "",
     subject: "",
@@ -309,24 +459,6 @@ function TutorMatchingClassSection({
     IELTS: 1.35,
     SAT: 1.5,
   };
-
-  useEffect(() => {
-    const node = sectionRef.current;
-    if (!node) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setInView(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.2 }
-    );
-
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
 
   const inputBaseClass =
     "h-12 w-full rounded-xl border border-[#d5dff1] bg-white/95 px-4 text-[15px] font-medium text-[#243b72] outline-none transition-all duration-300 placeholder:text-[#6b7aa0] focus:border-[#4f86ff] focus:ring-4 focus:ring-[#8ab4ff]/25";
@@ -401,42 +533,35 @@ function TutorMatchingClassSection({
   };
 
   return (
-    <section
-      ref={sectionRef}
-      id="parent-find-tutor"
-      className="relative"
-    >
-      <div className={`relative mx-auto w-full max-w-7xl ${beVietnamPro.className}`}>
-        <article
-          className={`overflow-hidden rounded-[30px] border border-[#cfdaef] bg-[#f3f4f7]/92 p-4 shadow-[0_24px_55px_rgba(17,45,112,0.12)] backdrop-blur-sm transition-all duration-700 md:p-6 ${
-            inView ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"
-          }`}
-        >
-          <h2 className="text-4xl font-black uppercase tracking-[0.02em] text-[#17367b] max-[360px]:text-3xl md:text-[45px]">
-            PHỤ HUYNH TÌM GIA SƯ
-          </h2>
-          <p className="mt-2 max-w-[56ch] text-xl italic leading-9 text-[#1f3f86] max-[360px]:text-base max-[360px]:leading-7 md:text-2xl">
-            SONG NGUYEN EDUCATION giúp phụ huynh tìm được gia sư phù hợp đồng hành cùng con trên hành trình tri thức
-          </p>
+    <div className={`w-full ${beVietnamPro.className}`}>
+      <div className="rounded-[26px] border border-[#d5dff3] bg-[#f5f7fb] p-4 shadow-[0_20px_45px_rgba(17,45,112,0.12)] md:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h3 className="text-2xl font-black text-[#17367b] md:text-3xl">Phụ huynh đăng ký lớp</h3>
+            <p className="mt-2 text-sm leading-7 text-[#4b5f88] md:text-base">
+              Điền nhanh thông tin học viên để nhận tư vấn lộ trình và học phí.
+            </p>
+          </div>
           <button
             type="button"
             onClick={onOpenProcessModal}
-            className="mt-2 inline-block text-left text-sm italic text-[#2d4f96] underline decoration-[#6f88c0] underline-offset-4 transition-colors hover:text-[#17367b]"
+            className="text-xs font-semibold text-[#21408c] underline decoration-[#6f88c0] underline-offset-4 hover:text-[#17367b]"
           >
-            *Phụ huynh tìm hiểu về quy trình đăng ký lớp tại đây
+            Xem quy trình đăng ký lớp
           </button>
+        </div>
 
-          <div className="mt-4 overflow-hidden rounded-full border border-[#d3dff5] bg-white/80">
-            <div
-              className="h-2 rounded-full bg-[linear-gradient(90deg,#0d3ea8_0%,#51a5ff_55%,#8fe3ff_100%)] transition-all duration-500"
-              style={{ width: `${completionRate}%` }}
-            />
-          </div>
-          <p className="mt-2 text-sm font-semibold text-[#2a4b8c]">Tiến độ hoàn thiện yêu cầu: {completionRate}%</p>
+        <div className="mt-4 overflow-hidden rounded-full border border-[#d3dff5] bg-white/80">
+          <div
+            className="h-2 rounded-full bg-[linear-gradient(90deg,#0d3ea8_0%,#51a5ff_55%,#8fe3ff_100%)] transition-all duration-500"
+            style={{ width: `${completionRate}%` }}
+          />
+        </div>
+        <p className="mt-2 text-xs font-semibold text-[#2a4b8c] md:text-sm">Tiến độ hoàn thiện yêu cầu: {completionRate}%</p>
 
-          <form onSubmit={handleSubmit} className="mt-5 space-y-4">
-            <div className="rounded-[24px] border border-white/70 bg-[#e8e9ec] p-4 md:p-5">
-              <h3 className="text-[30px] font-extrabold italic text-[#1d3979] md:text-[34px]">Thông tin học viên</h3>
+        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+          <div className="rounded-[22px] border border-white/70 bg-[#eef0f5] p-4">
+            <h4 className="text-lg font-bold text-[#1d3979] md:text-xl">Thông tin học viên</h4>
               <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 <input
                   value={studentForm.phone}
@@ -509,10 +634,10 @@ function TutorMatchingClassSection({
               )}
             </div>
 
-            <div className="mt-4 rounded-[24px] border border-white/70 bg-[#e8e9ec] p-4 md:p-5">
+            <div className="rounded-[22px] border border-white/70 bg-[#eef0f5] p-4">
               <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
                 <div>
-                  <h3 className="text-[30px] font-extrabold italic text-[#1d3979] md:text-[34px]">Yêu cầu gia sư</h3>
+                  <h4 className="text-lg font-bold text-[#1d3979] md:text-xl">Yêu cầu gia sư</h4>
                   <div className="mt-4 space-y-3">
                     <select
                       value={tutorForm.gender}
@@ -608,7 +733,7 @@ function TutorMatchingClassSection({
                 </div>
               </div>
 
-              <h4 className="mt-5 text-3xl font-extrabold text-[#17367b] md:text-4xl">Học phí tham khảo</h4>
+              <h4 className="mt-5 text-2xl font-extrabold text-[#17367b] md:text-3xl">Học phí tham khảo</h4>
 
               <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-[1fr_1fr]">
                 <div className="relative overflow-hidden rounded-xl bg-[#03933b] px-4 py-4 text-center text-[24px] font-black leading-tight text-white shadow-[0_14px_34px_rgba(3,147,59,0.35)] md:text-[28px] lg:text-[30px]">
@@ -648,20 +773,18 @@ function TutorMatchingClassSection({
               )}
             </div>
           </form>
-        </article>
+        </div>
       </div>
-
-    </section>
   );
 }
 
-function TutorRegistrationClassSection({
+function TutorRegistrationForm({
   onOpenProcessModal,
+  track,
 }: {
   onOpenProcessModal: () => void;
+  track: "free" | "trained";
 }) {
-  const [inView, setInView] = useState(false);
-  const sectionRef = useRef<HTMLElement | null>(null);
   const [personalForm, setPersonalForm] = useState({
     phone: "",
     role: "",
@@ -691,22 +814,9 @@ function TutorRegistrationClassSection({
   ];
 
   useEffect(() => {
-    const node = sectionRef.current;
-    if (!node) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setInView(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.22 }
-    );
-
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
+    const role = track === "free" ? "Gia sư tự do" : "Gia sư đào tạo";
+    setPersonalForm((prev) => ({ ...prev, role }));
+  }, [track]);
 
   const requiredFields = [
     personalForm.phone,
@@ -766,35 +876,39 @@ function TutorRegistrationClassSection({
   };
 
   return (
-    <section
-      ref={sectionRef}
-      id="tutor-register-section"
-      className="relative scroll-mt-[100px]"
-    >
-      <div className={`relative mx-auto w-full max-w-7xl ${beVietnamPro.className}`}>
-        <article
-          className={`overflow-hidden rounded-[30px] border border-[#cfdaef] bg-[#f0f1f5]/92 p-4 shadow-[0_24px_55px_rgba(17,45,112,0.12)] backdrop-blur-sm transition-all duration-700 md:p-6 ${
-            inView ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"
-          }`}
-        >
-          <h2 className="text-4xl font-black uppercase tracking-[0.02em] text-[#17367b] max-[360px]:text-3xl md:text-[45px]">
-            GIA SƯ ĐĂNG KÝ NHẬN LỚP
-          </h2>
-          <p className="mt-2 max-w-[56ch] text-xl italic leading-9 text-[#1f3f86] max-[360px]:text-base max-[360px]:leading-7 md:text-2xl">
-            SONG NGUYEN EDUCATION giúp gia sư kết nối lớp dạy phù hợp và đồng hành hiệu quả cùng học viên
-          </p>
-
-          <div className="mt-4 overflow-hidden rounded-full border border-[#d3dff5] bg-white/80">
-            <div
-              className="h-2 rounded-full bg-[linear-gradient(90deg,#0d3ea8_0%,#51a5ff_55%,#8fe3ff_100%)] transition-all duration-500"
-              style={{ width: `${completionRate}%` }}
-            />
+    <div className={`w-full ${beVietnamPro.className}`}>
+      <div className="rounded-[26px] border border-[#d5dff3] bg-[#f5f7fb] p-4 shadow-[0_20px_45px_rgba(17,45,112,0.12)] md:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h3 className="text-2xl font-black text-[#17367b] md:text-3xl">
+              {track === "free" ? "Gia sư tự do đăng ký" : "Gia sư đào tạo đăng ký"}
+            </h3>
+            <p className="mt-2 text-sm leading-7 text-[#4b5f88] md:text-base">
+              {track === "free"
+                ? "Phù hợp cho gia sư tự do, sinh viên muốn nhận lớp linh hoạt."
+                : "Chương trình đào tạo bài bản, ưu tiên ghép lớp chất lượng."}
+            </p>
           </div>
-          <p className="mt-2 text-sm font-semibold text-[#2a4b8c]">Tiến độ hoàn thiện hồ sơ: {completionRate}%</p>
+          <button
+            type="button"
+            onClick={onOpenProcessModal}
+            className="text-xs font-semibold text-[#21408c] underline decoration-[#6f88c0] underline-offset-4 hover:text-[#17367b]"
+          >
+            Xem quy trình đăng ký nhận lớp
+          </button>
+        </div>
 
-          <form onSubmit={handleSubmit} className="mt-5 space-y-4">
-            <div className="rounded-[24px] border border-white/70 bg-[#e6e7eb] p-4 md:p-5">
-              <h3 className="text-[30px] font-extrabold text-[#1d3979] md:text-[34px]">Thông tin cá nhân</h3>
+        <div className="mt-4 overflow-hidden rounded-full border border-[#d3dff5] bg-white/80">
+          <div
+            className="h-2 rounded-full bg-[linear-gradient(90deg,#0d3ea8_0%,#51a5ff_55%,#8fe3ff_100%)] transition-all duration-500"
+            style={{ width: `${completionRate}%` }}
+          />
+        </div>
+        <p className="mt-2 text-xs font-semibold text-[#2a4b8c] md:text-sm">Tiến độ hoàn thiện hồ sơ: {completionRate}%</p>
+
+        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+          <div className="rounded-[22px] border border-white/70 bg-[#eef0f5] p-4">
+            <h4 className="text-lg font-bold text-[#1d3979] md:text-xl">Thông tin cá nhân</h4>
               <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <input
                   value={personalForm.phone}
@@ -810,6 +924,7 @@ function TutorRegistrationClassSection({
                   <option value="">Bạn đang là</option>
                   <option value="Sinh viên">Sinh viên</option>
                   <option value="Gia sư tự do">Gia sư tự do</option>
+                  <option value="Gia sư đào tạo">Gia sư đào tạo</option>
                   <option value="Giáo viên">Giáo viên</option>
                 </select>
                 <input
@@ -844,20 +959,12 @@ function TutorRegistrationClassSection({
               {(errors.phone || errors.email || errors.role || errors.gender || errors.address) && (
                 <p className="mt-3 text-sm font-semibold text-[#cc1f1f]">Vui lòng kiểm tra lại thông tin cá nhân.</p>
               )}
-
-              <button
-                type="button"
-                onClick={onOpenProcessModal}
-                className="mt-4 inline-block text-left text-sm text-[#21408c] underline decoration-[#6f88c0] underline-offset-4 hover:text-[#17367b]"
-              >
-                *Tìm hiểu quy trình đăng ký nhận lớp tại đây
-              </button>
             </div>
 
-            <div className="rounded-[24px] border border-white/70 bg-[#e6e7eb] p-4 md:p-5">
+            <div className="rounded-[22px] border border-white/70 bg-[#eef0f5] p-4">
               <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
                 <div>
-                  <h3 className="text-[30px] font-extrabold text-[#1d3979] md:text-[34px]">Thông tin gia sư</h3>
+                  <h4 className="text-lg font-bold text-[#1d3979] md:text-xl">Thông tin gia sư</h4>
                   <div className="mt-4 space-y-3">
                     <select
                       value={tutorForm.teachingLevel}
@@ -933,13 +1040,6 @@ function TutorRegistrationClassSection({
 
               <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
                 <button
-                  type="button"
-                  onClick={onOpenProcessModal}
-                  className="inline-block text-left text-lg font-semibold text-[#21408c] underline decoration-[#6f88c0] underline-offset-4 hover:text-[#17367b]"
-                >
-                  *Tìm hiểu quy trình đăng ký nhận lớp tại đây
-                </button>
-                <button
                   type="submit"
                   className="rounded-xl bg-[linear-gradient(180deg,#f00b0b_0%,#d80404_100%)] px-6 py-3 text-center text-lg font-black text-white shadow-[0_16px_34px_rgba(216,4,4,0.4)] transition-all duration-300 hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0 md:px-7 md:text-xl lg:text-[22px]"
                 >
@@ -960,9 +1060,8 @@ function TutorRegistrationClassSection({
               )}
             </div>
           </form>
-        </article>
+        </div>
       </div>
-    </section>
   );
 }
 
@@ -1013,7 +1112,7 @@ function ProcessPopupModal({
 
   return (
     <div
-      className="fixed inset-0 z-[120] flex items-center justify-center bg-[#061534]/50 px-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[160] flex items-center justify-center bg-[#061534]/50 px-4 backdrop-blur-sm"
       onClick={onClose}
       role="presentation"
     >
@@ -1403,7 +1502,11 @@ function TutorClassSection() {
 }
 
 
-function AboutAndProcessSection() {
+function AboutAndProcessSection({
+  onOpenSignup,
+}: {
+  onOpenSignup: (type: SignupType) => void;
+}) {
   const sectionRef = useRef<HTMLElement | null>(null);
   const [vis, setVis] = useState(false);
   const [step, setStep] = useState(0);
@@ -1706,7 +1809,13 @@ function AboutAndProcessSection() {
                     )}
                     <button
                       type="button"
-                      onClick={() => goStep(step < 3 ? step + 1 : 0)}
+                      onClick={() => {
+                        if (step === 3) {
+                          onOpenSignup("tutor-free");
+                          return;
+                        }
+                        goStep(step + 1);
+                      }}
                       className="group/btn flex items-center gap-1 rounded-lg px-4 py-2 text-[12px] font-bold text-white transition-all duration-200 hover:brightness-110 hover:shadow-md"
                       style={{ background: cur.color }}
                     >
@@ -1752,6 +1861,7 @@ function AboutAndProcessSection() {
                 color: "#2563eb",
                 featured: false,
                 cta: "Đăng ký gia sư tự do",
+                signupType: "tutor-free" as const,
               },
               {
                 tag: "Gia sư đào tạo",
@@ -1769,6 +1879,7 @@ function AboutAndProcessSection() {
                 color: "#dc2626",
                 featured: true,
                 cta: "Đăng ký gia sư đào tạo",
+                signupType: "tutor-trained" as const,
               },
             ].map((card, ci) => (
               <div
@@ -1830,6 +1941,7 @@ function AboutAndProcessSection() {
                   {/* CTA */}
                   <button
                     type="button"
+                    onClick={() => onOpenSignup(card.signupType)}
                     className="group/cta mt-6 flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-[14px] font-bold transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg"
                     style={
                       card.featured
