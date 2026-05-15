@@ -1,18 +1,3 @@
-:root {
-  --education-blue: #1b5fd1;
-  --education-blue-dark: #0f3a8a;
-  --education-blue-soft: #eaf2ff;
-  --education-orange: #f59f00;
-  --education-orange-soft: #fff4d6;
-  --education-brick: #c94b3a;
-  --education-brick-soft: #ffe6df;
-  --education-green: #16a34a;
-  --education-text: #0b1b33;
-  --education-muted: #5d6b82;
-  --education-card: #ffffff;
-  --education-border: rgba(15, 58, 138, 0.12);
-}
-
 .page {
   background: #f5f8ff;
   color: var(--education-text);

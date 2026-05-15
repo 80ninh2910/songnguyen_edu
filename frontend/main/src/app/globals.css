@@ -80,6 +80,27 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  /* Education theme variables */
+  --education-blue: #1b5fd1;
+  --education-blue-dark: #0f3a8a;
+  --education-blue-soft: #eaf2ff;
+  --education-orange: #f59f00;
+  --education-orange-soft: #fff4d6;
+  --education-brick: #c94b3a;
+  --education-brick-soft: #ffe6df;
+  --education-green: #16a34a;
+  --education-text: #0b1b33;
+  --education-muted: #5d6b82;
+  --education-card: #ffffff;
+  --education-border: rgba(15, 58, 138, 0.12);
+  /* Brand theme variables */
+  --brand-blue: #1e4fbf;
+  --brand-blue-dark: #0f2f77;
+  --brand-blue-soft: #e9f0ff;
+  --brand-orange: #f5a524;
+  --brand-orange-soft: #fff2d6;
+  --ink: #10192d;
+  --muted: #5b6b85;
 }
 
 .dark {
