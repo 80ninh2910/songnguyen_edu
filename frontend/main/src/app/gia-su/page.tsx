@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Be_Vietnam_Pro } from "next/font/google";
-import { apiRequest } from "@/lib/api";
 
 import styles from "./page.module.css";
 
@@ -29,28 +27,43 @@ const stage1Steps = [
   },
 ];
 
-const tutorHighlights = [
+const modelComparison = [
   {
-    name: "Cô Mai Trần",
-    subject: "Toán - Cấp 2",
-    level: "Gia sư vàng",
-    desc: "Kinh nghiệm 6 năm, chuyên luyện thi vào 10.",
-    skills: ["Ôn thi", "Tư duy logic", "Bám sát đề"],
+    title: "Gia sư tự do",
+    highlight: "Phí kết nối 30% tháng đầu",
+    details: [
+      "Tự chủ giảng dạy và tự quản lý thời gian.",
+      "Trung tâm chỉ hỗ trợ kết nối lớp phù hợp.",
+      "Không bắt buộc tham gia đào tạo nghiệp vụ.",
+    ],
   },
   {
-    name: "Thầy Khang Lê",
-    subject: "Tiếng Anh",
-    level: "Gia sư ưu tú",
-    desc: "IELTS 8.0, giỏi giao tiếp và phản xạ.",
-    skills: ["Phát âm", "Phản xạ", "Thuyết trình"],
+    title: "Ký hợp đồng",
+    highlight: "Đào tạo và phỏng vấn trước khi nhận lớp",
+    details: [
+      "Được đào tạo phương pháp dạy chuẩn.",
+      "Có quản lý chuyên môn và đánh giá định kỳ.",
+      "Ưu tiên phân lớp và có cơ hội phát triển.",
+    ],
+  },
+];
+
+const trainingHighlights = [
+  {
+    label: "10 giờ đào tạo",
+    desc: "Phương pháp dạy, giao tiếp, giáo án và xử lý tình huống sư phạm.",
   },
   {
-    name: "Cô Yến Nguyễn",
-    subject: "Khoa học tự nhiên",
-    level: "Gia sư chuyên sâu",
-    desc: "Giáo trình STEM, đã đồng hành 120 học viên.",
-    skills: ["STEM", "Thực hành", "Kỷ luật"],
+    label: "Lệ phí 1.000.000 VNĐ",
+    desc: "Đóng trước khi bắt đầu khóa học nội bộ.",
   },
+];
+
+const trainingIncludes = [
+  "Tài liệu và nội dung đào tạo",
+  "Công tác tổ chức lớp huấn luyện",
+  "Đánh giá và kiểm tra cuối khóa",
+  "Cấp chứng nhận hoàn thành đào tạo nội bộ",
 ];
 
 const refundTimeline = [
@@ -97,7 +110,7 @@ const paymentHighlights = [
   "Tham gia đào tạo định kỳ để nâng cao chuyên môn và đánh giá xếp hạng.",
 ];
 
-export default function GiaSuPage() {
+export default function TutorRegistrationProcessPage() {
   return (
     <main className={`${styles.page} ${beVietnamPro.className}`}>
       <section className={styles.hero}>
@@ -246,23 +259,38 @@ export default function GiaSuPage() {
 
       <section className={`${styles.sectionAlt} ${styles.stageBlock2}`}>
         <div className={styles.container}>
-          <h2 className={styles.sectionTitle}>
-            Gia sư nổi bật <span>trong tháng</span>
-          </h2>
-          <p className={styles.sectionSubtitle}>
-            Điều phối viên gợi ý những gia sư có kỹ năng dạy học tốt.
-          </p>
-          <div className={styles.tutorList}>
-            {tutorHighlights.map((tutor) => (
-              <article className={styles.tutorCard} key={tutor.name}>
-                <span className={styles.tutorBadge}>{tutor.level}</span>
-                <h3>{tutor.name}</h3>
-                <p className={styles.tutorMeta}>{tutor.subject}</p>
-                <p>{tutor.desc}</p>
-                <div className={styles.tutorSkills}>
-                  {tutor.skills.map((skill) => (
-                    <span key={skill}>{skill}</span>
-                  ))}
+          <div className={styles.sectionHeader}>
+            <span className={styles.sectionTag}>
+              <strong>Giai đoạn 2</strong>
+            </span>
+            <h2>
+              <strong>
+                Huấn luyện & <span>chi phí</span>
+              </strong>
+            </h2>
+            <p>
+              Đào tạo tập trung vào chuyên môn, kỹ năng giao tiếp và xử lý
+              tình huống thực tế.
+            </p>
+          </div>
+          <div className={styles.trainingGrid}>
+            {trainingHighlights.map((item) => (
+              <div
+                key={item.label}
+                className={
+                  item.label.includes("1.000.000")
+                    ? `${styles.trainingCard} ${styles.trainingCardFee}`
+                    : styles.trainingCard
+                }
+              >
+                <div className={styles.cardIcon} aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    {item.label.includes("1.000.000") ? (
+                      <path d="M6 7h12v10H6zM8 5h8" />
+                    ) : (
+                      <path d="M12 3v5m0 0l2-2m-2 2l-2-2M5 14h14v5H5z" />
+                    )}
+                  </svg>
                 </div>
                 <h3>
                   {item.label.includes("1.000.000") ? (
