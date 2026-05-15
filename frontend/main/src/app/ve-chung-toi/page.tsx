@@ -43,7 +43,7 @@ export default function VeChungToiPage() {
           <div className={styles.heroVisual}>
             <div className={styles.imageCard}>
               <Image
-                src="/landing.jfif"
+                src="/landing.png"
                 alt="Minh hoa trung tam Anh ngu Song Nguyen"
                 fill
                 sizes="(max-width: 960px) 100vw, 50vw"
