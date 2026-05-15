@@ -67,12 +67,15 @@
   background: #f8fbff;
   padding: 20px;
   box-shadow: 0 8px 24px rgba(24, 54, 122, 0.08);
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s ease;
 }
 
-.planCardHighlight {
+.planCard:hover {
   border-color: #2d5fd0;
-  background: #ffffff;
   box-shadow: 0 16px 34px rgba(34, 84, 197, 0.18);
+  transform: translateY(-4px);
 }
 
 .planHeader {
@@ -117,7 +120,7 @@
 }
 
 .planList {
-  margin: 0;
+  margin: 0 0 16px 0;
   padding: 0;
   list-style: none;
   display: grid;
@@ -144,7 +147,7 @@
 }
 
 .planButton {
-  margin-top: 16px;
+  margin-top: auto;
   width: 100%;
   border: none;
   border-radius: 10px;
@@ -154,10 +157,10 @@
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  transition: transform 0.2s ease, background 0.2s ease;
+  transition: all 0.3s ease;
 }
 
-.planCardHighlight .planButton {
+.planCard:hover .planButton {
   background: #1f56c9;
   color: #ffffff;
 }
