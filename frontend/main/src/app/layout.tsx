@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Be_Vietnam_Pro, Geist_Mono } from "next/font/google";
 
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -7,7 +7,11 @@ import { cn } from "@/lib/utils";
 import SiteNavbar from "@/components/SiteNavbar";
 import PublicContactDock from "@/components/PublicContactDock";
 
-const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
+const beVietnamPro = Be_Vietnam_Pro({
+  subsets: ["latin", "vietnamese"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-sans",
+});
 
 const fontMono = Geist_Mono({
   subsets: ["latin"],
@@ -24,7 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="vi"
       suppressHydrationWarning
-      className={cn("antialiased", fontMono.variable, "font-sans", geist.variable)}
+      className={cn("antialiased", fontMono.variable, "font-sans", beVietnamPro.variable)}
     >
       <body className="bg-white text-black">
         <ThemeProvider defaultTheme="light" enableSystem={false} forcedTheme="light">

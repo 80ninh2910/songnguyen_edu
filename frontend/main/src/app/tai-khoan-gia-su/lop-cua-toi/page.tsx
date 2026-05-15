@@ -53,8 +53,6 @@ export default function MyClasses() {
 
   return (
     <>
-      <link rel="stylesheet" href="/css/my-classes.css" />
-      
       <div className="page-header">
         <div>
           <h1 className="page-title">Lớp Của Tôi</h1>

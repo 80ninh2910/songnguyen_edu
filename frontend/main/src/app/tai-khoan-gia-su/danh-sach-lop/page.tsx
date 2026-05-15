@@ -79,8 +79,6 @@ export default function ClassList() {
 
   return (
     <>
-      <link rel="stylesheet" href="/css/class-list.css" />
-      
       <h1 className="page-title" style={{ fontSize: '28px', fontWeight: 800, color: '#1f2937', marginBottom: '8px', fontFamily: "'Manrope', sans-serif" }}>Danh Sách Lớp</h1>
       <p className="page-subtitle" style={{ color: '#6b7280', marginBottom: '32px' }}>Tìm lớp học phù hợp với kỹ năng của bạn</p>
 

@@ -112,8 +112,6 @@ export default function Profile() {
 
   return (
     <>
-      <link rel="stylesheet" href="/css/profile.css" />
-
       <div className="profile-grid">
         <div className="profile-card">
           <div className="profile-avatar">

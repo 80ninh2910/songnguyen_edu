@@ -62,7 +62,7 @@ export default function HocPhiPage() {
           {tuitionPlans.map((plan) => (
             <article
               key={plan.level}
-              className={`${styles.planCard} ${plan.highlighted ? styles.planCardHighlight : ""}`}
+              className={styles.planCard}
             >
               <div className={styles.planHeader}>
                 <h2>{plan.level}</h2>
