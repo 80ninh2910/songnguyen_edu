@@ -112,7 +112,7 @@
 }
 
 .heroContent p {
-  color: var(--muted);
+  color: #0b0b0b;
   line-height: 1.7;
   font-size: 17px;
   max-width: 520px;
@@ -161,12 +161,12 @@
 .heroHighlights strong {
   display: block;
   font-size: 18px;
-  color: var(--brand-blue-dark);
+  color: #0b0b0b;
 }
 
 .heroHighlights span {
   font-size: 12px;
-  color: var(--muted);
+  color: #0b0b0b;
 }
 
 .heroVisual {
