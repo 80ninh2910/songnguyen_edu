@@ -28,7 +28,7 @@ export default function SiteNavbar() {
       { name: "Học phí", link: "/hoc-phi" },
       { name: "Lớp mới", link: "/lop-moi" },
       { name: "Gia sư", link: "/gia-su" },
-      { name: "Về chúng tôi", link: "/gioi-thieu-gia-su-uy-tin" },
+      { name: "Về chúng tôi", link: "/ve-chung-toi" },
       { name: "Hỏi đáp", link: "/hoi-dap-gia-su" },
     ],
     [],

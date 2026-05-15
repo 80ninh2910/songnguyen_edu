@@ -939,6 +939,12 @@
   grid-column: span 5;
 }
 
+.paymentSummary .primaryButton {
+  background: #ffd58a;
+  color: #0f3a8a;
+  box-shadow: none;
+}
+
 .paymentSummary h3 {
   font-size: 22px;
 }
