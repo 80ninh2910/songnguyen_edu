@@ -1,8 +1,9 @@
 'use client';
-import './login.css';
+import "./login.css";
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { apiRequest } from '@/lib/api';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,14 +20,29 @@ export default function LoginPage() {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
 
-    // Mock login - sau này thay bằng API call thực tế
-    await new Promise(resolve => setTimeout(resolve, 1200));
-
-    if (email && password) {
-      // Login thành công → chuyển sang Tutor Dashboard
-      router.push('/tai-khoan-gia-su');
-    } else {
+    if (!email || !password) {
       setError('Vui lòng nhập đầy đủ thông tin đăng nhập.');
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const session = await apiRequest<{
+        accessToken: string;
+        refreshToken: string;
+        user: { id: string; role: string; email: string; fullName: string };
+      }>("/auth/tutor/login", {
+        method: "POST",
+        body: { email, password },
+      });
+
+      localStorage.setItem('sne_access_token', session.accessToken);
+      localStorage.setItem('sne_refresh_token', session.refreshToken);
+      localStorage.setItem('sne_user', JSON.stringify(session.user));
+
+      router.push('/tai-khoan-gia-su');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Dang nhap khong thanh cong.');
       setIsLoading(false);
     }
   };

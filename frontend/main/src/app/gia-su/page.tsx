@@ -1,4 +1,8 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { Be_Vietnam_Pro } from "next/font/google";
+import { apiRequest } from "@/lib/api";
 
 import styles from "./page.module.css";
 
@@ -22,27 +26,13 @@ const values = [
   },
 ];
 
-const tutorHighlights = [
+const fallbackTutors = [
   {
-    name: "Cô Mai Trần",
-    subject: "Toán - Cấp 2",
-    level: "Gia sư vàng",
-    desc: "Kinh nghiệm 6 năm, chuyên luyện thi vào 10.",
-    skills: ["Ôn thi", "Tư duy logic", "Bám sát đề"],
-  },
-  {
-    name: "Thầy Khang Lê",
-    subject: "Tiếng Anh",
-    level: "Gia sư ưu tú",
-    desc: "IELTS 8.0, giỏi giao tiếp và phản xạ.",
-    skills: ["Phát âm", "Phản xạ", "Thuyết trình"],
-  },
-  {
-    name: "Cô Yến Nguyễn",
-    subject: "Khoa học tự nhiên",
-    level: "Gia sư chuyên sâu",
-    desc: "Giáo trình STEM, đã đồng hành 120 học viên.",
-    skills: ["STEM", "Thực hành", "Kỷ luật"],
+    name: "Gia su Song Nguyen",
+    subject: "Mon hoc",
+    level: "Gia su",
+    desc: "Ho so se duoc cap nhat khi co du lieu.",
+    skills: ["Ho tro", "Dong hanh"],
   },
 ];
 
@@ -70,6 +60,39 @@ const flow = [
 ];
 
 export default function GiaSuPage() {
+  const [tutorHighlights, setTutorHighlights] = useState(fallbackTutors);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    apiRequest<
+      Array<{
+        id: string;
+        fullName: string;
+        subjects: string[];
+        districts: string[];
+        status: string;
+      }>
+    >("/public/tutors")
+      .then((data) => {
+        if (data.length === 0) return;
+        setTutorHighlights(
+          data.map((item) => ({
+            name: item.fullName,
+            subject: item.subjects.join(", ") || "Mon hoc",
+            level: item.status === "APPROVED" ? "Gia su chinh thuc" : "Gia su",
+            desc: item.districts.length > 0
+              ? `Khu vuc day: ${item.districts.join(", ")}.`
+              : "Ho so se duoc cap nhat.",
+            skills: item.subjects.slice(0, 3).length > 0 ? item.subjects.slice(0, 3) : ["Ho tro", "Dong hanh"],
+          })),
+        );
+        setError("");
+      })
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : "Khong the tai danh sach gia su.");
+      });
+  }, []);
+
   return (
     <main className={`${styles.page} ${beVietnamPro.className}`}>
       <section className={styles.hero}>
@@ -146,6 +169,7 @@ export default function GiaSuPage() {
           <p className={styles.sectionSubtitle}>
             Điều phối viên gợi ý những gia sư có kỹ năng dạy học tốt.
           </p>
+          {error && <p className={styles.sectionSubtitle}>{error}</p>}
           <div className={styles.tutorList}>
             {tutorHighlights.map((tutor) => (
               <article className={styles.tutorCard} key={tutor.name}>

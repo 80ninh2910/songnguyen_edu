@@ -1,11 +1,18 @@
+'use client';
+
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { apiRequestWithAuth, getStoredAccessToken } from '@/lib/api';
+import { useProfile } from '@/context/ProfileContext';
 import "./dashboard.css";
 
 export default function Dashboard() {
-  const userName = 'Nguyễn';
+  const { profile } = useProfile();
+  const [matchingClasses, setMatchingClasses] = useState(0);
+
+  const userName = profile.fullName || 'Gia su';
   const greeting = 'Chào mừng bạn đến với Trung tâm Song Nguyên!';
-  const profileStatus = 'Gia Sư Chính Thức';
-  const matchingClasses = 8;
+  const profileStatus = profile.status || 'Gia Su';
   const updates = [
     {
       icon: 'chalkboard-teacher',
@@ -29,6 +36,15 @@ export default function Dashboard() {
       time: 'Hôm qua',
     },
   ];
+
+  useEffect(() => {
+    const token = getStoredAccessToken();
+    if (!token) return;
+
+    apiRequestWithAuth<Array<{ id: string }>>("/tutor/classes")
+      .then((data) => setMatchingClasses(data.length))
+      .catch(() => undefined);
+  }, []);
 
   return (
     <>

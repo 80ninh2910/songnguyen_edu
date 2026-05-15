@@ -18,6 +18,7 @@ import tutorImage7 from "@/components/assets/viet.png";
 import { BackgroundLines } from "@/components/ui/background-lines";
 import HeroParallaxDemo from "@/components/hero-parallax-demo";
 import DomeGallery from "@/components/DomeGallery";
+import { apiRequest } from "@/lib/api";
 
 const bricolageGrotesque = Bricolage_Grotesque({
   subsets: ["latin", "vietnamese"],
@@ -263,6 +264,7 @@ function TutorMatchingClassSection({
   const [inView, setInView] = useState(false);
   const sectionRef = useRef<HTMLElement | null>(null);
   const [studentForm, setStudentForm] = useState({
+    parentName: "",
     phone: "",
     subject: "",
     gender: "",
@@ -280,6 +282,7 @@ function TutorMatchingClassSection({
   const [activeTimeSlots, setActiveTimeSlots] = useState<string[]>([]);
   const [submitMessage, setSubmitMessage] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const weekDays = [
     { key: "su", label: "Su", full: "Chủ nhật" },
@@ -332,6 +335,7 @@ function TutorMatchingClassSection({
     "h-12 w-full rounded-xl border border-[#d5dff1] bg-white/95 px-4 text-[15px] font-medium text-[#243b72] outline-none transition-all duration-300 placeholder:text-[#6b7aa0] focus:border-[#4f86ff] focus:ring-4 focus:ring-[#8ab4ff]/25";
 
   const requiredFields = [
+    studentForm.parentName,
     studentForm.phone,
     studentForm.subject,
     studentForm.location,
@@ -374,10 +378,11 @@ function TutorMatchingClassSection({
     );
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const nextErrors: Record<string, string> = {};
+    if (!studentForm.parentName.trim()) nextErrors.parentName = "Vui long nhap ho ten phu huynh.";
     if (!/^(0|\+84)\d{9,10}$/.test(studentForm.phone.replace(/\s+/g, ""))) {
       nextErrors.phone = "Số điện thoại không hợp lệ.";
     }
@@ -397,7 +402,41 @@ function TutorMatchingClassSection({
       return;
     }
 
-    setSubmitMessage("Yêu cầu đã được ghi nhận. Học vụ sẽ liên hệ tư vấn và ghép gia sư phù hợp trong 24h.");
+    setIsSubmitting(true);
+    setSubmitMessage("");
+
+    const sessions = Number(studentForm.sessionsPerWeek) || 0;
+    const budgetPerHour = sessions > 0 ? Math.round(estimatedFee / (sessions * 4)) : undefined;
+    const noteParts = [
+      studentForm.gender ? `Gioi tinh hoc vien: ${studentForm.gender}` : null,
+      `So hoc vien: ${studentForm.studentCount}`,
+      `So buoi/tuan: ${studentForm.sessionsPerWeek}`,
+      `Lich hoc: ${activeWeekdays.join(", ") || "Chua chon"} | ${activeTimeSlots.join(", ") || "Chua chon"}`,
+      tutorForm.gender ? `Gioi tinh gia su: ${tutorForm.gender}` : null,
+      tutorForm.level ? `Trinh do gia su: ${tutorForm.level}` : null,
+      tutorForm.detail ? `Yeu cau chi tiet: ${tutorForm.detail}` : null,
+    ].filter(Boolean);
+
+    try {
+      await apiRequest("/public/class-requests", {
+        method: "POST",
+        body: {
+          parentName: studentForm.parentName,
+          parentPhone: studentForm.phone,
+          subject: studentForm.subject,
+          grade: studentForm.level,
+          district: studentForm.location,
+          budgetPerHour,
+          note: noteParts.join("; "),
+        },
+      });
+
+      setSubmitMessage("Yeu cau da duoc gui. Hoc vu se lien he trong 24h.");
+    } catch (err) {
+      setSubmitMessage(err instanceof Error ? err.message : "Gui yeu cau that bai. Vui long thu lai.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -438,6 +477,12 @@ function TutorMatchingClassSection({
             <div className="rounded-[24px] border border-white/70 bg-[#e8e9ec] p-4 md:p-5">
               <h3 className="text-[30px] font-extrabold italic text-[#1d3979] md:text-[34px]">Thông tin học viên</h3>
               <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <input
+                  value={studentForm.parentName}
+                  onChange={(e) => setStudentForm((prev) => ({ ...prev, parentName: e.target.value }))}
+                  placeholder="Ho va ten phu huynh"
+                  className={inputBaseClass}
+                />
                 <input
                   value={studentForm.phone}
                   onChange={(e) => setStudentForm((prev) => ({ ...prev, phone: e.target.value }))}
@@ -504,7 +549,7 @@ function TutorMatchingClassSection({
                   <option value="5">5+ buổi</option>
                 </select>
               </div>
-              {(errors.phone || errors.subject || errors.location || errors.level || errors.studentCount || errors.sessionsPerWeek) && (
+              {(errors.phone || errors.subject || errors.location || errors.level || errors.studentCount || errors.sessionsPerWeek || errors.parentName) && (
                 <p className="mt-3 text-sm font-semibold text-[#cc1f1f]">Vui lòng điền đầy đủ thông tin học viên.</p>
               )}
             </div>
@@ -617,9 +662,10 @@ function TutorMatchingClassSection({
                 </div>
                 <button
                   type="submit"
+                  disabled={isSubmitting}
                   className="rounded-xl bg-[linear-gradient(180deg,#f00b0b_0%,#d80404_100%)] px-4 py-4 text-center text-[22px] font-black leading-tight text-white shadow-[0_16px_34px_rgba(216,4,4,0.4)] transition-all duration-300 hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0 md:text-[26px] lg:text-[30px]"
                 >
-                  Tìm gia sư ngay
+                  {isSubmitting ? "Dang gui..." : "Tim gia su ngay"}
                 </button>
               </div>
 
@@ -663,11 +709,13 @@ function TutorRegistrationClassSection({
   const [inView, setInView] = useState(false);
   const sectionRef = useRef<HTMLElement | null>(null);
   const [personalForm, setPersonalForm] = useState({
+    fullName: "",
     phone: "",
     role: "",
     email: "",
     gender: "",
     address: "",
+    password: "",
     note: "",
   });
   const [tutorForm, setTutorForm] = useState({
@@ -679,6 +727,7 @@ function TutorRegistrationClassSection({
   const [activeWeekdays, setActiveWeekdays] = useState<string[]>([]);
   const [submitMessage, setSubmitMessage] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const weekDays = [
     { key: "su", label: "Su", full: "Chủ nhật" },
@@ -709,11 +758,13 @@ function TutorRegistrationClassSection({
   }, []);
 
   const requiredFields = [
+    personalForm.fullName,
     personalForm.phone,
     personalForm.role,
     personalForm.email,
     personalForm.gender,
     personalForm.address,
+    personalForm.password,
     tutorForm.teachingLevel,
     tutorForm.subject,
     tutorForm.school,
@@ -736,7 +787,7 @@ function TutorRegistrationClassSection({
     );
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const nextErrors: Record<string, string> = {};
@@ -746,6 +797,10 @@ function TutorRegistrationClassSection({
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(personalForm.email.trim())) {
       nextErrors.email = "Email không hợp lệ.";
     }
+    if (personalForm.password.trim().length < 6) {
+      nextErrors.password = "Mat khau toi thieu 6 ky tu.";
+    }
+    if (!personalForm.fullName.trim()) nextErrors.fullName = "Vui long nhap ho ten.";
     if (!personalForm.role) nextErrors.role = "Vui lòng chọn vai trò hiện tại.";
     if (!personalForm.gender) nextErrors.gender = "Vui lòng chọn giới tính.";
     if (!personalForm.address.trim()) nextErrors.address = "Vui lòng nhập địa chỉ.";
@@ -762,7 +817,41 @@ function TutorRegistrationClassSection({
       return;
     }
 
-    setSubmitMessage("Đăng ký thành công. Học vụ sẽ liên hệ xác minh hồ sơ gia sư trong thời gian sớm nhất.");
+    setIsSubmitting(true);
+    setSubmitMessage("");
+
+    const subjects = tutorForm.subject
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+    const districts = tutorForm.area
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+    try {
+      const registerResult = await apiRequest<{ tutorId: string; uploadToken: string }>(
+        "/public/tutors/register",
+        {
+          method: "POST",
+          body: {
+            fullName: personalForm.fullName,
+            email: personalForm.email,
+            phone: personalForm.phone,
+            password: personalForm.password,
+            subjects: subjects.length > 0 ? subjects : undefined,
+            districts: districts.length > 0 ? districts : undefined,
+          },
+        },
+      );
+
+      localStorage.setItem("sne_tutor_register", JSON.stringify(registerResult));
+      setSubmitMessage("Dang ky thanh cong. Hoc vu se lien he xac minh ho so gia su.");
+    } catch (err) {
+      setSubmitMessage(err instanceof Error ? err.message : "Dang ky that bai. Vui long thu lai.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -796,6 +885,12 @@ function TutorRegistrationClassSection({
             <div className="rounded-[24px] border border-white/70 bg-[#e6e7eb] p-4 md:p-5">
               <h3 className="text-[30px] font-extrabold text-[#1d3979] md:text-[34px]">Thông tin cá nhân</h3>
               <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <input
+                  value={personalForm.fullName}
+                  onChange={(e) => setPersonalForm((prev) => ({ ...prev, fullName: e.target.value }))}
+                  placeholder="Ho va ten"
+                  className={inputBaseClass}
+                />
                 <input
                   value={personalForm.phone}
                   onChange={(e) => setPersonalForm((prev) => ({ ...prev, phone: e.target.value }))}
@@ -835,13 +930,20 @@ function TutorRegistrationClassSection({
                   className={inputBaseClass}
                 />
                 <input
+                  type="password"
+                  value={personalForm.password}
+                  onChange={(e) => setPersonalForm((prev) => ({ ...prev, password: e.target.value }))}
+                  placeholder="Mat khau"
+                  className={inputBaseClass}
+                />
+                <input
                   value={personalForm.note}
                   onChange={(e) => setPersonalForm((prev) => ({ ...prev, note: e.target.value }))}
                   placeholder="Ghi chú thêm"
                   className={inputBaseClass}
                 />
               </div>
-              {(errors.phone || errors.email || errors.role || errors.gender || errors.address) && (
+              {(errors.phone || errors.email || errors.role || errors.gender || errors.address || errors.password || errors.fullName) && (
                 <p className="mt-3 text-sm font-semibold text-[#cc1f1f]">Vui lòng kiểm tra lại thông tin cá nhân.</p>
               )}
 
@@ -941,9 +1043,10 @@ function TutorRegistrationClassSection({
                 </button>
                 <button
                   type="submit"
+                  disabled={isSubmitting}
                   className="rounded-xl bg-[linear-gradient(180deg,#f00b0b_0%,#d80404_100%)] px-6 py-3 text-center text-lg font-black text-white shadow-[0_16px_34px_rgba(216,4,4,0.4)] transition-all duration-300 hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0 md:px-7 md:text-xl lg:text-[22px]"
                 >
-                  ĐĂNG KÝ LÀM GIA SƯ NGAY
+                  {isSubmitting ? "Dang gui..." : "DANG KY LAM GIA SU NGAY"}
                 </button>
               </div>
 

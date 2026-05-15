@@ -1,101 +1,75 @@
 'use client';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { apiRequestWithAuth, getStoredAccessToken } from '@/lib/api';
 
 export default function ClassList() {
   const [maxTuition, setMaxTuition] = useState(500);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [levelFill, setLevelFill] = useState('Tất cả');
+  const [classes, setClasses] = useState<Array<{
+    id: string;
+    title: string;
+    subject: string;
+    grade: string;
+    district: string;
+    feePerHour: number;
+    schedule: string | null;
+    status: string;
+    applicationStatus?: string | null;
+  }>>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
   const itemsPerPage = 6;
 
-  const classes = [
-    {
-      status: 'Tuyển sinh',
-      statusClass: 'advanced',
-      name: 'Toán Cấp 2 - 3',
-      location: 'Cơ sở chính (Phòng A1)',
-      price: '450k',
-      sessions: '8 buổi / tháng',
-      schedule: 'Thứ 2/4/6 (18:00)',
-      level: 'THPT',
-    },
-    {
-      status: 'Tuyển sinh',
-      statusClass: 'beginner',
-      name: 'Luyện Chữ Đẹp',
-      location: 'Cơ sở chính (Phòng B2)',
-      price: '200k',
-      sessions: '4 buổi / tháng',
-      schedule: 'Thứ 7/CN (09:00)',
-      level: 'Tiểu học',
-    },
-    {
-      status: 'Tuyển sinh',
-      statusClass: 'intermediate',
-      name: 'Anh Văn',
-      location: 'Cơ sở chính (Phòng A3)',
-      price: '400k',
-      sessions: '8 buổi / tháng',
-      schedule: 'Thứ 3/5 (17:00)',
-      level: 'Đại học',
-    },
-    {
-      status: 'Tuyển sinh',
-      statusClass: 'advanced',
-      name: 'Ngữ Văn Cấp 2 - 3',
-      location: 'Cơ sở chính (Phòng C1)',
-      price: '350k',
-      sessions: '8 buổi / tháng',
-      schedule: 'Thứ 4/6 (19:30)',
-      level: 'THCS',
-    },
-    {
-      status: 'Tuyển sinh',
-      statusClass: 'advanced',
-      name: 'KHTN Cấp 2 - 3',
-      location: 'Cơ sở chính (Phòng A2)',
-      price: '400k',
-      sessions: '8 buổi / tháng',
-      schedule: 'Thứ 3/5 (19:00)',
-      level: 'THCS',
-    },
-    {
-      status: 'Tuyển sinh',
-      statusClass: 'intermediate',
-      name: 'Tin Học',
-      location: 'Phòng Máy Tính',
-      price: '300k',
-      sessions: '4 buổi / tháng',
-      schedule: 'Thứ 7 (14:00)',
-      level: 'Người đi làm',
-    },
-    {
-      status: 'Năng khiếu',
-      statusClass: 'beginner',
-      name: 'Vẽ, Piano, Guitar',
-      location: 'Phòng Nghệ Thuật',
-      price: '500k',
-      sessions: '8 buổi / tháng',
-      schedule: 'CN (15:00)',
-      level: 'Tiểu học',
-    },
-    {
-      status: 'Tuyển sinh',
-      statusClass: 'intermediate',
-      name: 'Cờ Vua, Cờ Tướng',
-      location: 'Phòng Khám Phá',
-      price: '250k',
-      sessions: '4 buổi / tháng',
-      schedule: 'Thứ 7 (10:00)',
-      level: 'Tiểu học',
-    },
-  ];
+  const applyToClass = async (classId: string) => {
+    const token = getStoredAccessToken();
+    if (!token) {
+      setError('Vui long dang nhap lai.');
+      return;
+    }
+
+    try {
+      await apiRequestWithAuth(`/tutor/classes/${classId}/apply`, {
+        method: 'POST',
+      });
+
+      setClasses((prev) =>
+        prev.map((item) =>
+          item.id === classId ? { ...item, applicationStatus: 'PENDING' } : item,
+        ),
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Khong the gui yeu cau.');
+    }
+  };
+
+  useEffect(() => {
+    const token = getStoredAccessToken();
+    if (!token) {
+      setIsLoading(false);
+      setError('Vui long dang nhap lai.');
+      return;
+    }
+
+    apiRequestWithAuth<typeof classes>("/tutor/classes")
+      .then((data) => {
+        setClasses(data);
+        setError('');
+      })
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : 'Khong the tai danh sach lop.');
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, []);
 
   const filteredClasses = classes.filter(cls => {
-    const priceNum = parseInt(cls.price.replace('k', ''));
-    const matchesSearch = cls.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesLevel = levelFill === 'Tất cả' || cls.level === levelFill;
+    const priceNum = Math.round(cls.feePerHour / 1000);
+    const matchesSearch = cls.title.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesLevel = levelFill === 'Tất cả' || cls.grade === levelFill;
     const matchesTuition = priceNum <= maxTuition;
     return matchesSearch && matchesLevel && matchesTuition;
   });
@@ -157,35 +131,54 @@ export default function ClassList() {
 
       {/* Grid of Class Cards */}
       <div className="class-grid" style={{ minHeight: '300px' }}>
-        {renderedClasses.length > 0 ? renderedClasses.map((cls, idx) => (
+        {isLoading && (
+          <div style={{ padding: '40px', gridColumn: '1 / -1', textAlign: 'center', color: '#64748B' }}>
+            Dang tai danh sach lop...
+          </div>
+        )}
+        {!isLoading && error && (
+          <div style={{ padding: '40px', gridColumn: '1 / -1', textAlign: 'center', color: '#ef4444' }}>
+            {error}
+          </div>
+        )}
+        {!isLoading && !error && renderedClasses.length > 0 ? renderedClasses.map((cls, idx) => (
           <div className="class-card" key={idx}>
             <div className="card-header">
               <div className="badges">
-                <span className={`badge-label ${cls.statusClass}`}>{cls.status}</span>
+                <span className={`badge-label ${cls.status === 'OPEN' ? 'advanced' : 'intermediate'}`}>
+                  {cls.status === 'OPEN' ? 'Tuyen sinh' : 'Dang tuyen'}
+                </span>
               </div>
               <i className="fas fa-bookmark bookmark-icon"></i>
             </div>
-            <h2 className="card-title">{cls.name}</h2>
+            <h2 className="card-title">{cls.title}</h2>
             <div className="card-location">
-              <i className="fas fa-map-marker-alt"></i> {cls.location}
+              <i className="fas fa-map-marker-alt"></i> {cls.district}
             </div>
             <div className="card-details">
               <div className="detail-row">
                 <span className="detail-label">Lương</span>
-                <span className="detail-value">{cls.price} / buổi</span>
+                <span className="detail-value">{Math.round(cls.feePerHour / 1000)}k / gio</span>
               </div>
               <div className="detail-row">
                 <span className="detail-label">Thời lượng</span>
-                <span className="detail-value">{cls.sessions}</span>
+                <span className="detail-value">{cls.grade}</span>
               </div>
               <div className="detail-row">
                 <span className="detail-label">Lịch học</span>
-                <span className="detail-value">{cls.schedule}</span>
+                <span className="detail-value">{cls.schedule || 'Chua cap nhat'}</span>
               </div>
             </div>
-            <button className="btn-view-details">Gửi Yêu Cầu</button>
+            <button
+              className="btn-view-details"
+              onClick={() => applyToClass(cls.id)}
+              disabled={cls.applicationStatus === 'PENDING'}
+            >
+              {cls.applicationStatus === 'PENDING' ? 'Da gui yeu cau' : 'Gui yeu cau'}
+            </button>
           </div>
-        )) : (
+        )) : null}
+        {!isLoading && !error && renderedClasses.length === 0 && (
           <div style={{ padding: '40px', gridColumn: '1 / -1', textAlign: 'center', color: '#64748B' }}>
             Không tìm thấy lớp học nào phù hợp với bộ lọc hiện tại.
           </div>
