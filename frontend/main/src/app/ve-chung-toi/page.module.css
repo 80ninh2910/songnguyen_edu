@@ -191,7 +191,7 @@
 
 .imageCard :global(img) {
   object-fit: cover;
-  object-position: 65% center;
+  object-position: 85% center;
 }
 
 .infoBadge {
