@@ -46,7 +46,7 @@ export default function ClassDetail() {
     if (!course) return;
 
     try {
-      await apiRequestWithAuth(`/tutor/classes/${course.id}/apply`, { method: 'POST' });
+      await apiRequestWithAuth(`/tutor/classes/${course.id}/apply`, { method: 'POST', body: {} });
       setApplyMessage('Da gui yeu cau tham gia lop.');
     } catch (err) {
       setApplyMessage(err instanceof Error ? err.message : 'Khong the gui yeu cau.');

@@ -136,10 +136,21 @@ export async function apiRequestWithAuth<T>(
     const refreshToken = getStoredRefreshToken();
     if (!refreshToken) {
       clearStoredSession();
+      if (typeof window !== "undefined") {
+        window.location.href = "/dang-nhap-gia-su";
+      }
       throw error;
     }
 
-    const newToken = await refreshAccessToken(refreshToken);
-    return apiRequest<T>(path, { ...options, token: newToken });
+    try {
+      const newToken = await refreshAccessToken(refreshToken);
+      return await apiRequest<T>(path, { ...options, token: newToken });
+    } catch (refreshError) {
+      clearStoredSession();
+      if (typeof window !== "undefined") {
+        window.location.href = "/dang-nhap-gia-su";
+      }
+      throw refreshError;
+    }
   }
 }

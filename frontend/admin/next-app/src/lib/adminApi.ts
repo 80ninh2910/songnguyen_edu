@@ -658,3 +658,19 @@ export async function rejectAdminTutor(
     throw new Error("Không thể từ chối gia sư.");
   }
 }
+
+export async function assignAdminClass(
+  classId: string,
+  tutorId: string,
+  note?: string,
+): Promise<void> {
+  const response = await adminFetch(`/admin/classes/${classId}/assign`, {
+    method: "POST",
+    body: JSON.stringify({ tutorId, note }),
+  });
+
+  if (!response.ok) {
+    const payload = await parseJson<{ error?: { message?: string } }>(response).catch(() => null);
+    throw new Error(payload?.error?.message ?? "Không thể phân lớp cho gia sư.");
+  }
+}

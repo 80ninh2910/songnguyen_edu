@@ -1,82 +1,105 @@
 'use client';
-import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { apiRequestWithAuth, clearStoredSession, getStoredAccessToken } from '@/lib/api';
+
+function redirectToLogin() {
+  clearStoredSession();
+  window.location.href = '/dang-nhap-gia-su';
+}
+
+function isAuthError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  const msg = err.message.toLowerCase();
+  return (
+    msg.includes('revoked') ||
+    msg.includes('expired') ||
+    msg.includes('invalid') ||
+    msg.includes('unauthorized') ||
+    msg.includes('not approved')
+  );
+}
+
+type ClassItem = {
+  id: string;
+  title: string;
+  subject: string;
+  grade: string;
+  district: string;
+  feePerHour: number;
+  schedule: string | null;
+  status: string;
+  applicationStatus?: string | null;
+};
 
 export default function ClassList() {
   const [maxTuition, setMaxTuition] = useState(500);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [levelFill, setLevelFill] = useState('Tất cả');
-  const [classes, setClasses] = useState<Array<{
-    id: string;
-    title: string;
-    subject: string;
-    grade: string;
-    district: string;
-    feePerHour: number;
-    schedule: string | null;
-    status: string;
-    applicationStatus?: string | null;
-  }>>([]);
+  const [classes, setClasses] = useState<ClassItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [applyingId, setApplyingId] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState('');
   const itemsPerPage = 6;
 
   const applyToClass = async (classId: string) => {
-    const token = getStoredAccessToken();
-    if (!token) {
-      setError('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
-      setTimeout(() => { window.location.href = '/tai-khoan-gia-su/dang-nhap'; }, 1500);
+    if (!getStoredAccessToken()) {
+      redirectToLogin();
       return;
     }
 
-    try {
-      await apiRequestWithAuth(`/tutor/classes/${classId}/apply`, {
-        method: 'POST',
-      });
+    setApplyingId(classId);
+    setError('');
+    setSuccessMsg('');
 
+    try {
+      await apiRequestWithAuth(`/tutor/classes/${classId}/apply`, { method: 'POST', body: {} });
       setClasses((prev) =>
         prev.map((item) =>
           item.id === classId ? { ...item, applicationStatus: 'PENDING' } : item,
         ),
       );
-      setError('');
+      setSuccessMsg('Gửi yêu cầu nhận lớp thành công!');
+      setTimeout(() => setSuccessMsg(''), 3000);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Không thể gửi yêu cầu.';
-      // Nếu token hết hạn hoặc tài khoản không hợp lệ → redirect về login
-      if (message.includes('not found') || message.includes('login again') || message.includes('not approved')) {
-        clearStoredSession();
-        setError('Phiên đăng nhập không hợp lệ. Đang chuyển về trang đăng nhập...');
-        setTimeout(() => { window.location.href = '/tai-khoan-gia-su/dang-nhap'; }, 1500);
+      if (isAuthError(err)) {
+        redirectToLogin();
         return;
       }
-      setError(message);
+      setError(err instanceof Error ? err.message : 'Không thể gửi yêu cầu.');
+    } finally {
+      setApplyingId(null);
     }
   };
 
   useEffect(() => {
-    const token = getStoredAccessToken();
-    if (!token) {
+    if (!getStoredAccessToken()) {
       setIsLoading(false);
-      setError('Vui long dang nhap lai.');
+      redirectToLogin();
       return;
     }
 
-    apiRequestWithAuth<typeof classes>("/tutor/classes")
+    apiRequestWithAuth<ClassItem[]>('/tutor/classes')
       .then((data) => {
-        setClasses(data);
+        // API có thể trả về array trực tiếp hoặc { data: [...] }
+        const list = Array.isArray(data) ? data : (data as unknown as { data: ClassItem[] })?.data ?? [];
+        setClasses(list);
         setError('');
       })
       .catch((err) => {
-        setError(err instanceof Error ? err.message : 'Khong the tai danh sach lop.');
+        if (isAuthError(err)) {
+          redirectToLogin();
+          return;
+        }
+        setError(err instanceof Error ? err.message : 'Không thể tải danh sách lớp.');
       })
       .finally(() => {
         setIsLoading(false);
       });
   }, []);
 
-  const filteredClasses = classes.filter(cls => {
+  const filteredClasses = classes.filter((cls) => {
     const priceNum = Math.round(cls.feePerHour / 1000);
     const matchesSearch = cls.title.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesLevel = levelFill === 'Tất cả' || cls.grade === levelFill;
@@ -85,31 +108,73 @@ export default function ClassList() {
   });
 
   const totalPages = Math.ceil(filteredClasses.length / itemsPerPage) || 1;
-  const renderedClasses = filteredClasses.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const renderedClasses = filteredClasses.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage,
+  );
 
   return (
     <>
-      <h1 className="page-title" style={{ fontSize: '28px', fontWeight: 800, color: '#1f2937', marginBottom: '8px', fontFamily: "'Manrope', sans-serif" }}>Danh Sách Lớp</h1>
-      <p className="page-subtitle" style={{ color: '#6b7280', marginBottom: '32px' }}>Tìm lớp học phù hợp với kỹ năng của bạn</p>
+      <h1
+        className="page-title"
+        style={{
+          fontSize: '28px',
+          fontWeight: 800,
+          color: '#1f2937',
+          marginBottom: '8px',
+          fontFamily: "'Manrope', sans-serif",
+        }}
+      >
+        Danh Sách Lớp
+      </h1>
+      <p className="page-subtitle" style={{ color: '#6b7280', marginBottom: '32px' }}>
+        Tìm lớp học phù hợp với kỹ năng của bạn
+      </p>
+
+      {/* Success toast */}
+      {successMsg && (
+        <div
+          style={{
+            marginBottom: '16px',
+            padding: '12px 16px',
+            borderRadius: '10px',
+            background: '#ecfdf5',
+            border: '1px solid #6ee7b7',
+            color: '#065f46',
+            fontWeight: 600,
+          }}
+        >
+          ✓ {successMsg}
+        </div>
+      )}
 
       {/* Horizontal Filter Bar */}
       <div className="filter-bar">
         <div className="filter-group block-keywords">
           <label>TÌM KIẾM NHANH</label>
           <div className="input-wrap">
-            <i className="fas fa-search"></i>
-            <input 
-              type="text" 
-              placeholder="VD: Vật lý lượng tử..." 
+            <i className="fas fa-search" />
+            <input
+              type="text"
+              placeholder="VD: Vật lý lượng tử..."
               value={searchQuery}
-              onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
             />
           </div>
         </div>
         <div className="filter-group block-subject">
           <label>TRÌNH ĐỘ</label>
           <div className="input-wrap">
-            <select value={levelFill} onChange={(e) => { setLevelFill(e.target.value); setCurrentPage(1); }}>
+            <select
+              value={levelFill}
+              onChange={(e) => {
+                setLevelFill(e.target.value);
+                setCurrentPage(1);
+              }}
+            >
               <option value="Tất cả">Tất cả trình độ</option>
               <option value="THPT">THPT</option>
               <option value="THCS">THCS</option>
@@ -125,13 +190,16 @@ export default function ClassList() {
             <span className="tuition-value">{maxTuition}k/buổi</span>
           </div>
           <div className="range-wrap">
-            <input 
-              type="range" 
-              min="100" 
-              max="1000" 
+            <input
+              type="range"
+              min="100"
+              max="1000"
               step="50"
-              value={maxTuition} 
-              onChange={(e) => { setMaxTuition(Number(e.target.value)); setCurrentPage(1); }} 
+              value={maxTuition}
+              onChange={(e) => {
+                setMaxTuition(Number(e.target.value));
+                setCurrentPage(1);
+              }}
             />
           </div>
         </div>
@@ -141,51 +209,66 @@ export default function ClassList() {
       <div className="class-grid" style={{ minHeight: '300px' }}>
         {isLoading && (
           <div style={{ padding: '40px', gridColumn: '1 / -1', textAlign: 'center', color: '#64748B' }}>
-            Dang tai danh sach lop...
+            Đang tải danh sách lớp...
           </div>
         )}
+
         {!isLoading && error && (
           <div style={{ padding: '40px', gridColumn: '1 / -1', textAlign: 'center', color: '#ef4444' }}>
             {error}
           </div>
         )}
-        {!isLoading && !error && renderedClasses.length > 0 ? renderedClasses.map((cls, idx) => (
-          <div className="class-card" key={idx}>
-            <div className="card-header">
-              <div className="badges">
-                <span className={`badge-label ${cls.status === 'OPEN' ? 'advanced' : 'intermediate'}`}>
-                  {cls.status === 'OPEN' ? 'Tuyen sinh' : 'Dang tuyen'}
-                </span>
+
+        {!isLoading && !error && renderedClasses.length > 0
+          ? renderedClasses.map((cls) => (
+              <div className="class-card" key={cls.id}>
+                <div className="card-header">
+                  <div className="badges">
+                    <span className={`badge-label ${cls.status === 'OPEN' ? 'advanced' : 'intermediate'}`}>
+                      {cls.status === 'OPEN' ? 'Tuyển sinh' : 'Đang tuyển'}
+                    </span>
+                  </div>
+                  <i className="fas fa-bookmark bookmark-icon" />
+                </div>
+                <h2 className="card-title">{cls.title}</h2>
+                <div className="card-location">
+                  <i className="fas fa-map-marker-alt" /> {cls.district}
+                </div>
+                <div className="card-details">
+                  <div className="detail-row">
+                    <span className="detail-label">Lương</span>
+                    <span className="detail-value">
+                      {new Intl.NumberFormat('vi-VN').format(cls.feePerHour)}đ/giờ
+                    </span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Trình độ</span>
+                    <span className="detail-value">{cls.grade}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Lịch học</span>
+                    <span className="detail-value">{cls.schedule || 'Chưa cập nhật'}</span>
+                  </div>
+                  <div className="detail-row">
+                    <span className="detail-label">Môn</span>
+                    <span className="detail-value">{cls.subject}</span>
+                  </div>
+                </div>
+                <button
+                  className="btn-view-details"
+                  onClick={() => applyToClass(cls.id)}
+                  disabled={cls.applicationStatus === 'PENDING' || applyingId === cls.id}
+                >
+                  {applyingId === cls.id
+                    ? 'Đang gửi...'
+                    : cls.applicationStatus === 'PENDING'
+                      ? '✓ Đã gửi yêu cầu'
+                      : 'Đăng ký nhận lớp'}
+                </button>
               </div>
-              <i className="fas fa-bookmark bookmark-icon"></i>
-            </div>
-            <h2 className="card-title">{cls.title}</h2>
-            <div className="card-location">
-              <i className="fas fa-map-marker-alt"></i> {cls.district}
-            </div>
-            <div className="card-details">
-              <div className="detail-row">
-                <span className="detail-label">Lương</span>
-                <span className="detail-value">{Math.round(cls.feePerHour / 1000)}k / gio</span>
-              </div>
-              <div className="detail-row">
-                <span className="detail-label">Thời lượng</span>
-                <span className="detail-value">{cls.grade}</span>
-              </div>
-              <div className="detail-row">
-                <span className="detail-label">Lịch học</span>
-                <span className="detail-value">{cls.schedule || 'Chua cap nhat'}</span>
-              </div>
-            </div>
-            <button
-              className="btn-view-details"
-              onClick={() => applyToClass(cls.id)}
-              disabled={cls.applicationStatus === 'PENDING'}
-            >
-              {cls.applicationStatus === 'PENDING' ? 'Da gui yeu cau' : 'Gui yeu cau'}
-            </button>
-          </div>
-        )) : null}
+            ))
+          : null}
+
         {!isLoading && !error && renderedClasses.length === 0 && (
           <div style={{ padding: '40px', gridColumn: '1 / -1', textAlign: 'center', color: '#64748B' }}>
             Không tìm thấy lớp học nào phù hợp với bộ lọc hiện tại.
@@ -196,17 +279,17 @@ export default function ClassList() {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="pagination">
-          <button 
-            className="page-btn" 
-            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+          <button
+            className="page-btn"
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
             style={{ opacity: currentPage === 1 ? 0.5 : 1, cursor: currentPage === 1 ? 'not-allowed' : 'pointer' }}
           >
-            <i className="fas fa-chevron-left"></i>
+            <i className="fas fa-chevron-left" />
           </button>
-          
+
           {Array.from({ length: totalPages }).map((_, idx) => (
-            <button 
-              key={idx} 
+            <button
+              key={idx}
               className={`page-btn ${currentPage === idx + 1 ? 'active' : ''}`}
               onClick={() => setCurrentPage(idx + 1)}
             >
@@ -214,12 +297,15 @@ export default function ClassList() {
             </button>
           ))}
 
-          <button 
+          <button
             className="page-btn"
-            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-            style={{ opacity: currentPage === totalPages ? 0.5 : 1, cursor: currentPage === totalPages ? 'not-allowed' : 'pointer' }}
+            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+            style={{
+              opacity: currentPage === totalPages ? 0.5 : 1,
+              cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+            }}
           >
-            <i className="fas fa-chevron-right"></i>
+            <i className="fas fa-chevron-right" />
           </button>
         </div>
       )}
