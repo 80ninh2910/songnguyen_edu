@@ -170,6 +170,39 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
     },
   );
 
+  // GET /classes/:classId/apply — check application status for a class
+  app.get(
+    "/classes/:classId/apply",
+    {
+      preHandler: requireTutor,
+      schema: {
+        tags: ["Tutor"],
+        summary: "Get application status for a class",
+        params: classIdParamSchema,
+        response: {
+          200: successSchema({
+            type: "object",
+            properties: {
+              applied: { type: "boolean" },
+              status: { type: "string", nullable: true },
+            },
+          }),
+        },
+      },
+    },
+    async (request, reply) => {
+      const { classId } = request.params as { classId: string };
+      const application = await prisma.classApplication.findUnique({
+        where: { classId_tutorId: { classId, tutorId: request.user!.sub } },
+        select: { status: true },
+      });
+      void reply.send(success({
+        applied: !!application,
+        status: application?.status ?? null,
+      }));
+    },
+  );
+
   app.post(
     "/classes/:classId/apply",
     {
@@ -198,6 +231,22 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
     },
     async (request, reply) => {
       const { classId } = request.params as { classId: string };
+      const tutorId = request.user!.sub;
+
+      // Guard: ensure tutor record still exists (handles stale JWT tokens)
+      const tutorExists = await prisma.tutor.findUnique({
+        where: { id: tutorId },
+        select: { id: true, status: true },
+      });
+
+      if (!tutorExists) {
+        throw new AppError("UNAUTHORIZED", 401, "Tutor account not found. Please login again.");
+      }
+
+      if (tutorExists.status !== "APPROVED") {
+        throw new AppError("TUTOR_NOT_APPROVED", 403, "Tutor account is not approved yet.");
+      }
+
       const existingClass = await prisma.class.findUnique({
         where: { id: classId },
         select: { id: true, status: true },
@@ -212,7 +261,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
       }
 
       const existing = await prisma.classApplication.findUnique({
-        where: { classId_tutorId: { classId, tutorId: request.user!.sub } },
+        where: { classId_tutorId: { classId, tutorId } },
         select: { id: true },
       });
 
@@ -220,7 +269,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
         await prisma.classApplication.create({
           data: {
             classId,
-            tutorId: request.user!.sub,
+            tutorId,
             note: (request.body as { note?: string } | undefined)?.note,
           },
         });
@@ -246,16 +295,37 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
               cancelled: { type: "boolean" },
             },
           }),
+          400: errorResponseSchema,
         },
       },
     },
     async (request, reply) => {
       const { classId } = request.params as { classId: string };
-      const result = await prisma.classApplication.deleteMany({
-        where: { classId, tutorId: request.user!.sub },
+      const tutorId = request.user!.sub;
+
+      // Only PENDING applications can be cancelled
+      const application = await prisma.classApplication.findUnique({
+        where: { classId_tutorId: { classId, tutorId } },
+        select: { id: true, status: true },
       });
 
-      void reply.send(success({ cancelled: result.count > 0 }));
+      if (!application) {
+        throw new AppError("APPLICATION_NOT_FOUND", 404, "Application not found");
+      }
+
+      if (application.status !== "PENDING") {
+        throw new AppError(
+          "INVALID_STATE",
+          409,
+          `Cannot cancel an application with status ${application.status}`,
+        );
+      }
+
+      await prisma.classApplication.delete({
+        where: { classId_tutorId: { classId, tutorId } },
+      });
+
+      void reply.send(success({ cancelled: true }));
     },
   );
 

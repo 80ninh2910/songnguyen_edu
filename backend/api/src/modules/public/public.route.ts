@@ -76,6 +76,16 @@ export async function registerPublicRoutes(
       schema: {
         tags: ["Public"],
         summary: "List public classes",
+        querystring: {
+          type: "object",
+          properties: {
+            subject: { type: "string" },
+            grade: { type: "string" },
+            district: { type: "string" },
+            minFee: { type: "number" },
+            maxFee: { type: "number" },
+          },
+        },
         response: {
           200: successSchema({
             type: "array",
@@ -84,9 +94,37 @@ export async function registerPublicRoutes(
         },
       },
     },
-    async (_request, reply) => {
+    async (request, reply) => {
+      const q = request.query as {
+        subject?: string;
+        grade?: string;
+        district?: string;
+        minFee?: number;
+        maxFee?: number;
+      };
+
+      const where: any = { status: "OPEN" };
+
+      if (q.subject) {
+        where.subject = { contains: q.subject, mode: "insensitive" };
+      }
+
+      if (q.grade) {
+        where.grade = { contains: q.grade, mode: "insensitive" };
+      }
+
+      if (q.district) {
+        where.district = { contains: q.district, mode: "insensitive" };
+      }
+
+      if (q.minFee !== undefined || q.maxFee !== undefined) {
+        where.feePerHour = {};
+        if (q.minFee !== undefined) where.feePerHour.gte = Math.round(q.minFee);
+        if (q.maxFee !== undefined) where.feePerHour.lte = Math.round(q.maxFee);
+      }
+
       const classes = await prisma.class.findMany({
-        where: { status: "OPEN" },
+        where,
         orderBy: { createdAt: "desc" },
         select: {
           id: true,
@@ -298,14 +336,42 @@ export async function registerPublicRoutes(
             required: ["uploaded"],
             properties: {
               uploaded: { type: "boolean" },
+              count: { type: "number" },
             },
           }),
           400: errorResponseSchema,
+          404: errorResponseSchema,
         },
       },
     },
-    async (_request, reply) => {
-      void reply.send(success({ uploaded: true }));
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const body = request.body as {
+        documents: Array<{ type: string; url: string }>;
+      };
+
+      const tutor = await prisma.tutor.findUnique({
+        where: { id },
+        select: { id: true, status: true },
+      });
+
+      if (!tutor) {
+        throw new AppError("TUTOR_NOT_FOUND", 404, "Tutor not found");
+      }
+
+      if (body.documents.length === 0) {
+        throw new AppError("VALIDATION_ERROR", 400, "At least one document is required");
+      }
+
+      // Insert documents via raw query (avoids stale Prisma client type cache)
+      for (const doc of body.documents) {
+        await prisma.$executeRaw`
+          INSERT INTO tutor_documents (id, tutor_id, type, url, created_at)
+          VALUES (gen_random_uuid(), ${id}::uuid, ${doc.type}, ${doc.url}, now())
+        `;
+      }
+
+      void reply.send(success({ uploaded: true, count: body.documents.length }));
     },
   );
 }

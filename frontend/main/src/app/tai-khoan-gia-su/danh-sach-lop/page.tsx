@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { apiRequestWithAuth, getStoredAccessToken } from '@/lib/api';
+import { apiRequestWithAuth, clearStoredSession, getStoredAccessToken } from '@/lib/api';
 
 export default function ClassList() {
   const [maxTuition, setMaxTuition] = useState(500);
@@ -26,7 +26,8 @@ export default function ClassList() {
   const applyToClass = async (classId: string) => {
     const token = getStoredAccessToken();
     if (!token) {
-      setError('Vui long dang nhap lai.');
+      setError('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
+      setTimeout(() => { window.location.href = '/tai-khoan-gia-su/dang-nhap'; }, 1500);
       return;
     }
 
@@ -40,8 +41,17 @@ export default function ClassList() {
           item.id === classId ? { ...item, applicationStatus: 'PENDING' } : item,
         ),
       );
+      setError('');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Khong the gui yeu cau.');
+      const message = err instanceof Error ? err.message : 'Không thể gửi yêu cầu.';
+      // Nếu token hết hạn hoặc tài khoản không hợp lệ → redirect về login
+      if (message.includes('not found') || message.includes('login again') || message.includes('not approved')) {
+        clearStoredSession();
+        setError('Phiên đăng nhập không hợp lệ. Đang chuyển về trang đăng nhập...');
+        setTimeout(() => { window.location.href = '/tai-khoan-gia-su/dang-nhap'; }, 1500);
+        return;
+      }
+      setError(message);
     }
   };
 
