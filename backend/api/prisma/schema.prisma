@@ -94,10 +94,25 @@ model Tutor {
   assignments    ClassAssignment[]
   payments       Payment[]
 
+  documents      TutorDocument[]
+
   @@index([status])
   @@index([phone])
   @@index([subjects], type: Gin)
   @@map("tutors")
+}
+
+model TutorDocument {
+  id        String   @id @default(uuid())
+  tutorId   String   @map("tutor_id")
+  type      String                        // "CCCD" | "DEGREE" | "CERTIFICATE" | "OTHER"
+  url       String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tutor     Tutor    @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+
+  @@index([tutorId])
+  @@map("tutor_documents")
 }
 
 model ClassRequest {

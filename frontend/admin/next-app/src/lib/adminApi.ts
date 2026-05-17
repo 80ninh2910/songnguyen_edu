@@ -224,6 +224,22 @@ export type AdminClassDetail = {
   };
 };
 
+export type AdminClassApplicant = {
+  id: string;
+  status: string;
+  note: string | null;
+  createdAt: string;
+  tutor: {
+    id: string;
+    fullName: string;
+    email: string;
+    phone: string | null;
+    subjects: string[];
+    districts: string[];
+    status: string;
+  };
+};
+
 export type AdminTutorCreatePayload = {
   fullName: string;
   email: string;
@@ -514,6 +530,19 @@ export async function getAdminClassById(id: string): Promise<AdminClassDetail> {
   return payload.data;
 }
 
+export async function listAdminClassApplicants(
+  classId: string,
+): Promise<AdminClassApplicant[]> {
+  const response = await adminFetch(`/admin/classes/${classId}/applicants`);
+
+  if (!response.ok) {
+    throw new Error("Không thể tải danh sách ứng viên.");
+  }
+
+  const payload = await parseJson<ApiSuccess<AdminClassApplicant[]>>(response);
+  return payload.data;
+}
+
 export async function createAdminClass(payload: {
   title: string;
   subject: string;
@@ -627,5 +656,21 @@ export async function rejectAdminTutor(
 
   if (!response.ok) {
     throw new Error("Không thể từ chối gia sư.");
+  }
+}
+
+export async function assignAdminClass(
+  classId: string,
+  tutorId: string,
+  note?: string,
+): Promise<void> {
+  const response = await adminFetch(`/admin/classes/${classId}/assign`, {
+    method: "POST",
+    body: JSON.stringify({ tutorId, note }),
+  });
+
+  if (!response.ok) {
+    const payload = await parseJson<{ error?: { message?: string } }>(response).catch(() => null);
+    throw new Error(payload?.error?.message ?? "Không thể phân lớp cho gia sư.");
   }
 }

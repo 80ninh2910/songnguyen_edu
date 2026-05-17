@@ -1,6 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { apiRequestWithAuth, getStoredAccessToken } from '@/lib/api';
 
 export type ProfileData = {
   name: string;
@@ -85,6 +86,41 @@ const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
 
 export function ProfileProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<ProfileData>(defaultProfile);
+
+  useEffect(() => {
+    const token = getStoredAccessToken();
+    if (!token) {
+      return;
+    }
+
+    apiRequestWithAuth<{
+      id: string;
+      fullName: string;
+      email: string;
+      phone: string | null;
+      status: string;
+      subjects: string[];
+      districts: string[];
+    }>("/tutor/profile")
+      .then((data) => {
+        setProfile((prev) => ({
+          ...prev,
+          name: data.fullName,
+          fullName: data.fullName,
+          email: data.email,
+          phone: data.phone ?? prev.phone,
+          status: data.status,
+          subjects: data.subjects.length > 0 ? data.subjects : prev.subjects,
+          locations: data.districts.length > 0
+            ? data.districts.map((district, index) => ({
+                name: district,
+                color: index % 2 === 0 ? '#10B981' : '#3B82F6',
+              }))
+            : prev.locations,
+        }));
+      })
+      .catch(() => undefined);
+  }, []);
 
   return (
     <ProfileContext.Provider value={{ profile, setProfile }}>

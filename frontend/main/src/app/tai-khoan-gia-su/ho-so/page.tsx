@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useProfile } from '@/context/ProfileContext';
+import { apiRequestWithAuth, getStoredAccessToken } from '@/lib/api';
 
 export default function Profile() {
   const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
@@ -42,6 +43,22 @@ export default function Profile() {
     const avatarFile = formData.get('avatar') as File;
     if (avatarFile && avatarFile.size > 0) {
       updatedProfile.avatarUrl = URL.createObjectURL(avatarFile);
+    }
+
+    const token = getStoredAccessToken();
+    if (token) {
+      apiRequestWithAuth<{ updated: boolean; profile?: { fullName: string; phone: string | null; subjects: string[]; districts: string[] } }>(
+        '/tutor/profile',
+        {
+          method: 'PATCH',
+          body: {
+            fullName: updatedProfile.fullName,
+            phone: updatedProfile.phone,
+            subjects: updatedProfile.subjects,
+            districts: updatedProfile.locations.map((item) => item.name),
+          },
+        },
+      ).catch(() => undefined);
     }
 
     updatedProfile.notifications = [

@@ -1,3 +1,5 @@
+"use client";
+
 import { Be_Vietnam_Pro } from "next/font/google";
 
 import styles from "./page.module.css";
