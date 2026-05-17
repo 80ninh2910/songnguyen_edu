@@ -464,6 +464,8 @@ function ParentRegistrationForm({
 
   const inputBaseClass =
     "h-12 w-full rounded-xl border border-[#d5dff1] bg-white/95 px-4 text-[15px] font-medium text-[#243b72] outline-none transition-all duration-300 placeholder:text-[#6b7aa0] focus:border-[#4f86ff] focus:ring-4 focus:ring-[#8ab4ff]/25";
+  const parentSubmitClass =
+    "rounded-xl bg-[linear-gradient(180deg,#f00b0b_0%,#d80404_100%)] px-4 py-4 text-center text-[22px] font-black leading-tight text-white shadow-[0_16px_34px_rgba(216,4,4,0.4)] transition-all duration-300 hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0 md:text-[26px] lg:text-[30px]";
 
   const requiredFields = [
     studentForm.parentName,
@@ -879,6 +881,8 @@ function TutorRegistrationForm({
     note: "",
   });
   const [tutorForm, setTutorForm] = useState({
+    teachingLevel: "",
+    subject: "",
     school: "",
     area: "",
   });
