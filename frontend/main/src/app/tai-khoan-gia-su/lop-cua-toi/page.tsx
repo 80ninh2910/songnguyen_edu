@@ -1,65 +1,55 @@
 'use client';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { apiRequestWithAuth, getStoredAccessToken } from '@/lib/api';
 
 export default function MyClasses() {
   const [selectedClass, setSelectedClass] = useState<any>(null);
+  const [classes, setClasses] = useState<Array<{
+    id: string;
+    status: string;
+    class: {
+      id: string;
+      title: string;
+      grade: string;
+      subject: string;
+      district: string;
+      feePerHour: number;
+      schedule: string | null;
+    };
+    createdAt: string;
+  }>>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const classes = [
-    {
-      name: 'Toán Lớp 12 – Ca Tối',
-      status: 'approved',
-      statusLabel: 'Đã duyệt',
-      room: 'Phòng A3',
-      date: '24/10/2023',
-      days: 'Thứ 2, Thứ 4, Thứ 6',
-      time: '19:00 - 21:00',
-      icon: 'calculator',
-      action: 'join',
-      actionLabel: 'Xem Lịch Dạy',
-      instructor: 'Nguyễn T.', // mock fallback
-    },
-    {
-      name: 'Vật Lý Lớp 10 – Ca Sáng',
-      status: 'pending',
-      statusLabel: 'Chờ duyệt',
-      room: 'Phòng A1',
-      date: '28/10/2023',
-      days: 'Thứ 7, Chủ Nhật',
-      time: '10:00 - 12:00',
-      icon: 'atom',
-      action: 'review',
-      actionLabel: 'Đang Chờ Xét Duyệt',
-      instructor: 'Nguyễn T.',
-    },
-    {
-      name: 'Hóa Học Lớp 11 – Ca Chiều',
-      status: 'rejected',
-      statusLabel: 'Từ chối',
-      room: 'Phòng A2',
-      date: '15/10/2023',
-      days: 'Thứ 3, Thứ 5',
-      time: '',
-      note: 'Lớp đã đủ gia sư',
-      icon: 'flask',
-      action: 'reschedule',
-      actionLabel: 'Đăng Ký Lớp Khác',
-      instructor: 'Nguyễn T.',
-    },
-    {
-      name: 'Tiếng Anh Giao Tiếp – Ca Chiều',
-      status: 'approved',
-      statusLabel: 'Đã duyệt',
-      room: 'Phòng B1',
-      date: '02/11/2023',
-      days: 'Thứ 3, Thứ 5',
-      time: '17:00 - 19:00',
-      icon: 'language',
-      action: 'join',
-      actionLabel: 'Xem Lịch Dạy',
-      instructor: 'Nguyễn T.',
-    },
-  ];
+  useEffect(() => {
+    const token = getStoredAccessToken();
+    if (!token) {
+      setError('Vui long dang nhap lai.');
+      setIsLoading(false);
+      return;
+    }
+
+    apiRequestWithAuth<typeof classes>("/tutor/applications")
+      .then((data) => {
+        setClasses(data);
+        setError('');
+      })
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : 'Khong the tai lop cua toi.');
+      })
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  const mapStatus = (status: string) => {
+    if (status === 'ACCEPTED') {
+      return { label: 'Đã duyệt', css: 'approved', action: 'join', actionLabel: 'Xem Lịch Dạy' };
+    }
+    if (status === 'REJECTED') {
+      return { label: 'Từ chối', css: 'rejected', action: 'reschedule', actionLabel: 'Đăng Ký Lớp Khác' };
+    }
+    return { label: 'Chờ duyệt', css: 'pending', action: 'review', actionLabel: 'Đang Chờ Xét Duyệt' };
+  };
 
   return (
     <>
@@ -77,39 +67,56 @@ export default function MyClasses() {
       </div>
 
       <div className="class-list">
-        {classes.map((cls, idx) => (
+        {isLoading && (
+          <div style={{ padding: '24px', color: '#64748B' }}>Dang tai danh sach lop...</div>
+        )}
+        {!isLoading && error && (
+          <div style={{ padding: '24px', color: '#ef4444' }}>{error}</div>
+        )}
+        {!isLoading && !error && classes.length === 0 && (
+          <div style={{ padding: '24px', color: '#64748B' }}>Chua co lop nao.</div>
+        )}
+        {!isLoading && !error && classes.map((cls, idx) => {
+          const statusInfo = mapStatus(cls.status);
+          return (
           <div className="class-item" key={idx}>
             <div className="class-thumb">
-              <i className={`fas fa-${cls.icon}`}></i>
+              <i className="fas fa-chalkboard"></i>
             </div>
             <div className="class-info">
               <div className="class-name">
-                {cls.name}
-                <span className={`status-badge ${cls.status}`}>{cls.statusLabel}</span>
+                {cls.class.title}
+                <span className={`status-badge ${statusInfo.css}`}>{statusInfo.label}</span>
               </div>
               <div className="class-meta">
-                <span><i className="fas fa-user"></i> {cls.instructor}</span>
-                <span><i className="far fa-calendar"></i> {cls.date}</span>
-                {cls.time && <span><i className="far fa-clock"></i> {cls.time}</span>}
-                {cls.note && <span><i className="fas fa-exclamation-circle"></i> {cls.note}</span>}
+                <span><i className="fas fa-user"></i> {cls.class.subject}</span>
+                <span><i className="far fa-calendar"></i> {new Date(cls.createdAt).toLocaleDateString('vi-VN')}</span>
+                {cls.class.schedule && <span><i className="far fa-clock"></i> {cls.class.schedule}</span>}
               </div>
             </div>
             <div className="class-actions">
-              <Link href="/tai-khoan-gia-su/chi-tiet-lop/SN-2024-012" className="btn-text" style={{ textDecoration: 'none' }}>Xem Chi Tiết</Link>
-              {cls.actionLabel === 'Xem Lịch Dạy' ? (
-                <button 
-                  className={`btn-action ${cls.action}`} 
-                  onClick={() => setSelectedClass(cls)}
+              <Link href={`/tai-khoan-gia-su/chi-tiet-lop/${cls.class.id}`} className="btn-text" style={{ textDecoration: 'none' }}>Xem Chi Tiết</Link>
+              {statusInfo.actionLabel === 'Xem Lịch Dạy' ? (
+                <button
+                  className={`btn-action ${statusInfo.action}`}
+                  onClick={() => setSelectedClass({
+                    name: cls.class.title,
+                    date: new Date(cls.createdAt).toLocaleDateString('vi-VN'),
+                    days: cls.class.schedule || 'Chua cap nhat',
+                    time: cls.class.schedule || '',
+                    room: cls.class.district,
+                  })}
                   style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: 'pointer' }}
                 >
-                  {cls.actionLabel}
+                  {statusInfo.actionLabel}
                 </button>
               ) : (
-                <button className={`btn-action ${cls.action}`}>{cls.actionLabel}</button>
+                <button className={`btn-action ${statusInfo.action}`}>{statusInfo.actionLabel}</button>
               )}
             </div>
           </div>
-        ))}
+        );
+        })}
       </div>
 
       <div className="load-more">

@@ -1,4 +1,8 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { Be_Vietnam_Pro } from "next/font/google";
+import { apiRequest } from "@/lib/api";
 
 import styles from "./page.module.css";
 
@@ -7,42 +11,15 @@ const beVietnamPro = Be_Vietnam_Pro({
   weight: ["400", "500", "600", "700", "800"],
 });
 
-const classCards = [
+const fallbackCards = [
   {
-    title: "Toán 9 - Ôn thi vào 10",
-    level: "Cấp 2",
-    mode: "Học tại nhà",
+    title: "Toan 9 - On thi vao 10",
+    level: "Cap 2",
+    mode: "Hoc tai nha",
     schedule: "T2/T4/T6 - 19:00",
-    desc: "Cần gia sư có kinh nghiệm luyện đề, tập trung kỹ năng giải nhanh.",
-    budget: "180k/buổi",
-    area: "Quận 3",
-  },
-  {
-    title: "Tiếng Anh giao tiếp",
-    level: "Người lớn",
-    mode: "Online",
-    schedule: "Thứ 7 - 8:30",
-    desc: "Cần gia sư có lộ trình tự tin nói, phản xạ và phát âm.",
-    budget: "220k/buổi",
-    area: "Zoom",
-  },
-  {
-    title: "Hóa 12 - Theo chương trình mới",
-    level: "Cấp 3",
-    mode: "Học tại nhà",
-    schedule: "T3/T5 - 17:30",
-    desc: "Học viên cần kế hoạch ôn tập theo chủ đề và bài tập nâng cao.",
-    budget: "200k/buổi",
-    area: "Bình Thạnh",
-  },
-  {
-    title: "Lập trình Scratch cơ bản",
-    level: "Tiểu học",
-    mode: "Tại trung tâm",
-    schedule: "Chủ nhật - 09:00",
-    desc: "Lớp nhỏ, tập trung tư duy và khởi động STEM.",
-    budget: "160k/buổi",
-    area: "Tân Bình",
+    desc: "Can gia su co kinh nghiem luyen de, tap trung ky nang giai nhanh.",
+    budget: "180k/buoi",
+    area: "Quan 3",
   },
 ];
 
@@ -70,6 +47,41 @@ const matchingSteps = [
 ];
 
 export default function LopMoiPage() {
+  const [classCards, setClassCards] = useState(fallbackCards);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    apiRequest<
+      Array<{
+        id: string;
+        title: string;
+        subject: string;
+        grade: string;
+        district: string;
+        feePerHour: number;
+        schedule: string | null;
+      }>
+    >("/public/classes")
+      .then((data) => {
+        if (data.length === 0) return;
+        setClassCards(
+          data.map((item) => ({
+            title: item.title,
+            level: item.grade,
+            mode: "Tai trung tam",
+            schedule: item.schedule || "Dang cap nhat",
+            desc: `Mon ${item.subject} tai ${item.district}.`,
+            budget: `${Math.round(item.feePerHour / 1000)}k/gio`,
+            area: item.district,
+          })),
+        );
+        setError("");
+      })
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : "Khong the tai lop moi.");
+      });
+  }, []);
+
   return (
     <main className={`${styles.page} ${beVietnamPro.className}`}>
       <section className={styles.hero}>
@@ -127,6 +139,7 @@ export default function LopMoiPage() {
           <p className={styles.sectionSubtitle}>
             Lựa chọn nhanh các lớp có nhu cầu cao và thời gian bắt đầu sớm.
           </p>
+          {error && <p className={styles.sectionSubtitle}>{error}</p>}
           <div className={styles.gridCards}>
             {classCards.map((item) => (
               <article className={styles.glassCard} key={item.title}>

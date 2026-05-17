@@ -1,38 +1,56 @@
+'use client';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
+import { apiRequest, apiRequestWithAuth, getStoredAccessToken } from '@/lib/api';
 
 export default function ClassDetail() {
-  const course = {
-    id: 'SN-2024-012',
-    status: 'Đang Tuyển',
-    name: 'Toán Lớp 12: Luyện Thi Đại Học Quốc Gia',
-    description: 'Chương trình luyện thi chuyên sâu tập trung vào giải tích, đại số và hình học không gian. Giải đề thi thực tế, rèn kỹ năng làm bài nhanh và chính xác.',
-    price: '500.000đ',
-    period: '/ tháng (8 buổi)',
-    enrolled: 8,
-    total: 12,
-    spotsLeft: 4,
-    instructor: {
-      name: 'Chưa có gia sư',
-      title: 'Đang tuyển gia sư cho lớp này',
-    },
-    resource: {
-      name: 'Giáo Trình',
-      detail: 'Sách bài tập Toán 12 Nâng cao',
-    },
-    campus: {
-      name: 'Cơ Sở Chính',
-      detail: 'Tầng 2 - Trung tâm Song Nguyên',
-    },
-    parentRequirements: [
-      'Có bằng Cử nhân trở lên ngành Toán hoặc Sư phạm Toán.',
-      'Kinh nghiệm giảng dạy ít nhất 1 năm, ưu tiên có kinh nghiệm luyện thi ĐH.',
-    ],
-    tutorRequirements: [
-      'Cam kết dạy đủ buổi theo lịch đã đăng ký.',
-      'Tuân thủ nội quy và phương pháp giảng dạy của Trung tâm.',
-    ],
-    prerequisite: 'Đảm bảo thời gian hợp lệ',
-    safetyCert: 'Trải qua bài test của trung tâm',
+  const params = useParams<{ id: string }>();
+  type PublicClass = {
+    id: string;
+    title: string;
+    subject: string;
+    grade: string;
+    district: string;
+    feePerHour: number;
+    schedule: string | null;
+    status: string;
+  };
+
+  const [course, setCourse] = useState<PublicClass | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [applyMessage, setApplyMessage] = useState('');
+
+  useEffect(() => {
+    if (!params?.id) return;
+
+    apiRequest<PublicClass>(`/public/classes/${params.id}`)
+      .then((data) => {
+        setCourse(data);
+        setError('');
+      })
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : 'Khong the tai chi tiet lop.');
+      })
+      .finally(() => setIsLoading(false));
+  }, [params?.id]);
+
+  const handleApply = async () => {
+    const token = getStoredAccessToken();
+    if (!token) {
+      setApplyMessage('Vui long dang nhap lai.');
+      return;
+    }
+
+    if (!course) return;
+
+    try {
+      await apiRequestWithAuth(`/tutor/classes/${course.id}/apply`, { method: 'POST', body: {} });
+      setApplyMessage('Da gui yeu cau tham gia lop.');
+    } catch (err) {
+      setApplyMessage(err instanceof Error ? err.message : 'Khong the gui yeu cau.');
+    }
   };
 
   return (
@@ -54,12 +72,18 @@ export default function ClassDetail() {
       </nav>
 
       <div className="page-container">
-        <div className="course-badges">
-          <span className="badge-approved">{course.status}</span>
-          <span className="course-id">MÃ LỚP: {course.id}</span>
-        </div>
-        <h1 className="course-title">{course.name}</h1>
-        <p className="course-desc">{course.description}</p>
+        {isLoading && <p>Dang tai...</p>}
+        {!isLoading && error && <p style={{ color: '#ef4444' }}>{error}</p>}
+        {!isLoading && !error && course && (
+          <>
+            <div className="course-badges">
+              <span className="badge-approved">{course.status === 'OPEN' ? 'Dang tuyen' : course.status}</span>
+              <span className="course-id">MA LOP: {course.id}</span>
+            </div>
+            <h1 className="course-title">{course.title}</h1>
+            <p className="course-desc">Lop {course.subject} - {course.grade} tai {course.district}.</p>
+          </>
+        )}
 
         <div className="detail-grid">
           <div className="left-col">
@@ -85,11 +109,11 @@ export default function ClassDetail() {
                 <span className="avail-badge">Chỗ trống</span>
                 <div className="avail-circle">
                   <div className="avail-inner">
-                    <div className="avail-number">{course.enrolled}</div>
-                    <div className="avail-total">/ {course.total}</div>
+                    <div className="avail-number">{course ? 0 : 0}</div>
+                    <div className="avail-total">/ {course ? 0 : 0}</div>
                   </div>
                 </div>
-                <p className="avail-sub">Còn {course.spotsLeft} chỗ trống cho học kỳ này.</p>
+                <p className="avail-sub">Thong tin suc chua se cap nhat sau.</p>
               </div>
             </div>
 
@@ -98,24 +122,24 @@ export default function ClassDetail() {
                 <div className="info-chip-icon avatar-icon"><i className="fas fa-user"></i></div>
                 <div>
                   <div className="chip-label">Giảng Viên</div>
-                  <div className="chip-value">{course.instructor.name}</div>
-                  <div className="chip-sub">{course.instructor.title}</div>
+                  <div className="chip-value">Chua co gia su</div>
+                  <div className="chip-sub">Dang tuyen gia su cho lop nay</div>
                 </div>
               </div>
               <div className="info-chip">
                 <div className="info-chip-icon resource-icon"><i className="fas fa-file-alt"></i></div>
                 <div>
                   <div className="chip-label">Tài Liệu</div>
-                  <div className="chip-value">{course.resource.name}</div>
-                  <div className="chip-sub">{course.resource.detail}</div>
+                  <div className="chip-value">Giao trinh</div>
+                  <div className="chip-sub">Se cap nhat khi nhan lop</div>
                 </div>
               </div>
               <div className="info-chip">
                 <div className="info-chip-icon campus-icon"><i className="fas fa-map-marker-alt"></i></div>
                 <div>
                   <div className="chip-label">Cơ Sở</div>
-                  <div className="chip-value">{course.campus.name}</div>
-                  <div className="chip-sub">{course.campus.detail}</div>
+                  <div className="chip-value">{course?.district || 'Chua cap nhat'}</div>
+                  <div className="chip-sub">Dia chi lop</div>
                 </div>
               </div>
             </div>
@@ -124,7 +148,10 @@ export default function ClassDetail() {
               <div className="req-block">
                 <h3>Yêu Cầu Phụ Huynh</h3>
                 <div className="req-list">
-                  {course.parentRequirements.map((req, idx) => (
+                  {[
+                    'Co kinh nghiem giang day tu 6 thang tro len.',
+                    'Phu hop voi yeu cau mon hoc va cap do.',
+                  ].map((req, idx) => (
                     <div className="req-item" key={idx}><div className="req-dot"></div> {req}</div>
                   ))}
                 </div>
@@ -132,7 +159,10 @@ export default function ClassDetail() {
               <div className="req-block">
                 <h3>Yêu Cầu Gia Sư</h3>
                 <div className="req-list">
-                  {course.tutorRequirements.map((req, idx) => (
+                  {[
+                    'Cam ket day dung lich da dang ky.',
+                    'Tuân thu noi quy trung tam.',
+                  ].map((req, idx) => (
                     <div className="req-item" key={idx}><div className="req-dot"></div> {req}</div>
                   ))}
                 </div>
@@ -151,7 +181,9 @@ export default function ClassDetail() {
           <div className="right-col">
             <div className="enroll-card">
               <div className="enroll-label">Đăng Ký Lớp Học</div>
-              <div className="enroll-price">{course.price} <span>{course.period}</span></div>
+              <div className="enroll-price">
+                {course ? `${Math.round(course.feePerHour / 1000)}.000đ` : '---'} <span>/ gio</span>
+              </div>
               <div className="enroll-status">
                 <div className="enroll-status-label"><i className="fas fa-clipboard-check"></i> Trạng thái</div>
                 <span className="enroll-status-value">Chưa Đăng Ký</span>
@@ -164,19 +196,22 @@ export default function ClassDetail() {
                   <span className="mini-badge rejected">Từ chối</span>
                 </div>
               </div>
-              <button className="btn-register">Đăng Ký Lớp <i className="fas fa-chevron-right"></i></button>
-              <button className="btn-download">Tải Giáo Trình</button>
+              <button className="btn-register" onClick={handleApply}>
+                Dang ky lop <i className="fas fa-chevron-right"></i>
+              </button>
+              {applyMessage && <p style={{ marginTop: '12px', color: '#2563EB' }}>{applyMessage}</p>}
+              <button className="btn-download">Tai giao trinh</button>
             </div>
 
             <div className="protocol-card">
               <h3><i className="fas fa-shield-alt"></i> Quy Trình Xét Duyệt</h3>
               <div className="protocol-item">
                 <div className="protocol-label">Điều Kiện Tiên Quyết</div>
-                <div className="protocol-value">{course.prerequisite}</div>
+                <div className="protocol-value">Dam bao thoi gian hop le.</div>
               </div>
               <div className="protocol-item">
                 <div className="protocol-label">Chứng Nhận An Toàn</div>
-                <div className="protocol-value">{course.safetyCert}</div>
+                <div className="protocol-value">Trai qua bai test cua trung tam.</div>
               </div>
             </div>
           </div>

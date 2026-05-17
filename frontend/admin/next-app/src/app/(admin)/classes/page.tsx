@@ -16,8 +16,10 @@ import {
   closeAdminClass,
   createAdminClass,
   getAdminClassById,
+  listAdminClassApplicants,
   listAdminClasses,
   updateAdminClass,
+  type AdminClassApplicant,
   type AdminClassDetail,
   type AdminClassStatus,
   type AdminClassSummary,
@@ -132,6 +134,9 @@ export default function ClassesPage() {
   const [detail, setDetail] = useState<AdminClassDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
+  const [applicants, setApplicants] = useState<AdminClassApplicant[]>([]);
+  const [applicantsLoading, setApplicantsLoading] = useState(false);
+  const [applicantsError, setApplicantsError] = useState<string | null>(null);
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
@@ -264,17 +269,30 @@ export default function ClassesPage() {
   const loadDetail = useCallback(async (classId: string) => {
     setDetailLoading(true);
     setDetailError(null);
+    setApplicantsLoading(true);
+    setApplicantsError(null);
 
     try {
-      const response = await getAdminClassById(classId);
+      const [response, applicantsData] = await Promise.all([
+        getAdminClassById(classId),
+        listAdminClassApplicants(classId),
+      ]);
       setDetail(response);
+      setApplicants(applicantsData);
     } catch (err) {
       setDetailError(
         err instanceof Error ? err.message : "Không thể tải chi tiết lớp học.",
       );
       setDetail(null);
+      setApplicants([]);
+      setApplicantsError(
+        err instanceof Error
+          ? err.message
+          : "Không thể tải danh sách ứng viên.",
+      );
     } finally {
       setDetailLoading(false);
+      setApplicantsLoading(false);
     }
   }, []);
 
@@ -885,6 +903,62 @@ export default function ClassesPage() {
                           </p>
                           <p className="pairing-user-sub">
                             {member.parentPhone}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              <section>
+                <p
+                  style={{
+                    margin: "0 0 0.45rem",
+                    fontSize: "0.72rem",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    fontWeight: 800,
+                    color: "#64748b",
+                  }}
+                >
+                  Ung vien
+                </p>
+                {applicantsLoading ? (
+                  <p style={{ margin: 0, color: "#64748b" }}>
+                    Dang tai ung vien...
+                  </p>
+                ) : applicantsError ? (
+                  <p style={{ margin: 0, color: "#ba1a1a" }}>
+                    {applicantsError}
+                  </p>
+                ) : applicants.length === 0 ? (
+                  <p style={{ margin: 0, color: "#64748b" }}>
+                    Chua co ung vien.
+                  </p>
+                ) : (
+                  <div className="pairing-user-list">
+                    {applicants.map((item) => (
+                      <div className="pairing-user-item" key={item.id}>
+                        <div className="pairing-user-left">
+                          <div className="pairing-user-avatar">
+                            {getInitials(item.tutor.fullName)}
+                          </div>
+                          <div>
+                            <p className="pairing-user-name">
+                              {item.tutor.fullName}
+                            </p>
+                            <p className="pairing-user-sub">
+                              {item.tutor.email}
+                            </p>
+                          </div>
+                        </div>
+                        <div style={{ textAlign: "right" }}>
+                          <p className="pairing-user-name">
+                            {item.tutor.subjects.join(", ") || "-"}
+                          </p>
+                          <p className="pairing-user-sub">
+                            {item.tutor.districts.join(", ") || "-"}
                           </p>
                         </div>
                       </div>

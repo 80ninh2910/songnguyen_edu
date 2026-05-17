@@ -18,6 +18,7 @@ import tutorImage7 from "@/components/assets/viet.png";
 import { BackgroundLines } from "@/components/ui/background-lines";
 import HeroParallaxDemo from "@/components/hero-parallax-demo";
 import DomeGallery from "@/components/DomeGallery";
+import { apiRequest } from "@/lib/api";
 
 const bricolageGrotesque = Bricolage_Grotesque({
   subsets: ["latin", "vietnamese"],
@@ -321,18 +322,18 @@ function RegistrationModal({
 
   return (
     <div
-      className="fixed inset-0 z-[140] flex items-start justify-center overflow-y-auto bg-[#071737]/60 px-4 py-8 backdrop-blur-sm"
+      className="fixed inset-0 z-[140] flex items-center justify-center bg-[#071737]/60 p-4 backdrop-blur-sm"
       role="presentation"
       onClick={onClose}
     >
       <div
-        className={`relative w-full max-w-4xl overflow-hidden rounded-[28px] border border-[#d6e1fb] bg-white shadow-[0_30px_90px_rgba(4,16,50,0.4)] ${beVietnamPro.className} animate-[fadeInModal_.3s_ease-out]`}
+        className={`relative flex w-full max-w-4xl max-h-[90vh] flex-col overflow-hidden rounded-[28px] border border-[#d6e1fb] bg-white shadow-[0_30px_90px_rgba(4,16,50,0.4)] ${beVietnamPro.className} animate-[fadeInModal_.3s_ease-out]`}
         onClick={(event) => event.stopPropagation()}
         role="dialog"
         aria-modal="true"
         aria-label={header.title}
       >
-        <div className="flex flex-col gap-6 border-b border-[#e5edff] bg-[linear-gradient(120deg,#f7f9ff_0%,#ffffff_55%,#f6f9ff_100%)] px-5 py-5 md:px-7">
+        <div className="z-10 flex shrink-0 flex-col gap-6 border-b border-[#e5edff] bg-[linear-gradient(120deg,#f7f9ff_0%,#ffffff_55%,#f6f9ff_100%)] px-5 py-5 md:px-7">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <span className="inline-flex rounded-full bg-[#103a9c] px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-white">
@@ -378,8 +379,7 @@ function RegistrationModal({
             ))}
           </div>
         </div>
-
-        <div className="px-5 py-6 md:px-7">
+        <div className="flex-1 overflow-y-auto px-5 py-6 md:px-7">
           {activeType === "parent" ? (
             <ParentRegistrationForm onOpenProcessModal={() => handleOpenProcess("parent")} />
           ) : (
@@ -413,6 +413,7 @@ function ParentRegistrationForm({
   onOpenProcessModal: () => void;
 }) {
   const [studentForm, setStudentForm] = useState({
+    parentName: "",
     phone: "",
     subject: "",
     gender: "",
@@ -430,6 +431,7 @@ function ParentRegistrationForm({
   const [activeTimeSlots, setActiveTimeSlots] = useState<string[]>([]);
   const [submitMessage, setSubmitMessage] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const weekDays = [
     { key: "su", label: "Su", full: "Chủ nhật" },
@@ -466,6 +468,7 @@ function ParentRegistrationForm({
     "rounded-xl bg-[linear-gradient(180deg,#f00b0b_0%,#d80404_100%)] px-4 py-4 text-center text-[22px] font-black leading-tight text-white shadow-[0_16px_34px_rgba(216,4,4,0.4)] transition-all duration-300 hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0 md:text-[26px] lg:text-[30px]";
 
   const requiredFields = [
+    studentForm.parentName,
     studentForm.phone,
     studentForm.subject,
     studentForm.location,
@@ -497,9 +500,19 @@ function ParentRegistrationForm({
     }).format(value);
 
   const toggleWeekday = (key: string) => {
-    setActiveWeekdays((prev) =>
-      prev.includes(key) ? prev.filter((item) => item !== key) : [...prev, key]
-    );
+    setActiveWeekdays((prev) => {
+      if (prev.includes(key)) {
+        return prev.filter((item) => item !== key);
+      }
+      const maxDays = studentForm.sessionsPerWeek
+        ? (studentForm.sessionsPerWeek === "5" ? 7 : Number(studentForm.sessionsPerWeek))
+        : 7;
+      if (prev.length >= maxDays) {
+        alert(`Bạn chỉ được chọn tối đa ${maxDays} ngày theo số buổi đã đăng ký.`);
+        return prev;
+      }
+      return [...prev, key];
+    });
   };
 
   const toggleTimeSlot = (slot: string) => {
@@ -508,10 +521,11 @@ function ParentRegistrationForm({
     );
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const nextErrors: Record<string, string> = {};
+    if (!studentForm.parentName.trim()) nextErrors.parentName = "Vui long nhap ho ten phu huynh.";
     if (!/^(0|\+84)\d{9,10}$/.test(studentForm.phone.replace(/\s+/g, ""))) {
       nextErrors.phone = "Số điện thoại không hợp lệ.";
     }
@@ -531,7 +545,41 @@ function ParentRegistrationForm({
       return;
     }
 
-    setSubmitMessage("Yêu cầu đã được ghi nhận. Học vụ sẽ liên hệ tư vấn và ghép gia sư phù hợp trong 24h.");
+    setIsSubmitting(true);
+    setSubmitMessage("");
+
+    const sessions = Number(studentForm.sessionsPerWeek) || 0;
+    const budgetPerHour = sessions > 0 ? Math.round(estimatedFee / (sessions * 4)) : undefined;
+    const noteParts = [
+      studentForm.gender ? `Gioi tinh hoc vien: ${studentForm.gender}` : null,
+      `So hoc vien: ${studentForm.studentCount}`,
+      `So buoi/tuan: ${studentForm.sessionsPerWeek}`,
+      `Lich hoc: ${activeWeekdays.join(", ") || "Chua chon"} | ${activeTimeSlots.join(", ") || "Chua chon"}`,
+      tutorForm.gender ? `Gioi tinh gia su: ${tutorForm.gender}` : null,
+      tutorForm.level ? `Trinh do gia su: ${tutorForm.level}` : null,
+      tutorForm.detail ? `Yeu cau chi tiet: ${tutorForm.detail}` : null,
+    ].filter(Boolean);
+
+    try {
+      await apiRequest("/public/class-requests", {
+        method: "POST",
+        body: {
+          parentName: studentForm.parentName,
+          parentPhone: studentForm.phone,
+          subject: studentForm.subject,
+          grade: studentForm.level,
+          district: studentForm.location,
+          budgetPerHour,
+          note: noteParts.join("; "),
+        },
+      });
+
+      setSubmitMessage("Yeu cau da duoc gui. Hoc vu se lien he trong 24h.");
+    } catch (err) {
+      setSubmitMessage(err instanceof Error ? err.message : "Gui yeu cau that bai. Vui long thu lai.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -566,6 +614,12 @@ function ParentRegistrationForm({
             <h4 className="text-lg font-bold text-[#1d3979] md:text-xl">Thông tin học viên</h4>
               <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 <input
+                  value={studentForm.parentName}
+                  onChange={(e) => setStudentForm((prev) => ({ ...prev, parentName: e.target.value }))}
+                  placeholder="Ho va ten phu huynh"
+                  className={inputBaseClass}
+                />
+                <input
                   value={studentForm.phone}
                   onChange={(e) => setStudentForm((prev) => ({ ...prev, phone: e.target.value }))}
                   placeholder="Số điện thoại"
@@ -591,12 +645,36 @@ function ParentRegistrationForm({
                   <option value="Nữ">Nữ</option>
                   <option value="Khác">Khác</option>
                 </select>
-                <input
+                <select
                   value={studentForm.location}
                   onChange={(e) => setStudentForm((prev) => ({ ...prev, location: e.target.value }))}
-                  placeholder="Địa điểm dạy"
                   className={inputBaseClass}
-                />
+                >
+                  <option value="">Địa điểm dạy</option>
+                  <option value="Quận 1">Quận 1</option>
+                  <option value="Quận 3">Quận 3</option>
+                  <option value="Quận 4">Quận 4</option>
+                  <option value="Quận 5">Quận 5</option>
+                  <option value="Quận 6">Quận 6</option>
+                  <option value="Quận 7">Quận 7</option>
+                  <option value="Quận 8">Quận 8</option>
+                  <option value="Quận 10">Quận 10</option>
+                  <option value="Quận 11">Quận 11</option>
+                  <option value="Quận 12">Quận 12</option>
+                  <option value="Quận Bình Tân">Quận Bình Tân</option>
+                  <option value="Quận Bình Thạnh">Quận Bình Thạnh</option>
+                  <option value="Quận Gò Vấp">Quận Gò Vấp</option>
+                  <option value="Quận Phú Nhuận">Quận Phú Nhuận</option>
+                  <option value="Quận Tân Bình">Quận Tân Bình</option>
+                  <option value="Quận Tân Phú">Quận Tân Phú</option>
+                  <option value="TP Thủ Đức">TP Thủ Đức</option>
+                  <option value="Huyện Bình Chánh">Huyện Bình Chánh</option>
+                  <option value="Huyện Cần Giờ">Huyện Cần Giờ</option>
+                  <option value="Huyện Củ Chi">Huyện Củ Chi</option>
+                  <option value="Huyện Hóc Môn">Huyện Hóc Môn</option>
+                  <option value="Huyện Nhà Bè">Huyện Nhà Bè</option>
+                  <option value="Online">Online</option>
+                </select>
                 <select
                   value={studentForm.level}
                   onChange={(e) => setStudentForm((prev) => ({ ...prev, level: e.target.value }))}
@@ -620,7 +698,12 @@ function ParentRegistrationForm({
                 </select>
                 <select
                   value={studentForm.sessionsPerWeek}
-                  onChange={(e) => setStudentForm((prev) => ({ ...prev, sessionsPerWeek: e.target.value }))}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setStudentForm((prev) => ({ ...prev, sessionsPerWeek: val }));
+                    const maxDays = val ? (val === "5" ? 7 : Number(val)) : 7;
+                    setActiveWeekdays((prev) => prev.slice(0, maxDays));
+                  }}
                   className={`${inputBaseClass} lg:col-span-1`}
                 >
                   <option value="">Số buổi / tuần</option>
@@ -631,7 +714,7 @@ function ParentRegistrationForm({
                   <option value="5">5+ buổi</option>
                 </select>
               </div>
-              {(errors.phone || errors.subject || errors.location || errors.level || errors.studentCount || errors.sessionsPerWeek) && (
+              {(errors.phone || errors.subject || errors.location || errors.level || errors.studentCount || errors.sessionsPerWeek || errors.parentName) && (
                 <p className="mt-3 text-sm font-semibold text-[#cc1f1f]">Vui lòng điền đầy đủ thông tin học viên.</p>
               )}
             </div>
@@ -663,9 +746,8 @@ function ParentRegistrationForm({
                       className={inputBaseClass}
                     >
                       <option value="">Trình độ</option>
-                      <option value="Gia sư">Gia sư</option>
-                      <option value="Giáo viên">Giáo viên</option>
-                      <option value="Cử nhân / Thạc sĩ">Cử nhân / Thạc sĩ</option>
+                      <option value="Gia sư tự do">Gia sư tự do</option>
+                      <option value="Gia sư đào tạo">Gia sư đào tạo</option>
                     </select>
                   </div>
                   <a
@@ -738,12 +820,17 @@ function ParentRegistrationForm({
               <h4 className="mt-5 text-2xl font-extrabold text-[#17367b] md:text-3xl">Học phí tham khảo</h4>
 
               <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-[1fr_1fr]">
-                <div className="relative overflow-hidden rounded-xl bg-[#03933b] px-4 py-4 text-center text-[24px] font-black leading-tight text-white shadow-[0_14px_34px_rgba(3,147,59,0.35)] md:text-[28px] lg:text-[30px]">
+                <div className="relative overflow-hidden rounded-xl bg-[#528bff] px-4 py-4 text-center text-[24px] font-black leading-tight text-white shadow-[0_14px_34px_rgba(82,139,255,0.35)] md:text-[28px] lg:text-[30px]">
                   {formatVnd(estimatedFee)}
                   <span className="pointer-events-none absolute inset-0 bg-[linear-gradient(120deg,rgba(255,255,255,0.22)_0%,rgba(255,255,255,0)_42%,rgba(255,255,255,0.18)_100%)]" />
                 </div>
-                <button type="submit" className={parentSubmitClass}>
-                  Tìm gia sư ngay
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="rounded-xl bg-[linear-gradient(180deg,#f00b0b_0%,#d80404_100%)] px-4 py-4 text-center text-[22px] font-black leading-tight text-white shadow-[0_16px_34px_rgba(216,4,4,0.4)] transition-all duration-300 hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0 md:text-[26px] lg:text-[30px]"
+                  className="rounded-xl bg-[linear-gradient(180deg,#1b4fb6_0%,#0f3b9c_100%)] px-4 py-4 text-center text-[22px] font-black leading-tight text-white shadow-[0_16px_34px_rgba(15,59,156,0.4)] transition-all duration-300 hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0 md:text-[26px] lg:text-[30px]"
+                >
+                  {isSubmitting ? "Dang gui..." : "Tim gia su ngay"}
                 </button>
               </div>
 
@@ -785,22 +872,42 @@ function TutorRegistrationForm({
   track: "free" | "trained";
 }) {
   const [personalForm, setPersonalForm] = useState({
+    fullName: "",
     phone: "",
     role: "",
     email: "",
     gender: "",
     address: "",
+    password: "",
     note: "",
   });
   const [tutorForm, setTutorForm] = useState({
-    teachingLevel: "",
-    subject: "",
     school: "",
     area: "",
   });
   const [activeWeekdays, setActiveWeekdays] = useState<string[]>([]);
+  const [activeClasses, setActiveClasses] = useState<string[]>([]);
+  const [showClasses, setShowClasses] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const classOptions = [
+    ...Array.from({ length: 12 }, (_, i) => `Toán ${i + 1}`),
+    ...Array.from({ length: 12 }, (_, i) => `Tiếng Anh ${i + 1}`),
+    "Tiếng Việt Tiểu học",
+    ...Array.from({ length: 7 }, (_, i) => `Ngữ Văn ${i + 6}`),
+    ...Array.from({ length: 7 }, (_, i) => `Vật Lý ${i + 6}`),
+    ...Array.from({ length: 5 }, (_, i) => `Hóa Học ${i + 8}`),
+    ...Array.from({ length: 7 }, (_, i) => `Sinh Học ${i + 6}`),
+    "Luyện thi IELTS",
+    "Luyện thi TOEIC",
+    "Khác"
+  ];
+
+  const toggleClass = (c: string) => {
+    setActiveClasses(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]);
+  };
 
   const weekDays = [
     { key: "su", label: "Su", full: "Chủ nhật" },
@@ -818,11 +925,13 @@ function TutorRegistrationForm({
   }, [track]);
 
   const requiredFields = [
+    personalForm.fullName,
     personalForm.phone,
     personalForm.role,
     personalForm.email,
     personalForm.gender,
     personalForm.address,
+    personalForm.password,
     tutorForm.teachingLevel,
     tutorForm.subject,
     tutorForm.school,
@@ -831,8 +940,9 @@ function TutorRegistrationForm({
 
   const completionRate = Math.round(
     ((requiredFields.filter((value) => value.trim().length > 0).length +
-      (activeWeekdays.length > 0 ? 1 : 0)) /
-      (requiredFields.length + 1)) *
+      (activeWeekdays.length > 0 ? 1 : 0) +
+      (activeClasses.length > 0 ? 1 : 0)) /
+      (requiredFields.length + 2)) *
       100
   );
 
@@ -845,7 +955,7 @@ function TutorRegistrationForm({
     );
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const nextErrors: Record<string, string> = {};
@@ -855,11 +965,14 @@ function TutorRegistrationForm({
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(personalForm.email.trim())) {
       nextErrors.email = "Email không hợp lệ.";
     }
+    if (personalForm.password.trim().length < 6) {
+      nextErrors.password = "Mat khau toi thieu 6 ky tu.";
+    }
+    if (!personalForm.fullName.trim()) nextErrors.fullName = "Vui long nhap ho ten.";
     if (!personalForm.role) nextErrors.role = "Vui lòng chọn vai trò hiện tại.";
     if (!personalForm.gender) nextErrors.gender = "Vui lòng chọn giới tính.";
     if (!personalForm.address.trim()) nextErrors.address = "Vui lòng nhập địa chỉ.";
-    if (!tutorForm.teachingLevel) nextErrors.teachingLevel = "Vui lòng chọn lớp dạy.";
-    if (!tutorForm.subject.trim()) nextErrors.subject = "Vui lòng nhập môn dạy.";
+    if (activeClasses.length === 0) nextErrors.classes = "Vui lòng chọn môn/lớp dạy.";
     if (!tutorForm.school.trim()) nextErrors.school = "Vui lòng nhập trường đã/đang học.";
     if (!tutorForm.area.trim()) nextErrors.area = "Vui lòng nhập khu vực dạy.";
     if (activeWeekdays.length === 0) nextErrors.weekdays = "Vui lòng chọn các buổi có thể dạy.";
@@ -871,7 +984,41 @@ function TutorRegistrationForm({
       return;
     }
 
-    setSubmitMessage("Đăng ký thành công. Học vụ sẽ liên hệ xác minh hồ sơ gia sư trong thời gian sớm nhất.");
+    setIsSubmitting(true);
+    setSubmitMessage("");
+
+    const subjects = tutorForm.subject
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+    const districts = tutorForm.area
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+    try {
+      const registerResult = await apiRequest<{ tutorId: string; uploadToken: string }>(
+        "/public/tutors/register",
+        {
+          method: "POST",
+          body: {
+            fullName: personalForm.fullName,
+            email: personalForm.email,
+            phone: personalForm.phone,
+            password: personalForm.password,
+            subjects: subjects.length > 0 ? subjects : undefined,
+            districts: districts.length > 0 ? districts : undefined,
+          },
+        },
+      );
+
+      localStorage.setItem("sne_tutor_register", JSON.stringify(registerResult));
+      setSubmitMessage("Dang ky thanh cong. Hoc vu se lien he xac minh ho so gia su.");
+    } catch (err) {
+      setSubmitMessage(err instanceof Error ? err.message : "Dang ky that bai. Vui long thu lai.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -909,6 +1056,12 @@ function TutorRegistrationForm({
           <div className="rounded-[22px] border border-white/70 bg-[#eef0f5] p-4">
             <h4 className="text-lg font-bold text-[#1d3979] md:text-xl">Thông tin cá nhân</h4>
               <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <input
+                  value={personalForm.fullName}
+                  onChange={(e) => setPersonalForm((prev) => ({ ...prev, fullName: e.target.value }))}
+                  placeholder="Ho va ten"
+                  className={inputBaseClass}
+                />
                 <input
                   value={personalForm.phone}
                   onChange={(e) => setPersonalForm((prev) => ({ ...prev, phone: e.target.value }))}
@@ -949,13 +1102,20 @@ function TutorRegistrationForm({
                   className={inputBaseClass}
                 />
                 <input
+                  type="password"
+                  value={personalForm.password}
+                  onChange={(e) => setPersonalForm((prev) => ({ ...prev, password: e.target.value }))}
+                  placeholder="Mat khau"
+                  className={inputBaseClass}
+                />
+                <input
                   value={personalForm.note}
                   onChange={(e) => setPersonalForm((prev) => ({ ...prev, note: e.target.value }))}
                   placeholder="Ghi chú thêm"
                   className={inputBaseClass}
                 />
               </div>
-              {(errors.phone || errors.email || errors.role || errors.gender || errors.address) && (
+              {(errors.phone || errors.email || errors.role || errors.gender || errors.address || errors.password || errors.fullName) && (
                 <p className="mt-3 text-sm font-semibold text-[#cc1f1f]">Vui lòng kiểm tra lại thông tin cá nhân.</p>
               )}
             </div>
@@ -965,23 +1125,34 @@ function TutorRegistrationForm({
                 <div>
                   <h4 className="text-lg font-bold text-[#1d3979] md:text-xl">Thông tin gia sư</h4>
                   <div className="mt-4 space-y-3">
-                    <select
-                      value={tutorForm.teachingLevel}
-                      onChange={(e) => setTutorForm((prev) => ({ ...prev, teachingLevel: e.target.value }))}
-                      className={inputBaseClass}
-                    >
-                      <option value="">Lớp dạy</option>
-                      <option value="Tiểu học">Tiểu học</option>
-                      <option value="THCS">THCS</option>
-                      <option value="THPT">THPT</option>
-                      <option value="Luyện thi chứng chỉ">Luyện thi chứng chỉ</option>
-                    </select>
-                    <input
-                      value={tutorForm.subject}
-                      onChange={(e) => setTutorForm((prev) => ({ ...prev, subject: e.target.value }))}
-                      placeholder="Môn dạy"
-                      className={inputBaseClass}
-                    />
+                    <div className="relative">
+                      <div 
+                        className={`${inputBaseClass} flex items-center justify-between cursor-pointer`}
+                        onClick={() => setShowClasses(!showClasses)}
+                      >
+                        <span className={`truncate pr-2 ${activeClasses.length > 0 ? "text-[#243b72]" : "text-[#6b7aa0]"}`}>
+                          {activeClasses.length > 0 ? `Đã chọn: ${activeClasses.join(', ')}` : "Môn/Lớp dạy (Toán 1, Anh 2...)"}
+                        </span>
+                        <span className="text-xs">▼</span>
+                      </div>
+                      {showClasses && (
+                        <div className="absolute z-50 mt-1 w-full max-h-60 overflow-y-auto rounded-xl border border-[#d5dff1] bg-white p-2 shadow-[0_10px_30px_rgba(0,0,0,0.1)]">
+                          <div className="grid grid-cols-2 gap-1 sm:grid-cols-3">
+                            {classOptions.map((c) => (
+                              <label key={c} className="flex cursor-pointer items-start gap-2 rounded-lg px-2 py-1.5 hover:bg-[#f3f7ff]">
+                                <input 
+                                  type="checkbox" 
+                                  checked={activeClasses.includes(c)}
+                                  onChange={() => toggleClass(c)}
+                                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-[#b1c3e3] text-[#1b4fb6] focus:ring-[#1b4fb6]"
+                                />
+                                <span className="text-[13px] font-medium leading-tight text-[#243b72]">{c}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                     <input
                       value={tutorForm.school}
                       onChange={(e) => setTutorForm((prev) => ({ ...prev, school: e.target.value }))}
@@ -996,7 +1167,7 @@ function TutorRegistrationForm({
                     />
                   </div>
 
-                  {(errors.teachingLevel || errors.subject || errors.school || errors.area) && (
+                  {(errors.classes || errors.school || errors.area) && (
                     <p className="mt-3 text-sm font-semibold text-[#cc1f1f]">Vui lòng điền đầy đủ thông tin gia sư.</p>
                   )}
                 </div>
@@ -1040,9 +1211,11 @@ function TutorRegistrationForm({
               <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
                 <button
                   type="submit"
+                  disabled={isSubmitting}
                   className="rounded-xl bg-[linear-gradient(180deg,#f00b0b_0%,#d80404_100%)] px-6 py-3 text-center text-lg font-black text-white shadow-[0_16px_34px_rgba(216,4,4,0.4)] transition-all duration-300 hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0 md:px-7 md:text-xl lg:text-[22px]"
+                  className="rounded-xl bg-[linear-gradient(180deg,#1b4fb6_0%,#0f3b9c_100%)] px-6 py-3 text-center text-lg font-black text-white shadow-[0_16px_34px_rgba(15,59,156,0.4)] transition-all duration-300 hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0 md:px-7 md:text-xl lg:text-[22px]"
                 >
-                  ĐĂNG KÝ LÀM GIA SƯ NGAY
+                  {isSubmitting ? "Dang gui..." : "DANG KY LAM GIA SU NGAY"}
                 </button>
               </div>
 
