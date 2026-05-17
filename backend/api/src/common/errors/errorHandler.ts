@@ -147,7 +147,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
     // 6. Unhandled errors → 500
     void reply.status(500).send({
       success: false,
-      error: { code: ErrorCodes.INTERNAL_ERROR, message: "Internal server error", details: null },
+      error: { code: ErrorCodes.INTERNAL_ERROR, message: error instanceof Error ? error.message : "Internal server error", details: error instanceof Error ? error.stack : null },
     });
   });
 }

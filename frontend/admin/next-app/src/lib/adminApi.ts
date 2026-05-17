@@ -324,6 +324,9 @@ async function adminFetch(
 
   if (response.status === 401) {
     clearAuthTokens();
+    if (typeof window !== "undefined" && !window.location.pathname.includes("/login")) {
+      window.location.href = "/login";
+    }
   }
 
   return response;

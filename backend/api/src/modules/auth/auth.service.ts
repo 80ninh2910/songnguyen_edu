@@ -167,14 +167,16 @@ export const authService = {
       throw new AppError("INVALID_REFRESH_TOKEN", 401, "Invalid refresh token");
     }
 
-    const exists = await cacheService.exists(refreshTokenKey(refreshToken));
+    if (cacheService.isEnabled()) {
+      const exists = await cacheService.exists(refreshTokenKey(refreshToken));
 
-    if (!exists) {
-      throw new AppError(
-        "INVALID_REFRESH_TOKEN",
-        401,
-        "Refresh token was revoked or expired",
-      );
+      if (!exists) {
+        throw new AppError(
+          "INVALID_REFRESH_TOKEN",
+          401,
+          "Refresh token was revoked or expired",
+        );
+      }
     }
 
     const accessToken = app.jwt.sign(
