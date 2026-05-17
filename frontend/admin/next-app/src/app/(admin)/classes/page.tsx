@@ -310,10 +310,7 @@ export default function ClassesPage() {
       return;
     }
 
-    if (
-      !selectedClassId ||
-      !records.some((item) => item.id === selectedClassId)
-    ) {
+    if (!selectedClassId) {
       setSelectedClassId(records[0].id);
     }
   }, [records, selectedClassId]);
@@ -438,8 +435,9 @@ export default function ClassesPage() {
     setFormLoading(true);
 
     try {
+      let createdId = "";
       if (formMode === "create") {
-        await createAdminClass({
+        const result = await createAdminClass({
           title,
           subject,
           grade,
@@ -447,6 +445,7 @@ export default function ClassesPage() {
           feePerHour: Math.round(feeValue),
           schedule: schedule || undefined,
         });
+        createdId = result.id;
         showToast("success", "Đã tạo lớp học mới.");
       } else if (detail) {
         const payload: {
@@ -468,7 +467,10 @@ export default function ClassesPage() {
 
       setIsFormOpen(false);
       await Promise.all([loadClasses(), loadStats()]);
-      if (detail) {
+      
+      if (createdId) {
+        setSelectedClassId(createdId);
+      } else if (detail) {
         await loadDetail(detail.id);
       }
     } catch (err) {
