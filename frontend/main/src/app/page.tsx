@@ -30,7 +30,7 @@ const beVietnamPro = Be_Vietnam_Pro({
 });
 
 type ProcessType = "parent" | "tutor";
-type SignupType = "parent" | "tutor-free" | "tutor-trained";
+type SignupType = "parent" | "center" | "tutor-free" | "tutor-trained";
 
 export default function NavbarDemo() {
   const [activeProcessModal, setActiveProcessModal] = useState<ProcessType | null>(null);
@@ -302,9 +302,14 @@ function RegistrationModal({
 
   const headerMap: Record<SignupType, { title: string; desc: string; badge: string }> = {
     parent: {
-      title: "Đăng ký lớp cho phụ huynh",
+      title: "Đăng ký tìm gia sư",
       desc: "Gửi yêu cầu học tập nhanh chóng để được tư vấn trong 24h.",
-      badge: "Phụ huynh",
+      badge: "Đăng ký gia sư",
+    },
+    center: {
+      title: "Đăng ký học tại trung tâm",
+      desc: "Đăng ký học trực tiếp tại các cơ sở của trung tâm Song Nguyên.",
+      badge: "Học tại trung tâm",
     },
     "tutor-free": {
       title: "Gia sư tự do đăng ký nhận lớp",
@@ -356,10 +361,11 @@ function RegistrationModal({
             </button>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-2 sm:grid-cols-4">
             {(
               [
-                { key: "parent" as const, label: "Phụ huynh" },
+                { key: "parent" as const, label: "Đăng ký gia sư" },
+                { key: "center" as const, label: "Học trung tâm" },
                 { key: "tutor-free" as const, label: "Gia sư tự do" },
                 { key: "tutor-trained" as const, label: "Gia sư đào tạo" },
               ] as const
@@ -380,8 +386,11 @@ function RegistrationModal({
           </div>
         </div>
         <div className="flex-1 overflow-y-auto px-5 py-6 md:px-7">
-          {activeType === "parent" ? (
-            <ParentRegistrationForm onOpenProcessModal={() => handleOpenProcess("parent")} />
+          {activeType === "parent" || activeType === "center" ? (
+            <ParentRegistrationForm
+              title={activeType === "center" ? "Đăng ký học tại trung tâm" : "Phụ huynh đăng ký tìm gia sư"}
+              onOpenProcessModal={() => handleOpenProcess("parent")}
+            />
           ) : (
             <TutorRegistrationForm
               track={activeType === "tutor-free" ? "free" : "trained"}
@@ -409,8 +418,10 @@ function RegistrationModal({
 
 function ParentRegistrationForm({
   onOpenProcessModal,
+  title = "Phụ huynh đăng ký lớp",
 }: {
   onOpenProcessModal: () => void;
+  title?: string;
 }) {
   const [studentForm, setStudentForm] = useState({
     parentName: "",
@@ -587,7 +598,7 @@ function ParentRegistrationForm({
       <div className="rounded-[26px] border border-[#d5dff3] bg-[#f5f7fb] p-4 shadow-[0_20px_45px_rgba(17,45,112,0.12)] md:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h3 className="text-2xl font-black text-[#17367b] md:text-3xl">Phụ huynh đăng ký lớp</h3>
+            <h3 className="text-2xl font-black text-[#17367b] md:text-3xl">{title}</h3>
             <p className="mt-2 text-sm leading-7 text-[#4b5f88] md:text-base">
               Điền nhanh thông tin học viên để nhận tư vấn lộ trình và học phí.
             </p>
@@ -616,7 +627,7 @@ function ParentRegistrationForm({
                 <input
                   value={studentForm.parentName}
                   onChange={(e) => setStudentForm((prev) => ({ ...prev, parentName: e.target.value }))}
-                  placeholder="Ho va ten phu huynh"
+                  placeholder="Họ và tên phụ huynh"
                   className={inputBaseClass}
                 />
                 <input
@@ -877,7 +888,6 @@ function TutorRegistrationForm({
     email: "",
     gender: "",
     address: "",
-    password: "",
     note: "",
   });
   const [tutorForm, setTutorForm] = useState({
@@ -888,22 +898,70 @@ function TutorRegistrationForm({
   });
   const [activeWeekdays, setActiveWeekdays] = useState<string[]>([]);
   const [activeClasses, setActiveClasses] = useState<string[]>([]);
+  const [otherClassStr, setOtherClassStr] = useState("");
   const [showClasses, setShowClasses] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const classOptions = [
-    ...Array.from({ length: 12 }, (_, i) => `Toán ${i + 1}`),
-    ...Array.from({ length: 12 }, (_, i) => `Tiếng Anh ${i + 1}`),
-    "Tiếng Việt Tiểu học",
-    ...Array.from({ length: 7 }, (_, i) => `Ngữ Văn ${i + 6}`),
-    ...Array.from({ length: 7 }, (_, i) => `Vật Lý ${i + 6}`),
-    ...Array.from({ length: 5 }, (_, i) => `Hóa Học ${i + 8}`),
-    ...Array.from({ length: 7 }, (_, i) => `Sinh Học ${i + 6}`),
-    "Luyện thi IELTS",
-    "Luyện thi TOEIC",
-    "Khác"
+  const classGroups = [
+    {
+      title: "Cấp 1 – Tiểu học (Lớp 1 → 5)",
+      options: [
+        { label: "Tiếng Việt", value: "Tiếng Việt (Cấp 1)" },
+        { label: "Toán", value: "Toán (Cấp 1)" },
+        { label: "Đạo đức", value: "Đạo đức (Cấp 1)" },
+        { label: "Tự nhiên & Xã hội", value: "Tự nhiên & Xã hội (Cấp 1)" },
+        { label: "Khoa học", value: "Khoa học (Cấp 1)" },
+        { label: "Lịch sử", value: "Lịch sử (Cấp 1)" },
+        { label: "Địa lí", value: "Địa lí (Cấp 1)" },
+        { label: "Tin học & Công nghệ", value: "Tin học & Công nghệ (Cấp 1)" },
+        { label: "Ngoại ngữ (Tiếng Anh)", value: "Ngoại ngữ (Cấp 1)" },
+        { label: "Nghệ thuật / Năng khiếu", value: "Nghệ thuật (Cấp 1)" },
+      ]
+    },
+    {
+      title: "Cấp 2 – THCS (Lớp 6 → 9)",
+      options: [
+        { label: "Ngữ văn", value: "Ngữ văn (Cấp 2)" },
+        { label: "Toán", value: "Toán (Cấp 2)" },
+        { label: "Ngoại ngữ (Tiếng Anh)", value: "Ngoại ngữ (Cấp 2)" },
+        { label: "Giáo dục công dân", value: "Giáo dục công dân (Cấp 2)" },
+        { label: "Lịch sử", value: "Lịch sử (Cấp 2)" },
+        { label: "Địa lí", value: "Địa lí (Cấp 2)" },
+        { label: "Vật lí", value: "Vật lí (Cấp 2)" },
+        { label: "Hóa học", value: "Hóa học (Cấp 2)" },
+        { label: "Sinh học", value: "Sinh học (Cấp 2)" },
+        { label: "Công nghệ", value: "Công nghệ (Cấp 2)" },
+        { label: "Tin học", value: "Tin học (Cấp 2)" },
+        { label: "Nghệ thuật / Năng khiếu", value: "Nghệ thuật (Cấp 2)" },
+      ]
+    },
+    {
+      title: "Cấp 3 – THPT (Lớp 10 → 12)",
+      options: [
+        { label: "Ngữ văn", value: "Ngữ văn (Cấp 3)" },
+        { label: "Toán", value: "Toán (Cấp 3)" },
+        { label: "Ngoại ngữ (Tiếng Anh)", value: "Ngoại ngữ (Cấp 3)" },
+        { label: "Vật lí", value: "Vật lí (Cấp 3)" },
+        { label: "Hóa học", value: "Hóa học (Cấp 3)" },
+        { label: "Sinh học", value: "Sinh học (Cấp 3)" },
+        { label: "Lịch sử", value: "Lịch sử (Cấp 3)" },
+        { label: "Địa lí", value: "Địa lí (Cấp 3)" },
+        { label: "GD kinh tế & pháp luật", value: "GD kinh tế & pháp luật (Cấp 3)" },
+        { label: "Tin học", value: "Tin học (Cấp 3)" },
+        { label: "Công nghệ", value: "Công nghệ (Cấp 3)" },
+        { label: "Nghệ thuật / Năng khiếu", value: "Nghệ thuật (Cấp 3)" },
+      ]
+    },
+    {
+      title: "Khác",
+      options: [
+        { label: "Luyện thi IELTS", value: "Luyện thi IELTS" },
+        { label: "Luyện thi TOEIC", value: "Luyện thi TOEIC" },
+        { label: "Khác", value: "Khác" }
+      ]
+    }
   ];
 
   const toggleClass = (c: string) => {
@@ -932,7 +990,6 @@ function TutorRegistrationForm({
     personalForm.email,
     personalForm.gender,
     personalForm.address,
-    personalForm.password,
     tutorForm.school,
     tutorForm.area,
   ];
@@ -964,14 +1021,12 @@ function TutorRegistrationForm({
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(personalForm.email.trim())) {
       nextErrors.email = "Email không hợp lệ.";
     }
-    if (personalForm.password.trim().length < 6) {
-      nextErrors.password = "Mat khau toi thieu 6 ky tu.";
-    }
     if (!personalForm.fullName.trim()) nextErrors.fullName = "Vui long nhap ho ten.";
     if (!personalForm.role) nextErrors.role = "Vui lòng chọn vai trò hiện tại.";
     if (!personalForm.gender) nextErrors.gender = "Vui lòng chọn giới tính.";
     if (!personalForm.address.trim()) nextErrors.address = "Vui lòng nhập địa chỉ.";
     if (activeClasses.length === 0) nextErrors.classes = "Vui lòng chọn môn/lớp dạy.";
+    if (activeClasses.includes("Khác") && !otherClassStr.trim()) nextErrors.otherClassStr = "Vui lòng nhập môn/lớp dạy khác.";
     if (!tutorForm.school.trim()) nextErrors.school = "Vui lòng nhập trường đã/đang học.";
     if (!tutorForm.area.trim()) nextErrors.area = "Vui lòng nhập khu vực dạy.";
     if (activeWeekdays.length === 0) nextErrors.weekdays = "Vui lòng chọn các buổi có thể dạy.";
@@ -986,7 +1041,9 @@ function TutorRegistrationForm({
     setIsSubmitting(true);
     setSubmitMessage("");
 
-    const subjects = activeClasses;
+    const subjects = activeClasses.includes("Khác") 
+      ? [...activeClasses.filter(c => c !== "Khác"), otherClassStr.trim()].filter(Boolean)
+      : activeClasses;
     const districts = tutorForm.area
       .split(",")
       .map((item) => item.trim())
@@ -1001,7 +1058,6 @@ function TutorRegistrationForm({
             fullName: personalForm.fullName,
             email: personalForm.email,
             phone: personalForm.phone,
-            password: personalForm.password,
             subjects: subjects.length > 0 ? subjects : undefined,
             districts: districts.length > 0 ? districts : undefined,
           },
@@ -1055,7 +1111,7 @@ function TutorRegistrationForm({
                 <input
                   value={personalForm.fullName}
                   onChange={(e) => setPersonalForm((prev) => ({ ...prev, fullName: e.target.value }))}
-                  placeholder="Ho va ten"
+                  placeholder="Họ và tên"
                   className={inputBaseClass}
                 />
                 <input
@@ -1097,13 +1153,7 @@ function TutorRegistrationForm({
                   placeholder="Địa chỉ"
                   className={inputBaseClass}
                 />
-                <input
-                  type="password"
-                  value={personalForm.password}
-                  onChange={(e) => setPersonalForm((prev) => ({ ...prev, password: e.target.value }))}
-                  placeholder="Mat khau"
-                  className={inputBaseClass}
-                />
+
                 <input
                   value={personalForm.note}
                   onChange={(e) => setPersonalForm((prev) => ({ ...prev, note: e.target.value }))}
@@ -1111,7 +1161,7 @@ function TutorRegistrationForm({
                   className={inputBaseClass}
                 />
               </div>
-              {(errors.phone || errors.email || errors.role || errors.gender || errors.address || errors.password || errors.fullName) && (
+              {(errors.phone || errors.email || errors.role || errors.gender || errors.address || errors.fullName) && (
                 <p className="mt-3 text-sm font-semibold text-[#cc1f1f]">Vui lòng kiểm tra lại thông tin cá nhân.</p>
               )}
             </div>
@@ -1132,20 +1182,43 @@ function TutorRegistrationForm({
                         <span className="text-xs">▼</span>
                       </div>
                       {showClasses && (
-                        <div className="absolute z-50 mt-1 w-full max-h-60 overflow-y-auto rounded-xl border border-[#d5dff1] bg-white p-2 shadow-[0_10px_30px_rgba(0,0,0,0.1)]">
-                          <div className="grid grid-cols-2 gap-1 sm:grid-cols-3">
-                            {classOptions.map((c) => (
-                              <label key={c} className="flex cursor-pointer items-start gap-2 rounded-lg px-2 py-1.5 hover:bg-[#f3f7ff]">
-                                <input 
-                                  type="checkbox" 
-                                  checked={activeClasses.includes(c)}
-                                  onChange={() => toggleClass(c)}
-                                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-[#b1c3e3] text-[#1b4fb6] focus:ring-[#1b4fb6]"
-                                />
-                                <span className="text-[13px] font-medium leading-tight text-[#243b72]">{c}</span>
-                              </label>
+                        <div className="absolute z-50 mt-1 w-full max-h-[350px] overflow-y-auto rounded-xl border border-[#d5dff1] bg-white p-4 shadow-[0_10px_30px_rgba(0,0,0,0.1)]">
+                          <div className="flex flex-col gap-5">
+                            {classGroups.map((group) => (
+                              <div key={group.title}>
+                                <div className="mb-2 text-[13px] font-bold text-[#1d3979] border-b border-[#e5edff] pb-1 uppercase tracking-wide">
+                                  {group.title}
+                                </div>
+                                <div className="grid grid-cols-2 gap-x-2 gap-y-1 sm:grid-cols-3">
+                                  {group.options.map((opt) => (
+                                    <label key={opt.value} className="flex cursor-pointer items-start gap-2 rounded-lg px-2 py-1.5 hover:bg-[#f3f7ff]">
+                                      <input 
+                                        type="checkbox" 
+                                        checked={activeClasses.includes(opt.value)}
+                                        onChange={() => toggleClass(opt.value)}
+                                        className="mt-0.5 h-4 w-4 shrink-0 rounded border-[#b1c3e3] text-[#1b4fb6] focus:ring-[#1b4fb6]"
+                                      />
+                                      <span className="text-[13px] font-medium leading-tight text-[#243b72]">{opt.label}</span>
+                                    </label>
+                                  ))}
+                                </div>
+                              </div>
                             ))}
                           </div>
+                        </div>
+                      )}
+                      {activeClasses.includes("Khác") && (
+                        <div>
+                          <input
+                            type="text"
+                            value={otherClassStr}
+                            onChange={(e) => setOtherClassStr(e.target.value)}
+                            placeholder="Nhập môn/lớp dạy khác..."
+                            className={`${inputBaseClass} mt-3`}
+                          />
+                          {errors.otherClassStr && (
+                            <p className="mt-1 text-xs text-[#cc1f1f]">{errors.otherClassStr}</p>
+                          )}
                         </div>
                       )}
                     </div>
