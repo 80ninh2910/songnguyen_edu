@@ -19,7 +19,6 @@ import { BackgroundLines } from "@/components/ui/background-lines";
 import HeroParallaxDemo from "@/components/hero-parallax-demo";
 import DomeGallery from "@/components/DomeGallery";
 import { apiRequest } from "@/lib/api";
-
 const bricolageGrotesque = Bricolage_Grotesque({
   subsets: ["latin", "vietnamese"],
 });
@@ -388,6 +387,7 @@ function RegistrationModal({
         <div className="flex-1 overflow-y-auto px-5 py-6 md:px-7">
           {activeType === "parent" || activeType === "center" ? (
             <ParentRegistrationForm
+              mode={activeType}
               title={activeType === "center" ? "Đăng ký học tại trung tâm" : "Phụ huynh đăng ký tìm gia sư"}
               onOpenProcessModal={() => handleOpenProcess("parent")}
             />
@@ -419,9 +419,11 @@ function RegistrationModal({
 function ParentRegistrationForm({
   onOpenProcessModal,
   title = "Phụ huynh đăng ký lớp",
+  mode = "parent",
 }: {
   onOpenProcessModal: () => void;
   title?: string;
+  mode?: "parent" | "center";
 }) {
   const [studentForm, setStudentForm] = useState({
     parentName: "",
@@ -432,6 +434,7 @@ function ParentRegistrationForm({
     level: "",
     studentCount: "",
     sessionsPerWeek: "",
+    monthlyBudget: "",
   });
   const [tutorForm, setTutorForm] = useState({
     gender: "",
@@ -443,6 +446,18 @@ function ParentRegistrationForm({
   const [submitMessage, setSubmitMessage] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const parentNameRef = useRef<HTMLInputElement | null>(null);
+  const phoneRef = useRef<HTMLInputElement | null>(null);
+  const monthlyBudgetRef = useRef<HTMLInputElement | null>(null);
+  const subjectRef = useRef<HTMLSelectElement | null>(null);
+  const genderRef = useRef<HTMLSelectElement | null>(null);
+  const locationRef = useRef<HTMLSelectElement | null>(null);
+  const levelRef = useRef<HTMLSelectElement | null>(null);
+  const studentCountRef = useRef<HTMLSelectElement | null>(null);
+  const sessionsPerWeekRef = useRef<HTMLSelectElement | null>(null);
+  const tutorLevelRef = useRef<HTMLSelectElement | null>(null);
+  const weekdaysRef = useRef<HTMLDivElement | null>(null);
+  const timeSlotsRef = useRef<HTMLDivElement | null>(null);
 
   const weekDays = [
     { key: "su", label: "Su", full: "Chủ nhật" },
@@ -455,6 +470,35 @@ function ParentRegistrationForm({
   ];
 
   const timeSlots = ["Sáng", "Chiều", "Tối"];
+
+  const locationOptions =
+    mode === "center"
+      ? ["Quận Gò Vấp", "Quận 12"]
+      : [
+          "Quận 1",
+          "Quận 3",
+          "Quận 4",
+          "Quận 5",
+          "Quận 6",
+          "Quận 7",
+          "Quận 8",
+          "Quận 10",
+          "Quận 11",
+          "Quận 12",
+          "Quận Bình Tân",
+          "Quận Bình Thạnh",
+          "Quận Gò Vấp",
+          "Quận Phú Nhuận",
+          "Quận Tân Bình",
+          "Quận Tân Phú",
+          "TP Thủ Đức",
+          "Huyện Bình Chánh",
+          "Huyện Cần Giờ",
+          "Huyện Củ Chi",
+          "Huyện Hóc Môn",
+          "Huyện Nhà Bè",
+          "Online",
+        ];
 
   const subjectBasePrice: Record<string, number> = {
     "Tiếng Anh": 280000,
@@ -475,6 +519,8 @@ function ParentRegistrationForm({
 
   const inputBaseClass =
     "h-12 w-full rounded-xl border border-[#d5dff1] bg-white/95 px-4 text-[15px] font-medium text-[#243b72] outline-none transition-all duration-300 placeholder:text-[#6b7aa0] focus:border-[#4f86ff] focus:ring-4 focus:ring-[#8ab4ff]/25";
+  const errorInputClass = (hasError: boolean) =>
+    `${inputBaseClass} ${hasError ? "border-[#e44b4b] focus:border-[#e44b4b] focus:ring-[#f3a1a1]/40" : ""}`;
   const parentSubmitClass =
     "rounded-xl bg-[linear-gradient(180deg,#f00b0b_0%,#d80404_100%)] px-4 py-4 text-center text-[22px] font-black leading-tight text-white shadow-[0_16px_34px_rgba(216,4,4,0.4)] transition-all duration-300 hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0 md:text-[26px] lg:text-[30px]";
 
@@ -486,6 +532,7 @@ function ParentRegistrationForm({
     studentForm.level,
     studentForm.studentCount,
     studentForm.sessionsPerWeek,
+    studentForm.monthlyBudget,
     tutorForm.level,
   ];
 
@@ -510,6 +557,51 @@ function ParentRegistrationForm({
       maximumFractionDigits: 0,
     }).format(value);
 
+  const formatNumber = (value: string) => {
+    if (!value) return "";
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? new Intl.NumberFormat("vi-VN").format(numeric) : "";
+  };
+
+  const focusFirstParentError = (nextErrors: Record<string, string>) => {
+    const focusOrder: Array<keyof typeof nextErrors> = [
+      "parentName",
+      "phone",
+      "monthlyBudget",
+      "subject",
+      "gender",
+      "location",
+      "level",
+      "studentCount",
+      "sessionsPerWeek",
+      "tutorLevel",
+      "weekdays",
+      "timeSlots",
+    ];
+    const refMap: Record<string, React.RefObject<HTMLElement>> = {
+      parentName: parentNameRef,
+      phone: phoneRef,
+      monthlyBudget: monthlyBudgetRef,
+      subject: subjectRef,
+      gender: genderRef,
+      location: locationRef,
+      level: levelRef,
+      studentCount: studentCountRef,
+      sessionsPerWeek: sessionsPerWeekRef,
+      tutorLevel: tutorLevelRef,
+      weekdays: weekdaysRef,
+      timeSlots: timeSlotsRef,
+    };
+
+    const firstKey = focusOrder.find((key) => nextErrors[key]);
+    if (!firstKey) return;
+    const target = refMap[firstKey]?.current;
+    if (target) {
+      target.focus();
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  };
+
   const toggleWeekday = (key: string) => {
     setActiveWeekdays((prev) => {
       if (prev.includes(key)) {
@@ -519,7 +611,7 @@ function ParentRegistrationForm({
         ? (studentForm.sessionsPerWeek === "5" ? 7 : Number(studentForm.sessionsPerWeek))
         : 7;
       if (prev.length >= maxDays) {
-        alert(`Bạn chỉ được chọn tối đa ${maxDays} ngày theo số buổi đã đăng ký.`);
+        alert("Vui lòng điền đầy đủ thông tin.");
         return prev;
       }
       return [...prev, key];
@@ -545,6 +637,7 @@ function ParentRegistrationForm({
     if (!studentForm.level) nextErrors.level = "Vui lòng chọn cấp độ.";
     if (!studentForm.sessionsPerWeek) nextErrors.sessionsPerWeek = "Vui lòng chọn số buổi.";
     if (!studentForm.studentCount) nextErrors.studentCount = "Vui lòng chọn số học viên.";
+    if (!studentForm.monthlyBudget.trim()) nextErrors.monthlyBudget = "Vui lòng nhập học phí mong muốn.";
     if (!tutorForm.level) nextErrors.tutorLevel = "Vui lòng chọn trình độ gia sư.";
     if (activeWeekdays.length === 0) nextErrors.weekdays = "Hãy chọn ít nhất 1 ngày học.";
     if (activeTimeSlots.length === 0) nextErrors.timeSlots = "Hãy chọn ít nhất 1 khung giờ.";
@@ -553,6 +646,7 @@ function ParentRegistrationForm({
 
     if (Object.keys(nextErrors).length > 0) {
       setSubmitMessage("Thông tin chưa đầy đủ. Vui lòng kiểm tra các trường bắt buộc.");
+      focusFirstParentError(nextErrors);
       return;
     }
 
@@ -560,11 +654,14 @@ function ParentRegistrationForm({
     setSubmitMessage("");
 
     const sessions = Number(studentForm.sessionsPerWeek) || 0;
-    const budgetPerHour = sessions > 0 ? Math.round(estimatedFee / (sessions * 4)) : undefined;
+    const monthlyBudgetValue = Number(studentForm.monthlyBudget) || 0;
+    const baseMonthly = monthlyBudgetValue > 0 ? monthlyBudgetValue : estimatedFee;
+    const budgetPerHour = sessions > 0 ? Math.round(baseMonthly / (sessions * 4)) : undefined;
     const noteParts = [
       studentForm.gender ? `Gioi tinh hoc vien: ${studentForm.gender}` : null,
       `So hoc vien: ${studentForm.studentCount}`,
       `So buoi/tuan: ${studentForm.sessionsPerWeek}`,
+      monthlyBudgetValue > 0 ? `Hoc phi mong muon/thang: ${formatVnd(monthlyBudgetValue)}` : null,
       `Lich hoc: ${activeWeekdays.join(", ") || "Chua chon"} | ${activeTimeSlots.join(", ") || "Chua chon"}`,
       tutorForm.gender ? `Gioi tinh gia su: ${tutorForm.gender}` : null,
       tutorForm.level ? `Trinh do gia su: ${tutorForm.level}` : null,
@@ -625,21 +722,24 @@ function ParentRegistrationForm({
             <h4 className="text-lg font-bold text-[#1d3979] md:text-xl">Thông tin học viên</h4>
               <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 <input
+                  ref={parentNameRef}
                   value={studentForm.parentName}
                   onChange={(e) => setStudentForm((prev) => ({ ...prev, parentName: e.target.value }))}
                   placeholder="Họ và tên phụ huynh"
-                  className={inputBaseClass}
+                  className={errorInputClass(!!errors.parentName)}
                 />
                 <input
+                  ref={phoneRef}
                   value={studentForm.phone}
                   onChange={(e) => setStudentForm((prev) => ({ ...prev, phone: e.target.value }))}
                   placeholder="Số điện thoại"
-                  className={inputBaseClass}
+                  className={errorInputClass(!!errors.phone)}
                 />
                 <select
+                  ref={subjectRef}
                   value={studentForm.subject}
                   onChange={(e) => setStudentForm((prev) => ({ ...prev, subject: e.target.value }))}
-                  className={inputBaseClass}
+                  className={errorInputClass(!!errors.subject)}
                 >
                   <option value="">Môn học</option>
                   {Object.keys(subjectBasePrice).map((item) => (
@@ -647,6 +747,7 @@ function ParentRegistrationForm({
                   ))}
                 </select>
                 <select
+                  ref={genderRef}
                   value={studentForm.gender}
                   onChange={(e) => setStudentForm((prev) => ({ ...prev, gender: e.target.value }))}
                   className={inputBaseClass}
@@ -657,39 +758,23 @@ function ParentRegistrationForm({
                   <option value="Khác">Khác</option>
                 </select>
                 <select
+                  ref={locationRef}
                   value={studentForm.location}
                   onChange={(e) => setStudentForm((prev) => ({ ...prev, location: e.target.value }))}
-                  className={inputBaseClass}
+                  className={errorInputClass(!!errors.location)}
                 >
                   <option value="">Địa điểm dạy</option>
-                  <option value="Quận 1">Quận 1</option>
-                  <option value="Quận 3">Quận 3</option>
-                  <option value="Quận 4">Quận 4</option>
-                  <option value="Quận 5">Quận 5</option>
-                  <option value="Quận 6">Quận 6</option>
-                  <option value="Quận 7">Quận 7</option>
-                  <option value="Quận 8">Quận 8</option>
-                  <option value="Quận 10">Quận 10</option>
-                  <option value="Quận 11">Quận 11</option>
-                  <option value="Quận 12">Quận 12</option>
-                  <option value="Quận Bình Tân">Quận Bình Tân</option>
-                  <option value="Quận Bình Thạnh">Quận Bình Thạnh</option>
-                  <option value="Quận Gò Vấp">Quận Gò Vấp</option>
-                  <option value="Quận Phú Nhuận">Quận Phú Nhuận</option>
-                  <option value="Quận Tân Bình">Quận Tân Bình</option>
-                  <option value="Quận Tân Phú">Quận Tân Phú</option>
-                  <option value="TP Thủ Đức">TP Thủ Đức</option>
-                  <option value="Huyện Bình Chánh">Huyện Bình Chánh</option>
-                  <option value="Huyện Cần Giờ">Huyện Cần Giờ</option>
-                  <option value="Huyện Củ Chi">Huyện Củ Chi</option>
-                  <option value="Huyện Hóc Môn">Huyện Hóc Môn</option>
-                  <option value="Huyện Nhà Bè">Huyện Nhà Bè</option>
-                  <option value="Online">Online</option>
+                  {locationOptions.map((item) => (
+                    <option key={item} value={item}>
+                      {item}
+                    </option>
+                  ))}
                 </select>
                 <select
+                  ref={levelRef}
                   value={studentForm.level}
                   onChange={(e) => setStudentForm((prev) => ({ ...prev, level: e.target.value }))}
-                  className={inputBaseClass}
+                  className={errorInputClass(!!errors.level)}
                 >
                   <option value="">Lớp / Cấp độ</option>
                   {Object.keys(levelMultiplier).map((item) => (
@@ -697,9 +782,10 @@ function ParentRegistrationForm({
                   ))}
                 </select>
                 <select
+                  ref={studentCountRef}
                   value={studentForm.studentCount}
                   onChange={(e) => setStudentForm((prev) => ({ ...prev, studentCount: e.target.value }))}
-                  className={inputBaseClass}
+                  className={errorInputClass(!!errors.studentCount)}
                 >
                   <option value="">Số học viên</option>
                   <option value="1">1 học viên</option>
@@ -708,6 +794,7 @@ function ParentRegistrationForm({
                   <option value="4">4+ học viên</option>
                 </select>
                 <select
+                  ref={sessionsPerWeekRef}
                   value={studentForm.sessionsPerWeek}
                   onChange={(e) => {
                     const val = e.target.value;
@@ -715,7 +802,7 @@ function ParentRegistrationForm({
                     const maxDays = val ? (val === "5" ? 7 : Number(val)) : 7;
                     setActiveWeekdays((prev) => prev.slice(0, maxDays));
                   }}
-                  className={`${inputBaseClass} lg:col-span-1`}
+                  className={`${errorInputClass(!!errors.sessionsPerWeek)} lg:col-span-1`}
                 >
                   <option value="">Số buổi / tuần</option>
                   <option value="1">1 buổi</option>
@@ -725,7 +812,7 @@ function ParentRegistrationForm({
                   <option value="5">5+ buổi</option>
                 </select>
               </div>
-              {(errors.phone || errors.subject || errors.location || errors.level || errors.studentCount || errors.sessionsPerWeek || errors.parentName) && (
+              {(errors.phone || errors.subject || errors.location || errors.level || errors.studentCount || errors.sessionsPerWeek || errors.parentName || errors.monthlyBudget) && (
                 <p className="mt-3 text-sm font-semibold text-[#cc1f1f]">Vui lòng điền đầy đủ thông tin học viên.</p>
               )}
             </div>
@@ -752,9 +839,10 @@ function ParentRegistrationForm({
                       className="min-h-[70px] w-full rounded-xl border border-[#d5dff1] bg-white/95 px-4 py-3 text-[15px] font-medium text-[#243b72] outline-none transition-all duration-300 placeholder:text-[#6b7aa0] focus:border-[#4f86ff] focus:ring-4 focus:ring-[#8ab4ff]/25"
                     />
                     <select
+                      ref={tutorLevelRef}
                       value={tutorForm.level}
                       onChange={(e) => setTutorForm((prev) => ({ ...prev, level: e.target.value }))}
-                      className={inputBaseClass}
+                      className={errorInputClass(!!errors.tutorLevel)}
                     >
                       <option value="">Trình độ</option>
                       <option value="Gia sư tự do">Gia sư tự do</option>
@@ -777,7 +865,13 @@ function ParentRegistrationForm({
                     Các buổi trong tuần học viên có thể học
                   </p>
                   <div className="mt-3 rounded-2xl border border-white/70 bg-white/75 p-4">
-                    <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
+                    <div
+                      ref={weekdaysRef}
+                      tabIndex={-1}
+                      className={`grid grid-cols-4 gap-2 sm:grid-cols-7 focus:outline-none focus:ring-2 focus:ring-[#8ab4ff]/60 ${
+                        errors.weekdays ? "rounded-xl border border-[#e44b4b] p-1" : ""
+                      }`}
+                    >
                       {weekDays.map((day) => {
                         const isActive = activeWeekdays.includes(day.key);
                         return (
@@ -798,7 +892,13 @@ function ParentRegistrationForm({
                       })}
                     </div>
 
-                    <div className="mt-3 grid grid-cols-3 gap-2">
+                    <div
+                      ref={timeSlotsRef}
+                      tabIndex={-1}
+                      className={`mt-3 grid grid-cols-3 gap-2 focus:outline-none focus:ring-2 focus:ring-[#8ab4ff]/60 ${
+                        errors.timeSlots ? "rounded-xl border border-[#e44b4b] p-1" : ""
+                      }`}
+                    >
                       {timeSlots.map((slot) => {
                         const active = activeTimeSlots.includes(slot);
                         return (
@@ -828,6 +928,34 @@ function ParentRegistrationForm({
                 </div>
               </div>
 
+              <div className="mt-5 rounded-2xl border-2 border-[#6ea0ff] bg-[#eef4ff] p-4 shadow-[0_12px_28px_rgba(82,139,255,0.2)]">
+                <p className="text-sm font-bold uppercase tracking-[0.12em] text-[#21408c]">Học phí mong muốn</p>
+                <div className="mt-2 relative">
+                  <input
+                    ref={monthlyBudgetRef}
+                    value={studentForm.monthlyBudget}
+                    onChange={(e) => {
+                      const rawValue = e.target.value.replace(/\D/g, "");
+                      setStudentForm((prev) => ({ ...prev, monthlyBudget: rawValue }));
+                    }}
+                    placeholder="Nhập học phí / tháng"
+                    inputMode="numeric"
+                    className={`${errorInputClass(!!errors.monthlyBudget)} h-14 text-lg font-bold pr-14`}
+                  />
+                  <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-[#4f6db6]">
+                    VND
+                  </span>
+                </div>
+                {errors.monthlyBudget && (
+                  <p className="mt-2 text-sm font-semibold text-[#cc1f1f]">{errors.monthlyBudget}</p>
+                )}
+                {!errors.monthlyBudget && studentForm.monthlyBudget && (
+                  <p className="mt-2 text-sm font-semibold text-[#21408c]">
+                    Số tiền (VND): {formatVnd(Number(studentForm.monthlyBudget))}
+                  </p>
+                )}
+              </div>
+
               <h4 className="mt-5 text-2xl font-extrabold text-[#17367b] md:text-3xl">Học phí tham khảo</h4>
 
               <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-[1fr_1fr]">
@@ -840,7 +968,7 @@ function ParentRegistrationForm({
                   disabled={isSubmitting}
                   className="rounded-xl bg-[linear-gradient(180deg,#1b4fb6_0%,#0f3b9c_100%)] px-4 py-4 text-center text-[22px] font-black leading-tight text-white shadow-[0_16px_34px_rgba(15,59,156,0.4)] transition-all duration-300 hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0 md:text-[26px] lg:text-[30px]"
                 >
-                  {isSubmitting ? "Dang gui..." : "Tim gia su ngay"}
+                  {isSubmitting ? "Đang gửi..." : "Tìm gia sư ngay"}
                 </button>
               </div>
 
@@ -903,10 +1031,20 @@ function TutorRegistrationForm({
   const [submitMessage, setSubmitMessage] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const fullNameRef = useRef<HTMLInputElement | null>(null);
+  const tutorPhoneRef = useRef<HTMLInputElement | null>(null);
+  const emailRef = useRef<HTMLInputElement | null>(null);
+  const genderRef = useRef<HTMLSelectElement | null>(null);
+  const addressRef = useRef<HTMLInputElement | null>(null);
+  const classDropdownRef = useRef<HTMLDivElement | null>(null);
+  const otherClassRef = useRef<HTMLInputElement | null>(null);
+  const schoolRef = useRef<HTMLInputElement | null>(null);
+  const areaRef = useRef<HTMLInputElement | null>(null);
+  const tutorWeekdaysRef = useRef<HTMLDivElement | null>(null);
 
   const classGroups = [
     {
-      title: "Cấp 1 – Tiểu học (Lớp 1 → 5)",
+      title: "Tiểu học",
       options: [
         { label: "Tiếng Việt", value: "Tiếng Việt (Cấp 1)" },
         { label: "Toán", value: "Toán (Cấp 1)" },
@@ -921,7 +1059,7 @@ function TutorRegistrationForm({
       ]
     },
     {
-      title: "Cấp 2 – THCS (Lớp 6 → 9)",
+      title: "THCS",
       options: [
         { label: "Ngữ văn", value: "Ngữ văn (Cấp 2)" },
         { label: "Toán", value: "Toán (Cấp 2)" },
@@ -938,7 +1076,7 @@ function TutorRegistrationForm({
       ]
     },
     {
-      title: "Cấp 3 – THPT (Lớp 10 → 12)",
+      title: "THPT",
       options: [
         { label: "Ngữ văn", value: "Ngữ văn (Cấp 3)" },
         { label: "Toán", value: "Toán (Cấp 3)" },
@@ -978,10 +1116,11 @@ function TutorRegistrationForm({
     { key: "sa", label: "Sa", full: "Thứ 7" },
   ];
 
+  const fixedRole = track === "free" ? "Gia sư tự do" : "Gia sư đào tạo";
+
   useEffect(() => {
-    const role = track === "free" ? "Gia sư tự do" : "Gia sư đào tạo";
-    setPersonalForm((prev) => ({ ...prev, role }));
-  }, [track]);
+    setPersonalForm((prev) => ({ ...prev, role: fixedRole }));
+  }, [fixedRole]);
 
   const requiredFields = [
     personalForm.fullName,
@@ -1004,11 +1143,48 @@ function TutorRegistrationForm({
 
   const inputBaseClass =
     "h-12 w-full rounded-xl border border-[#d5dff1] bg-white/95 px-4 text-[15px] font-medium text-[#243b72] outline-none transition-all duration-300 placeholder:text-[#6b7aa0] focus:border-[#4f86ff] focus:ring-4 focus:ring-[#8ab4ff]/25";
+  const errorInputClass = (hasError: boolean) =>
+    `${inputBaseClass} ${hasError ? "border-[#e44b4b] focus:border-[#e44b4b] focus:ring-[#f3a1a1]/40" : ""}`;
 
   const toggleWeekday = (key: string) => {
     setActiveWeekdays((prev) =>
       prev.includes(key) ? prev.filter((item) => item !== key) : [...prev, key]
     );
+  };
+
+  const focusFirstTutorError = (nextErrors: Record<string, string>) => {
+    const focusOrder: Array<keyof typeof nextErrors> = [
+      "fullName",
+      "phone",
+      "email",
+      "gender",
+      "address",
+      "classes",
+      "otherClassStr",
+      "school",
+      "area",
+      "weekdays",
+    ];
+    const refMap: Record<string, React.RefObject<HTMLElement>> = {
+      fullName: fullNameRef,
+      phone: tutorPhoneRef,
+      email: emailRef,
+      gender: genderRef,
+      address: addressRef,
+      classes: classDropdownRef,
+      otherClassStr: otherClassRef,
+      school: schoolRef,
+      area: areaRef,
+      weekdays: tutorWeekdaysRef,
+    };
+
+    const firstKey = focusOrder.find((key) => nextErrors[key]);
+    if (!firstKey) return;
+    const target = refMap[firstKey]?.current;
+    if (target) {
+      target.focus();
+      target.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -1035,6 +1211,7 @@ function TutorRegistrationForm({
 
     if (Object.keys(nextErrors).length > 0) {
       setSubmitMessage("Thông tin chưa đầy đủ. Vui lòng kiểm tra các trường bắt buộc.");
+      focusFirstTutorError(nextErrors);
       return;
     }
 
@@ -1109,38 +1286,38 @@ function TutorRegistrationForm({
             <h4 className="text-lg font-bold text-[#1d3979] md:text-xl">Thông tin cá nhân</h4>
               <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <input
+                  ref={fullNameRef}
                   value={personalForm.fullName}
                   onChange={(e) => setPersonalForm((prev) => ({ ...prev, fullName: e.target.value }))}
                   placeholder="Họ và tên"
-                  className={inputBaseClass}
+                  className={errorInputClass(!!errors.fullName)}
                 />
                 <input
+                  ref={tutorPhoneRef}
                   value={personalForm.phone}
                   onChange={(e) => setPersonalForm((prev) => ({ ...prev, phone: e.target.value }))}
                   placeholder="Số điện thoại"
-                  className={inputBaseClass}
+                  className={errorInputClass(!!errors.phone)}
                 />
                 <select
-                  value={personalForm.role}
-                  onChange={(e) => setPersonalForm((prev) => ({ ...prev, role: e.target.value }))}
-                  className={inputBaseClass}
+                  value={fixedRole}
+                  disabled
+                  className={`${inputBaseClass} cursor-not-allowed bg-[#eef2ff] text-[#243b72]/80`}
                 >
-                  <option value="">Bạn đang là</option>
-                  <option value="Sinh viên">Sinh viên</option>
-                  <option value="Gia sư tự do">Gia sư tự do</option>
-                  <option value="Gia sư đào tạo">Gia sư đào tạo</option>
-                  <option value="Giáo viên">Giáo viên</option>
+                  <option value={fixedRole}>{fixedRole}</option>
                 </select>
                 <input
+                  ref={emailRef}
                   value={personalForm.email}
                   onChange={(e) => setPersonalForm((prev) => ({ ...prev, email: e.target.value }))}
                   placeholder="Email"
-                  className={inputBaseClass}
+                  className={errorInputClass(!!errors.email)}
                 />
                 <select
+                  ref={genderRef}
                   value={personalForm.gender}
                   onChange={(e) => setPersonalForm((prev) => ({ ...prev, gender: e.target.value }))}
-                  className={inputBaseClass}
+                  className={errorInputClass(!!errors.gender)}
                 >
                   <option value="">Giới tính</option>
                   <option value="Nam">Nam</option>
@@ -1148,10 +1325,11 @@ function TutorRegistrationForm({
                   <option value="Khác">Khác</option>
                 </select>
                 <input
+                  ref={addressRef}
                   value={personalForm.address}
                   onChange={(e) => setPersonalForm((prev) => ({ ...prev, address: e.target.value }))}
                   placeholder="Địa chỉ"
-                  className={inputBaseClass}
+                  className={errorInputClass(!!errors.address)}
                 />
 
                 <input
@@ -1173,7 +1351,9 @@ function TutorRegistrationForm({
                   <div className="mt-4 space-y-3">
                     <div className="relative">
                       <div 
-                        className={`${inputBaseClass} flex items-center justify-between cursor-pointer`}
+                          ref={classDropdownRef}
+                          tabIndex={0}
+                        className={`${errorInputClass(!!errors.classes)} flex items-center justify-between cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#8ab4ff]/60`}
                         onClick={() => setShowClasses(!showClasses)}
                       >
                         <span className={`truncate pr-2 ${activeClasses.length > 0 ? "text-[#243b72]" : "text-[#6b7aa0]"}`}>
@@ -1211,10 +1391,11 @@ function TutorRegistrationForm({
                         <div>
                           <input
                             type="text"
+                            ref={otherClassRef}
                             value={otherClassStr}
                             onChange={(e) => setOtherClassStr(e.target.value)}
                             placeholder="Nhập môn/lớp dạy khác..."
-                            className={`${inputBaseClass} mt-3`}
+                            className={`${errorInputClass(!!errors.otherClassStr)} mt-3`}
                           />
                           {errors.otherClassStr && (
                             <p className="mt-1 text-xs text-[#cc1f1f]">{errors.otherClassStr}</p>
@@ -1223,16 +1404,18 @@ function TutorRegistrationForm({
                       )}
                     </div>
                     <input
+                      ref={schoolRef}
                       value={tutorForm.school}
                       onChange={(e) => setTutorForm((prev) => ({ ...prev, school: e.target.value }))}
                       placeholder="Trường đã/đang học"
-                      className={inputBaseClass}
+                      className={errorInputClass(!!errors.school)}
                     />
                     <input
+                      ref={areaRef}
                       value={tutorForm.area}
                       onChange={(e) => setTutorForm((prev) => ({ ...prev, area: e.target.value }))}
                       placeholder="Khu vực dạy"
-                      className={inputBaseClass}
+                      className={errorInputClass(!!errors.area)}
                     />
                   </div>
 
@@ -1245,7 +1428,13 @@ function TutorRegistrationForm({
                   <p className="text-sm font-semibold text-[#2a4b8c] md:text-base">
                     Các buổi trong tuần có thể dạy
                   </p>
-                  <div className="mt-3 rounded-2xl border border-white/70 bg-white/75 p-4">
+                  <div
+                    ref={tutorWeekdaysRef}
+                    tabIndex={-1}
+                    className={`mt-3 rounded-2xl border border-white/70 bg-white/75 p-4 focus:outline-none focus:ring-2 focus:ring-[#8ab4ff]/60 ${
+                      errors.weekdays ? "border-[#e44b4b]" : ""
+                    }`}
+                  >
                     <div className="grid grid-cols-4 gap-2 sm:grid-cols-7">
                       {weekDays.map((day) => {
                         const isActive = activeWeekdays.includes(day.key);
@@ -1283,7 +1472,7 @@ function TutorRegistrationForm({
                   disabled={isSubmitting}
                   className="rounded-xl bg-[linear-gradient(180deg,#1b4fb6_0%,#0f3b9c_100%)] px-6 py-3 text-center text-lg font-black text-white shadow-[0_16px_34px_rgba(15,59,156,0.4)] transition-all duration-300 hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0 md:px-7 md:text-xl lg:text-[22px]"
                 >
-                  {isSubmitting ? "Dang gui..." : "DANG KY LAM GIA SU NGAY"}
+                  {isSubmitting ? "Đang gửi..." : "ĐĂNG KÝ LÀM GIA SƯ NGAY"}
                 </button>
               </div>
 
