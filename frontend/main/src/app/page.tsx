@@ -578,7 +578,7 @@ function ParentRegistrationForm({
       "weekdays",
       "timeSlots",
     ];
-    const refMap: Record<string, React.RefObject<HTMLElement>> = {
+    const refMap: Record<string, React.RefObject<HTMLElement | null>> = {
       parentName: parentNameRef,
       phone: phoneRef,
       monthlyBudget: monthlyBudgetRef,
@@ -1165,7 +1165,7 @@ function TutorRegistrationForm({
       "area",
       "weekdays",
     ];
-    const refMap: Record<string, React.RefObject<HTMLElement>> = {
+    const refMap: Record<string, React.RefObject<HTMLElement | null>> = {
       fullName: fullNameRef,
       phone: tutorPhoneRef,
       email: emailRef,
