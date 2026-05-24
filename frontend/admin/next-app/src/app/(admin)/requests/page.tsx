@@ -107,7 +107,11 @@ function formatClassCode(id: string): string {
 // -------------------------------------------------------------
 // PARENT REQUESTS TAB
 // -------------------------------------------------------------
-function ParentRequestsTab({ showToast }: { showToast: (tone: ToastTone, msg: string) => void }) {
+function ParentRequestsTab({
+  showToast,
+}: {
+  showToast: (tone: ToastTone, msg: string) => void;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -173,7 +177,11 @@ function ParentRequestsTab({ showToast }: { showToast: (tone: ToastTone, msg: st
       setRecords(response.data);
       setMeta(response.meta);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Không thể tải danh sách yêu cầu mở lớp.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Không thể tải danh sách yêu cầu mở lớp.",
+      );
     } finally {
       setLoading(false);
     }
@@ -204,7 +212,9 @@ function ParentRequestsTab({ showToast }: { showToast: (tone: ToastTone, msg: st
       const response = await getAdminClassRequestById(requestId);
       setDetail(response);
     } catch (err) {
-      setDetailError(err instanceof Error ? err.message : "Không thể tải chi tiết yêu cầu.");
+      setDetailError(
+        err instanceof Error ? err.message : "Không thể tải chi tiết yêu cầu.",
+      );
       setDetail(null);
     } finally {
       setDetailLoading(false);
@@ -224,7 +234,10 @@ function ParentRequestsTab({ showToast }: { showToast: (tone: ToastTone, msg: st
       setSelectedRequestId("");
       return;
     }
-    if (!selectedRequestId || !records.some((item) => item.id === selectedRequestId)) {
+    if (
+      !selectedRequestId ||
+      !records.some((item) => item.id === selectedRequestId)
+    ) {
       setSelectedRequestId(records[0].id);
     }
   }, [records, selectedRequestId]);
@@ -270,13 +283,18 @@ function ParentRequestsTab({ showToast }: { showToast: (tone: ToastTone, msg: st
     setConvertLoading(true);
 
     try {
-      const payload: { title?: string; feePerHour?: number; schedule?: string } = {};
+      const payload: {
+        title?: string;
+        feePerHour?: number;
+        schedule?: string;
+      } = {};
       const trimmedTitle = convertForm.title.trim();
       const trimmedSchedule = convertForm.schedule.trim();
       const feeValue = Number(convertForm.feePerHour);
 
       if (trimmedTitle) payload.title = trimmedTitle;
-      if (Number.isFinite(feeValue) && feeValue > 0) payload.feePerHour = Math.round(feeValue);
+      if (Number.isFinite(feeValue) && feeValue > 0)
+        payload.feePerHour = Math.round(feeValue);
       if (trimmedSchedule) payload.schedule = trimmedSchedule;
 
       await convertAdminClassRequest(detail.id, payload);
@@ -284,7 +302,10 @@ function ParentRequestsTab({ showToast }: { showToast: (tone: ToastTone, msg: st
       setIsConvertOpen(false);
       await Promise.all([loadRequests(), loadStats(), loadDetail(detail.id)]);
     } catch (err) {
-      showToast("error", err instanceof Error ? err.message : "Không thể tạo lớp từ yêu cầu.");
+      showToast(
+        "error",
+        err instanceof Error ? err.message : "Không thể tạo lớp từ yêu cầu.",
+      );
     } finally {
       setConvertLoading(false);
     }
@@ -308,7 +329,10 @@ function ParentRequestsTab({ showToast }: { showToast: (tone: ToastTone, msg: st
       setRejectReason("");
       await Promise.all([loadRequests(), loadStats(), loadDetail(detail.id)]);
     } catch (err) {
-      showToast("error", err instanceof Error ? err.message : "Không thể từ chối yêu cầu.");
+      showToast(
+        "error",
+        err instanceof Error ? err.message : "Không thể từ chối yêu cầu.",
+      );
     } finally {
       setRejectLoading(false);
     }
@@ -318,13 +342,24 @@ function ParentRequestsTab({ showToast }: { showToast: (tone: ToastTone, msg: st
 
   return (
     <>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "1rem",
+        }}
+      >
         <div>
           <p className="admin-page-subtitle" style={{ margin: 0 }}>
             Duyệt và tạo lớp từ yêu cầu của phụ huynh.
           </p>
         </div>
-        <button className="admin-btn tonal" onClick={() => void loadRequests()} type="button">
+        <button
+          className="admin-btn tonal"
+          onClick={() => void loadRequests()}
+          type="button"
+        >
           <AdminIcon name="autorenew" />
           Làm mới
         </button>
@@ -390,9 +425,17 @@ function ParentRequestsTab({ showToast }: { showToast: (tone: ToastTone, msg: st
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={8} style={{ textAlign: "center" }}>Đang tải dữ liệu...</td></tr>
+                <tr>
+                  <td colSpan={8} style={{ textAlign: "center" }}>
+                    Đang tải dữ liệu...
+                  </td>
+                </tr>
               ) : records.length === 0 ? (
-                <tr><td colSpan={8} style={{ textAlign: "center" }}>Chưa có yêu cầu mở lớp.</td></tr>
+                <tr>
+                  <td colSpan={8} style={{ textAlign: "center" }}>
+                    Chưa có yêu cầu mở lớp.
+                  </td>
+                </tr>
               ) : (
                 records.map((record) => {
                   const metaInfo = STATUS_META[record.status];
@@ -401,30 +444,51 @@ function ParentRequestsTab({ showToast }: { showToast: (tone: ToastTone, msg: st
                     <tr
                       key={record.id}
                       onClick={() => setSelectedRequestId(record.id)}
-                      style={isSelected ? { background: "rgba(219, 234, 254, 0.35)" } : undefined}
+                      style={
+                        isSelected
+                          ? { background: "rgba(219, 234, 254, 0.35)" }
+                          : undefined
+                      }
                     >
-                      <td style={{ fontWeight: 700 }}>{formatRequestCode(record.id)}</td>
+                      <td style={{ fontWeight: 700 }}>
+                        {formatRequestCode(record.id)}
+                      </td>
                       <td>
                         <div className="table-user">
-                          <div className="table-user-avatar">{getInitials(record.parentName)}</div>
+                          <div className="table-user-avatar">
+                            {getInitials(record.parentName)}
+                          </div>
                           <div>
-                            <p className="table-user-name">{record.parentName}</p>
-                            <p className="table-user-email">{record.parentPhone}</p>
+                            <p className="table-user-name">
+                              {record.parentName}
+                            </p>
+                            <p className="table-user-email">
+                              {record.parentPhone}
+                            </p>
                           </div>
                         </div>
                       </td>
-                      <td style={{ fontWeight: 700 }}>{record.subject} - {record.grade}</td>
+                      <td style={{ fontWeight: 700 }}>
+                        {record.subject} - {record.grade}
+                      </td>
                       <td>{record.district}</td>
                       <td>{formatCurrency(record.budgetPerHour)}</td>
                       <td>{formatDate(record.createdAt)}</td>
                       <td>
-                        <AdminStatusBadge label={metaInfo.label} tone={metaInfo.tone} dotColor={metaInfo.dotColor} />
+                        <AdminStatusBadge
+                          label={metaInfo.label}
+                          tone={metaInfo.tone}
+                          dotColor={metaInfo.dotColor}
+                        />
                       </td>
                       <td>
                         <div className="table-action-group">
                           <button
                             className="table-action-btn"
-                            onClick={(e) => { e.stopPropagation(); setSelectedRequestId(record.id); }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedRequestId(record.id);
+                            }}
                             type="button"
                           >
                             <AdminIcon name="visibility" />
@@ -440,41 +504,108 @@ function ParentRequestsTab({ showToast }: { showToast: (tone: ToastTone, msg: st
         </div>
 
         <aside className="admin-panel">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: "0.75rem",
+            }}
+          >
             <div>
-              <h3 className="admin-panel-title" style={{ margin: 0 }}>Chi tiết yêu cầu</h3>
-              <p className="admin-panel-subtitle">{detail ? formatRequestCode(detail.id) : "Chưa chọn yêu cầu"}</p>
+              <h3 className="admin-panel-title" style={{ margin: 0 }}>
+                Chi tiết yêu cầu
+              </h3>
+              <p className="admin-panel-subtitle">
+                {detail ? formatRequestCode(detail.id) : "Chưa chọn yêu cầu"}
+              </p>
             </div>
-            {selectedMeta && <AdminStatusBadge label={selectedMeta.label} tone={selectedMeta.tone} dotColor={selectedMeta.dotColor} />}
+            {selectedMeta && (
+              <AdminStatusBadge
+                label={selectedMeta.label}
+                tone={selectedMeta.tone}
+                dotColor={selectedMeta.dotColor}
+              />
+            )}
           </div>
 
           {detailLoading ? (
-            <p style={{ marginTop: "1rem", color: "#64748b" }}>Đang tải chi tiết...</p>
+            <p style={{ marginTop: "1rem", color: "#64748b" }}>
+              Đang tải chi tiết...
+            </p>
           ) : detailError ? (
             <p style={{ marginTop: "1rem", color: "#ba1a1a" }}>{detailError}</p>
           ) : detail ? (
             <div style={{ marginTop: "1rem", display: "grid", gap: "1rem" }}>
               <section>
-                <p style={{ margin: "0 0 0.45rem", fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 800, color: "#64748b" }}>
+                <p
+                  style={{
+                    margin: "0 0 0.45rem",
+                    fontSize: "0.72rem",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    fontWeight: 800,
+                    color: "#64748b",
+                  }}
+                >
                   Thông tin phụ huynh
                 </p>
                 <div className="payments-info-grid">
-                  <div><p className="payments-info-label">Họ tên</p><p className="payments-info-value">{detail.parentName}</p></div>
-                  <div><p className="payments-info-label">Số điện thoại</p><p className="payments-info-value">{detail.parentPhone}</p></div>
-                  <div><p className="payments-info-label">Email</p><p className="payments-info-value">{detail.parentEmail ?? "-"}</p></div>
-                  <div><p className="payments-info-label">Ngày gửi</p><p className="payments-info-value">{formatDate(detail.createdAt)}</p></div>
+                  <div>
+                    <p className="payments-info-label">Họ tên</p>
+                    <p className="payments-info-value">{detail.parentName}</p>
+                  </div>
+                  <div>
+                    <p className="payments-info-label">Số điện thoại</p>
+                    <p className="payments-info-value">{detail.parentPhone}</p>
+                  </div>
+                  <div>
+                    <p className="payments-info-label">Email</p>
+                    <p className="payments-info-value">
+                      {detail.parentEmail ?? "-"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="payments-info-label">Ngày gửi</p>
+                    <p className="payments-info-value">
+                      {formatDate(detail.createdAt)}
+                    </p>
+                  </div>
                 </div>
               </section>
 
               <section>
-                <p style={{ margin: "0 0 0.45rem", fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 800, color: "#64748b" }}>
+                <p
+                  style={{
+                    margin: "0 0 0.45rem",
+                    fontSize: "0.72rem",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    fontWeight: 800,
+                    color: "#64748b",
+                  }}
+                >
                   Yêu cầu của phụ huynh
                 </p>
                 <div className="payments-info-grid">
-                  <div><p className="payments-info-label">Môn học</p><p className="payments-info-value">{detail.subject}</p></div>
-                  <div><p className="payments-info-label">Lớp</p><p className="payments-info-value">{detail.grade}</p></div>
-                  <div><p className="payments-info-label">Khu vực</p><p className="payments-info-value">{detail.district}</p></div>
-                  <div><p className="payments-info-label">Học phí</p><p className="payments-info-value">{formatCurrency(detail.budgetPerHour)}</p></div>
+                  <div>
+                    <p className="payments-info-label">Môn học</p>
+                    <p className="payments-info-value">{detail.subject}</p>
+                  </div>
+                  <div>
+                    <p className="payments-info-label">Lớp</p>
+                    <p className="payments-info-value">{detail.grade}</p>
+                  </div>
+                  <div>
+                    <p className="payments-info-label">Khu vực</p>
+                    <p className="payments-info-value">{detail.district}</p>
+                  </div>
+                  <div>
+                    <p className="payments-info-label">Học phí</p>
+                    <p className="payments-info-value">
+                      {formatCurrency(detail.budgetPerHour)}
+                    </p>
+                  </div>
                 </div>
                 {detail.note && (
                   <div style={{ marginTop: "0.6rem" }}>
@@ -485,20 +616,37 @@ function ParentRequestsTab({ showToast }: { showToast: (tone: ToastTone, msg: st
               </section>
 
               <section>
-                <p style={{ margin: "0 0 0.45rem", fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 800, color: "#64748b" }}>
+                <p
+                  style={{
+                    margin: "0 0 0.45rem",
+                    fontSize: "0.72rem",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.08em",
+                    fontWeight: 800,
+                    color: "#64748b",
+                  }}
+                >
                   Học viên trong yêu cầu
                 </p>
                 {detail.members.length === 0 ? (
-                  <p style={{ margin: 0, color: "#64748b" }}>Chưa có thông tin học viên.</p>
+                  <p style={{ margin: 0, color: "#64748b" }}>
+                    Chưa có thông tin học viên.
+                  </p>
                 ) : (
                   <div className="pairing-user-list">
                     {detail.members.map((member) => (
                       <div className="pairing-user-item" key={member.id}>
                         <div className="pairing-user-left">
-                          <div className="pairing-user-avatar">{getInitials(member.studentName)}</div>
+                          <div className="pairing-user-avatar">
+                            {getInitials(member.studentName)}
+                          </div>
                           <div>
-                            <p className="pairing-user-name">{member.studentName}</p>
-                            <p className="pairing-user-sub">{member.studentGrade ?? "-"}</p>
+                            <p className="pairing-user-name">
+                              {member.studentName}
+                            </p>
+                            <p className="pairing-user-sub">
+                              {member.studentGrade ?? "-"}
+                            </p>
                           </div>
                         </div>
                       </div>
@@ -509,20 +657,36 @@ function ParentRequestsTab({ showToast }: { showToast: (tone: ToastTone, msg: st
 
               {detail.classes.length > 0 && (
                 <section>
-                  <p style={{ margin: "0 0 0.45rem", fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.08em", fontWeight: 800, color: "#64748b" }}>
+                  <p
+                    style={{
+                      margin: "0 0 0.45rem",
+                      fontSize: "0.72rem",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                      fontWeight: 800,
+                      color: "#64748b",
+                    }}
+                  >
                     Lớp đã tạo
                   </p>
                   <div className="pairing-user-list">
                     {detail.classes.map((item) => (
                       <div className="pairing-user-item" key={item.id}>
                         <div className="pairing-user-left">
-                          <div className="pairing-user-avatar">{item.title.slice(0, 2).toUpperCase()}</div>
+                          <div className="pairing-user-avatar">
+                            {item.title.slice(0, 2).toUpperCase()}
+                          </div>
                           <div>
                             <p className="pairing-user-name">{item.title}</p>
-                            <p className="pairing-user-sub">{formatDate(item.createdAt)}</p>
+                            <p className="pairing-user-sub">
+                              {formatDate(item.createdAt)}
+                            </p>
                           </div>
                         </div>
-                        <AdminStatusBadge label={item.status} tone={item.status === "OPEN" ? "open" : "processing"} />
+                        <AdminStatusBadge
+                          label={item.status}
+                          tone={item.status === "OPEN" ? "open" : "processing"}
+                        />
                       </div>
                     ))}
                   </div>
@@ -530,15 +694,28 @@ function ParentRequestsTab({ showToast }: { showToast: (tone: ToastTone, msg: st
               )}
             </div>
           ) : (
-            <p style={{ marginTop: "1rem", color: "#64748b" }}>Chọn một yêu cầu để xem chi tiết.</p>
+            <p style={{ marginTop: "1rem", color: "#64748b" }}>
+              Chọn một yêu cầu để xem chi tiết.
+            </p>
           )}
 
           {detail?.status === "PENDING" && (
-            <div className="payments-action-stack" style={{ marginTop: "1.1rem" }}>
-              <button className="admin-btn primary" onClick={() => setIsConvertOpen(true)} type="button">
+            <div
+              className="payments-action-stack"
+              style={{ marginTop: "1.1rem" }}
+            >
+              <button
+                className="admin-btn primary"
+                onClick={() => setIsConvertOpen(true)}
+                type="button"
+              >
                 <AdminIcon name="verified" /> Tạo lớp từ yêu cầu
               </button>
-              <button className="admin-btn danger" onClick={() => setIsRejectOpen(true)} type="button">
+              <button
+                className="admin-btn danger"
+                onClick={() => setIsRejectOpen(true)}
+                type="button"
+              >
                 <AdminIcon name="cancel" /> Từ chối yêu cầu
               </button>
             </div>
@@ -546,22 +723,72 @@ function ParentRequestsTab({ showToast }: { showToast: (tone: ToastTone, msg: st
         </aside>
       </section>
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", color: "#64748b", fontSize: "0.8rem" }}>
-        <span>Hiển thị {rangeStart} - {rangeEnd} trong tổng số {meta.total} yêu cầu</span>
-        <div style={{ display: "inline-flex", gap: "0.35rem", alignItems: "center" }}>
-          <button className="admin-btn tonal" disabled={pagination.currentPage <= 1} onClick={() => updateQuery({ page: Math.max(1, pagination.currentPage - 1) })} type="button">
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          color: "#64748b",
+          fontSize: "0.8rem",
+        }}
+      >
+        <span>
+          Hiển thị {rangeStart} - {rangeEnd} trong tổng số {meta.total} yêu cầu
+        </span>
+        <div
+          style={{
+            display: "inline-flex",
+            gap: "0.35rem",
+            alignItems: "center",
+          }}
+        >
+          <button
+            className="admin-btn tonal"
+            disabled={pagination.currentPage <= 1}
+            onClick={() =>
+              updateQuery({ page: Math.max(1, pagination.currentPage - 1) })
+            }
+            type="button"
+          >
             <AdminIcon name="chevron_left" style={{ width: "1rem" }} />
           </button>
           {pagination.pages.map((item, index) =>
             item === "ellipsis" ? (
-              <button className="admin-btn tonal" key={`ellipsis-${index}`} type="button">...</button>
+              <button
+                className="admin-btn tonal"
+                key={`ellipsis-${index}`}
+                type="button"
+              >
+                ...
+              </button>
             ) : (
-              <button className={item === pagination.currentPage ? "admin-btn primary" : "admin-btn tonal"} key={item} onClick={() => updateQuery({ page: item })} type="button">
+              <button
+                className={
+                  item === pagination.currentPage
+                    ? "admin-btn primary"
+                    : "admin-btn tonal"
+                }
+                key={item}
+                onClick={() => updateQuery({ page: item })}
+                type="button"
+              >
                 {item}
               </button>
-            )
+            ),
           )}
-          <button className="admin-btn tonal" disabled={pagination.currentPage >= pagination.totalPages} onClick={() => updateQuery({ page: Math.min(pagination.totalPages, pagination.currentPage + 1) })} type="button">
+          <button
+            className="admin-btn tonal"
+            disabled={pagination.currentPage >= pagination.totalPages}
+            onClick={() =>
+              updateQuery({
+                page: Math.min(
+                  pagination.totalPages,
+                  pagination.currentPage + 1,
+                ),
+              })
+            }
+            type="button"
+          >
             <AdminIcon name="chevron_right" style={{ width: "1rem" }} />
           </button>
         </div>
@@ -574,9 +801,15 @@ function ParentRequestsTab({ showToast }: { showToast: (tone: ToastTone, msg: st
             <div className="admin-dialog-header">
               <div>
                 <p className="admin-dialog-eyebrow">Tạo lớp từ yêu cầu</p>
-                <h3 className="admin-dialog-title">{detail.subject} {detail.grade}</h3>
+                <h3 className="admin-dialog-title">
+                  {detail.subject} {detail.grade}
+                </h3>
               </div>
-              <button className="admin-dialog-close" onClick={() => setIsConvertOpen(false)} type="button">
+              <button
+                className="admin-dialog-close"
+                onClick={() => setIsConvertOpen(false)}
+                type="button"
+              >
                 <AdminIcon name="cancel" />
               </button>
             </div>
@@ -584,20 +817,53 @@ function ParentRequestsTab({ showToast }: { showToast: (tone: ToastTone, msg: st
               <div className="admin-dialog-grid">
                 <label className="admin-dialog-field">
                   Tiêu đề lớp
-                  <input type="text" value={convertForm.title} onChange={(e) => setConvertForm({ ...convertForm, title: e.target.value })} />
+                  <input
+                    type="text"
+                    value={convertForm.title}
+                    onChange={(e) =>
+                      setConvertForm({ ...convertForm, title: e.target.value })
+                    }
+                  />
                 </label>
                 <label className="admin-dialog-field">
                   Học phí/giờ
-                  <input type="number" min={0} value={convertForm.feePerHour} onChange={(e) => setConvertForm({ ...convertForm, feePerHour: e.target.value })} />
+                  <input
+                    type="number"
+                    min={0}
+                    value={convertForm.feePerHour}
+                    onChange={(e) =>
+                      setConvertForm({
+                        ...convertForm,
+                        feePerHour: e.target.value,
+                      })
+                    }
+                  />
                 </label>
                 <label className="admin-dialog-field admin-dialog-field-full">
                   Lịch học (tuỳ chọn)
-                  <input type="text" value={convertForm.schedule} onChange={(e) => setConvertForm({ ...convertForm, schedule: e.target.value })} />
+                  <input
+                    type="text"
+                    value={convertForm.schedule}
+                    onChange={(e) =>
+                      setConvertForm({
+                        ...convertForm,
+                        schedule: e.target.value,
+                      })
+                    }
+                  />
                 </label>
               </div>
               <div className="admin-dialog-actions">
-                <button className="admin-btn ghost" onClick={() => setIsConvertOpen(false)} type="button">Hủy</button>
-                <button className="admin-btn primary" type="submit">{convertLoading ? "Đang tạo..." : "Xác nhận tạo lớp"}</button>
+                <button
+                  className="admin-btn ghost"
+                  onClick={() => setIsConvertOpen(false)}
+                  type="button"
+                >
+                  Hủy
+                </button>
+                <button className="admin-btn primary" type="submit">
+                  {convertLoading ? "Đang tạo..." : "Xác nhận tạo lớp"}
+                </button>
               </div>
             </form>
           </div>
@@ -613,18 +879,34 @@ function ParentRequestsTab({ showToast }: { showToast: (tone: ToastTone, msg: st
                 <p className="admin-dialog-eyebrow">Từ chối yêu cầu</p>
                 <h3 className="admin-dialog-title">{detail.parentName}</h3>
               </div>
-              <button className="admin-dialog-close" onClick={() => setIsRejectOpen(false)} type="button">
+              <button
+                className="admin-dialog-close"
+                onClick={() => setIsRejectOpen(false)}
+                type="button"
+              >
                 <AdminIcon name="cancel" />
               </button>
             </div>
             <form className="admin-dialog-body" onSubmit={handleSubmitReject}>
               <label className="admin-dialog-field admin-dialog-field-full">
                 Lý do từ chối (bắt buộc)
-                <textarea rows={3} value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} />
+                <textarea
+                  rows={3}
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                />
               </label>
               <div className="admin-dialog-actions">
-                <button className="admin-btn ghost" onClick={() => setIsRejectOpen(false)} type="button">Hủy</button>
-                <button className="admin-btn danger" type="submit">{rejectLoading ? "Đang xử lý..." : "Xác nhận từ chối"}</button>
+                <button
+                  className="admin-btn ghost"
+                  onClick={() => setIsRejectOpen(false)}
+                  type="button"
+                >
+                  Hủy
+                </button>
+                <button className="admin-btn danger" type="submit">
+                  {rejectLoading ? "Đang xử lý..." : "Xác nhận từ chối"}
+                </button>
               </div>
             </form>
           </div>
@@ -637,7 +919,11 @@ function ParentRequestsTab({ showToast }: { showToast: (tone: ToastTone, msg: st
 // -------------------------------------------------------------
 // TUTOR REQUESTS TAB (Class Applications)
 // -------------------------------------------------------------
-function TutorRequestsTab({ showToast }: { showToast: (tone: ToastTone, msg: string) => void }) {
+function TutorRequestsTab({
+  showToast,
+}: {
+  showToast: (tone: ToastTone, msg: string) => void;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -646,7 +932,12 @@ function TutorRequestsTab({ showToast }: { showToast: (tone: ToastTone, msg: str
   const page = Number(searchParams.get("page") ?? "1");
 
   const [records, setRecords] = useState<AdminClassSummary[]>([]);
-  const [meta, setMeta] = useState({ page: 1, limit: PAGE_SIZE, total: 0, totalPages: 1 });
+  const [meta, setMeta] = useState({
+    page: 1,
+    limit: PAGE_SIZE,
+    total: 0,
+    totalPages: 1,
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -678,7 +969,9 @@ function TutorRequestsTab({ showToast }: { showToast: (tone: ToastTone, msg: str
       setRecords(response.data);
       setMeta(response.meta);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Không thể tải danh sách lớp học.");
+      setError(
+        err instanceof Error ? err.message : "Không thể tải danh sách lớp học.",
+      );
     } finally {
       setLoading(false);
     }
@@ -712,7 +1005,10 @@ function TutorRequestsTab({ showToast }: { showToast: (tone: ToastTone, msg: str
       setSelectedClassId("");
       return;
     }
-    if (!selectedClassId || !records.some((item) => item.id === selectedClassId)) {
+    if (
+      !selectedClassId ||
+      !records.some((item) => item.id === selectedClassId)
+    ) {
       setSelectedClassId(records[0].id);
     }
   }, [records, selectedClassId]);
@@ -728,7 +1024,7 @@ function TutorRequestsTab({ showToast }: { showToast: (tone: ToastTone, msg: str
 
   const handleAssign = async (tutorId: string) => {
     if (!detail || assignLoading) return;
-    
+
     if (!window.confirm("Bạn có chắc muốn phân lớp cho gia sư này?")) return;
 
     setAssignLoading(true);
@@ -739,7 +1035,10 @@ function TutorRequestsTab({ showToast }: { showToast: (tone: ToastTone, msg: str
       setSelectedClassId("");
       setDetail(null);
     } catch (err) {
-      showToast("error", err instanceof Error ? err.message : "Lỗi khi phân lớp.");
+      showToast(
+        "error",
+        err instanceof Error ? err.message : "Lỗi khi phân lớp.",
+      );
     } finally {
       setAssignLoading(false);
     }
@@ -773,13 +1072,24 @@ function TutorRequestsTab({ showToast }: { showToast: (tone: ToastTone, msg: str
 
   return (
     <>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: "1rem",
+        }}
+      >
         <div>
           <p className="admin-page-subtitle" style={{ margin: 0 }}>
             Duyệt gia sư nhận lớp từ danh sách các lớp đang mở.
           </p>
         </div>
-        <button className="admin-btn tonal" onClick={() => void loadClasses()} type="button">
+        <button
+          className="admin-btn tonal"
+          onClick={() => void loadClasses()}
+          type="button"
+        >
           <AdminIcon name="autorenew" />
           Làm mới
         </button>
@@ -806,9 +1116,17 @@ function TutorRequestsTab({ showToast }: { showToast: (tone: ToastTone, msg: str
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={6} style={{ textAlign: "center" }}>Đang tải dữ liệu...</td></tr>
+                <tr>
+                  <td colSpan={6} style={{ textAlign: "center" }}>
+                    Đang tải dữ liệu...
+                  </td>
+                </tr>
               ) : records.length === 0 ? (
-                <tr><td colSpan={6} style={{ textAlign: "center" }}>Không có lớp học nào đang mở.</td></tr>
+                <tr>
+                  <td colSpan={6} style={{ textAlign: "center" }}>
+                    Không có lớp học nào đang mở.
+                  </td>
+                </tr>
               ) : (
                 records.map((record) => {
                   const isSelected = record.id === selectedClassId;
@@ -816,24 +1134,48 @@ function TutorRequestsTab({ showToast }: { showToast: (tone: ToastTone, msg: str
                     <tr
                       key={record.id}
                       onClick={() => setSelectedClassId(record.id)}
-                      style={isSelected ? { background: "rgba(219, 234, 254, 0.35)" } : undefined}
+                      style={
+                        isSelected
+                          ? { background: "rgba(219, 234, 254, 0.35)" }
+                          : undefined
+                      }
                     >
-                      <td style={{ fontWeight: 700 }}>{formatClassCode(record.id)}</td>
+                      <td style={{ fontWeight: 700 }}>
+                        {formatClassCode(record.id)}
+                      </td>
                       <td>
-                        <p style={{ margin: 0, fontWeight: 700 }}>{record.title}</p>
-                        <p style={{ margin: 0, fontSize: "0.85rem", color: "#64748b" }}>{record.subject} - {record.grade}</p>
+                        <p style={{ margin: 0, fontWeight: 700 }}>
+                          {record.title}
+                        </p>
+                        <p
+                          style={{
+                            margin: 0,
+                            fontSize: "0.85rem",
+                            color: "#64748b",
+                          }}
+                        >
+                          {record.subject} - {record.grade}
+                        </p>
                       </td>
                       <td>{record.district}</td>
                       <td>{formatCurrency(record.feePerHour)}</td>
                       <td>
                         {record._count.applications > 0 ? (
-                          <span style={{ fontWeight: "bold", color: "#0058be" }}>{record._count.applications} gia sư</span>
+                          <span
+                            style={{ fontWeight: "bold", color: "#0058be" }}
+                          >
+                            {record._count.applications} gia sư
+                          </span>
                         ) : (
                           <span style={{ color: "#94a3b8" }}>Chưa có</span>
                         )}
                       </td>
                       <td>
-                        <AdminStatusBadge label="ĐANG MỞ" tone="open" dotColor="#0058be" />
+                        <AdminStatusBadge
+                          label="ĐANG MỞ"
+                          tone="open"
+                          dotColor="#0058be"
+                        />
                       </td>
                     </tr>
                   );
@@ -844,31 +1186,68 @@ function TutorRequestsTab({ showToast }: { showToast: (tone: ToastTone, msg: str
         </div>
 
         <aside className="admin-panel">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: "0.75rem",
+            }}
+          >
             <div>
-              <h3 className="admin-panel-title" style={{ margin: 0 }}>Gia sư ứng tuyển</h3>
-              <p className="admin-panel-subtitle">{detail ? detail.title : "Chưa chọn lớp"}</p>
+              <h3 className="admin-panel-title" style={{ margin: 0 }}>
+                Gia sư ứng tuyển
+              </h3>
+              <p className="admin-panel-subtitle">
+                {detail ? detail.title : "Chưa chọn lớp"}
+              </p>
             </div>
           </div>
 
           {detailLoading ? (
-            <p style={{ marginTop: "1rem", color: "#64748b" }}>Đang tải danh sách...</p>
+            <p style={{ marginTop: "1rem", color: "#64748b" }}>
+              Đang tải danh sách...
+            </p>
           ) : detail ? (
             <div style={{ marginTop: "1rem", display: "grid", gap: "1rem" }}>
               <section>
                 {applicants.length === 0 ? (
-                  <p style={{ margin: 0, color: "#64748b" }}>Hiện chưa có gia sư nào đăng ký nhận lớp này.</p>
+                  <p style={{ margin: 0, color: "#64748b" }}>
+                    Hiện chưa có gia sư nào đăng ký nhận lớp này.
+                  </p>
                 ) : (
                   <div className="pairing-user-list">
                     {applicants.map((item) => (
-                      <div className="pairing-user-item" key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div
+                        className="pairing-user-item"
+                        key={item.id}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                        }}
+                      >
                         <div className="pairing-user-left">
-                          <div className="pairing-user-avatar">{getInitials(item.tutor.fullName)}</div>
+                          <div className="pairing-user-avatar">
+                            {getInitials(item.tutor.fullName)}
+                          </div>
                           <div>
-                            <p className="pairing-user-name">{item.tutor.fullName}</p>
-                            <p className="pairing-user-sub">{item.tutor.email} • {item.tutor.phone ?? "Chưa có SĐT"}</p>
-                            <p className="pairing-user-sub" style={{ marginTop: "0.25rem", fontSize: "0.75rem" }}>
-                              {item.tutor.subjects.join(", ")} | {item.tutor.districts.join(", ")}
+                            <p className="pairing-user-name">
+                              {item.tutor.fullName}
+                            </p>
+                            <p className="pairing-user-sub">
+                              {item.tutor.email} •{" "}
+                              {item.tutor.phone ?? "Chưa có SĐT"}
+                            </p>
+                            <p
+                              className="pairing-user-sub"
+                              style={{
+                                marginTop: "0.25rem",
+                                fontSize: "0.75rem",
+                              }}
+                            >
+                              {item.tutor.subjects.join(", ")} |{" "}
+                              {item.tutor.districts.join(", ")}
                             </p>
                           </div>
                         </div>
@@ -876,7 +1255,10 @@ function TutorRequestsTab({ showToast }: { showToast: (tone: ToastTone, msg: str
                           className="admin-btn primary"
                           onClick={() => handleAssign(item.tutor.id)}
                           disabled={assignLoading}
-                          style={{ padding: "0.4rem 0.8rem", fontSize: "0.8rem" }}
+                          style={{
+                            padding: "0.4rem 0.8rem",
+                            fontSize: "0.8rem",
+                          }}
                         >
                           Phân lớp
                         </button>
@@ -887,27 +1269,75 @@ function TutorRequestsTab({ showToast }: { showToast: (tone: ToastTone, msg: str
               </section>
             </div>
           ) : (
-            <p style={{ marginTop: "1rem", color: "#64748b" }}>Chọn một lớp học để xem gia sư ứng tuyển.</p>
+            <p style={{ marginTop: "1rem", color: "#64748b" }}>
+              Chọn một lớp học để xem gia sư ứng tuyển.
+            </p>
           )}
         </aside>
       </section>
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", color: "#64748b", fontSize: "0.8rem", marginTop: "1rem" }}>
-        <span>Hiển thị {rangeStart} - {rangeEnd} trong tổng số {meta.total} lớp</span>
-        <div style={{ display: "inline-flex", gap: "0.35rem", alignItems: "center" }}>
-          <button className="admin-btn tonal" disabled={pagination.currentPage <= 1} onClick={() => updateQuery(Math.max(1, pagination.currentPage - 1))} type="button">
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          color: "#64748b",
+          fontSize: "0.8rem",
+          marginTop: "1rem",
+        }}
+      >
+        <span>
+          Hiển thị {rangeStart} - {rangeEnd} trong tổng số {meta.total} lớp
+        </span>
+        <div
+          style={{
+            display: "inline-flex",
+            gap: "0.35rem",
+            alignItems: "center",
+          }}
+        >
+          <button
+            className="admin-btn tonal"
+            disabled={pagination.currentPage <= 1}
+            onClick={() => updateQuery(Math.max(1, pagination.currentPage - 1))}
+            type="button"
+          >
             <AdminIcon name="chevron_left" style={{ width: "1rem" }} />
           </button>
           {pagination.pages.map((item, index) =>
             item === "ellipsis" ? (
-              <button className="admin-btn tonal" key={`ellipsis-${index}`} type="button">...</button>
+              <button
+                className="admin-btn tonal"
+                key={`ellipsis-${index}`}
+                type="button"
+              >
+                ...
+              </button>
             ) : (
-              <button className={item === pagination.currentPage ? "admin-btn primary" : "admin-btn tonal"} key={item} onClick={() => updateQuery(item as number)} type="button">
+              <button
+                className={
+                  item === pagination.currentPage
+                    ? "admin-btn primary"
+                    : "admin-btn tonal"
+                }
+                key={item}
+                onClick={() => updateQuery(item as number)}
+                type="button"
+              >
                 {item}
               </button>
-            )
+            ),
           )}
-          <button className="admin-btn tonal" disabled={pagination.currentPage >= pagination.totalPages} onClick={() => updateQuery(Math.min(pagination.totalPages, pagination.currentPage + 1))} type="button">
+          <button
+            className="admin-btn tonal"
+            disabled={pagination.currentPage >= pagination.totalPages}
+            onClick={() =>
+              updateQuery(
+                Math.min(pagination.totalPages, pagination.currentPage + 1),
+              )
+            }
+            type="button"
+          >
             <AdminIcon name="chevron_right" style={{ width: "1rem" }} />
           </button>
         </div>
@@ -942,10 +1372,16 @@ export default function RequestsPage() {
         <div className="admin-toast-stack" aria-live="polite">
           <div className={`admin-toast ${toast.tone}`}>
             <span className="admin-toast-icon">
-              <AdminIcon name={toast.tone === "success" ? "check_circle" : "warning"} />
+              <AdminIcon
+                name={toast.tone === "success" ? "check_circle" : "warning"}
+              />
             </span>
             <span>{toast.message}</span>
-            <button className="admin-toast-close" onClick={() => setToast(null)} type="button">
+            <button
+              className="admin-toast-close"
+              onClick={() => setToast(null)}
+              type="button"
+            >
               <AdminIcon name="cancel" />
             </button>
           </div>
@@ -954,26 +1390,34 @@ export default function RequestsPage() {
 
       <header className="admin-page-header" style={{ paddingBottom: 0 }}>
         <div>
-          <p style={{ margin: 0, color: "#64748b", fontSize: "0.8rem" }}>
-            Lớp học • Yêu cầu
-          </p>
           <h1 className="admin-page-title">Quản lý Yêu cầu</h1>
         </div>
       </header>
 
       {/* Tabs */}
-      <div style={{ display: "flex", gap: "1.5rem", marginTop: "1rem", marginBottom: "1.5rem", borderBottom: "1px solid #e2e8f0" }}>
+      <div
+        style={{
+          display: "flex",
+          gap: "1.5rem",
+          marginTop: "1rem",
+          marginBottom: "1.5rem",
+          borderBottom: "1px solid #e2e8f0",
+        }}
+      >
         <button
           onClick={() => setActiveTab("parent")}
           style={{
             padding: "0.75rem 0.5rem",
             background: "none",
             border: "none",
-            borderBottom: activeTab === "parent" ? "3px solid #0f3b9c" : "3px solid transparent",
+            borderBottom:
+              activeTab === "parent"
+                ? "3px solid #0f3b9c"
+                : "3px solid transparent",
             color: activeTab === "parent" ? "#0f3b9c" : "#64748b",
             fontWeight: activeTab === "parent" ? 700 : 500,
             cursor: "pointer",
-            fontSize: "0.95rem"
+            fontSize: "0.95rem",
           }}
         >
           Duyệt yêu cầu phụ huynh
@@ -984,11 +1428,14 @@ export default function RequestsPage() {
             padding: "0.75rem 0.5rem",
             background: "none",
             border: "none",
-            borderBottom: activeTab === "tutor" ? "3px solid #0f3b9c" : "3px solid transparent",
+            borderBottom:
+              activeTab === "tutor"
+                ? "3px solid #0f3b9c"
+                : "3px solid transparent",
             color: activeTab === "tutor" ? "#0f3b9c" : "#64748b",
             fontWeight: activeTab === "tutor" ? 700 : 500,
             cursor: "pointer",
-            fontSize: "0.95rem"
+            fontSize: "0.95rem",
           }}
         >
           Duyệt gia sư nhận lớp

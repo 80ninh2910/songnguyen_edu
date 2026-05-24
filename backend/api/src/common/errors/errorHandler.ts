@@ -28,13 +28,17 @@ function isJwtError(error: unknown): error is JwtErrorLike {
 
 function isPrismaError(
   error: unknown,
-): error is { code: string; message: string; meta?: { target?: unknown; field_name?: string } } {
+): error is {
+  code: string;
+  message: string;
+  meta?: { target?: unknown; field_name?: string };
+} {
   return Boolean(
     error &&
-      typeof error === "object" &&
-      "code" in error &&
-      typeof (error as { code: unknown }).code === "string" &&
-      (error as { code: string }).code.match(/^P\d{4}$/),
+    typeof error === "object" &&
+    "code" in error &&
+    typeof (error as { code: unknown }).code === "string" &&
+    (error as { code: string }).code.match(/^P\d{4}$/),
   );
 }
 
@@ -43,10 +47,17 @@ function isFastifyValidationError(error: unknown): error is {
 } {
   return Boolean(
     error &&
-      typeof error === "object" &&
-      "validation" in error &&
-      Array.isArray((error as { validation?: unknown }).validation),
+    typeof error === "object" &&
+    "validation" in error &&
+    Array.isArray((error as { validation?: unknown }).validation),
   );
+}
+
+function getHttpStatusCode(error: unknown): number | null {
+  if (!error || typeof error !== "object" || !("statusCode" in error))
+    return null;
+  const statusCode = (error as { statusCode?: unknown }).statusCode;
+  return typeof statusCode === "number" ? statusCode : null;
 }
 
 export function registerErrorHandler(app: FastifyInstance): void {
@@ -57,7 +68,11 @@ export function registerErrorHandler(app: FastifyInstance): void {
     if (error instanceof AppError) {
       void reply.status(error.statusCode).send({
         success: false,
-        error: { code: error.code, message: error.message, details: error.details },
+        error: {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+        },
       });
       return;
     }
@@ -66,7 +81,11 @@ export function registerErrorHandler(app: FastifyInstance): void {
     if (isJwtError(error)) {
       void reply.status(401).send({
         success: false,
-        error: { code: ErrorCodes.AUTH_REQUIRED, message: "Authentication required", details: null },
+        error: {
+          code: ErrorCodes.AUTH_REQUIRED,
+          message: "Authentication required",
+          details: null,
+        },
       });
       return;
     }
@@ -78,7 +97,11 @@ export function registerErrorHandler(app: FastifyInstance): void {
         error: {
           code: ErrorCodes.VALIDATION_ERROR,
           message: "Validation failed",
-          details: error.issues.map((i) => ({ path: i.path.join("."), code: i.code, message: i.message })),
+          details: error.issues.map((i) => ({
+            path: i.path.join("."),
+            code: i.code,
+            message: i.message,
+          })),
         },
       });
       return;
@@ -102,16 +125,37 @@ export function registerErrorHandler(app: FastifyInstance): void {
       return;
     }
 
+    const statusCode = getHttpStatusCode(error);
+    if (statusCode === 429) {
+      void reply.status(429).send({
+        success: false,
+        error: {
+          code: ErrorCodes.RATE_LIMITED,
+          message: error instanceof Error ? error.message : "Too many requests",
+          details: null,
+        },
+      });
+      return;
+    }
+
     // 5. Prisma errors — map to appropriate HTTP status
     if (isPrismaError(error)) {
-      const pe = error as { code: string; message: string; meta?: { target?: unknown; field_name?: string } };
+      const pe = error as {
+        code: string;
+        message: string;
+        meta?: { target?: unknown; field_name?: string };
+      };
 
       switch (pe.code) {
         // Unique constraint violation → 409
         case "P2002":
           void reply.status(409).send({
             success: false,
-            error: { code: "DUPLICATE_ENTRY", message: "Record already exists", details: pe.meta ?? null },
+            error: {
+              code: "DUPLICATE_ENTRY",
+              message: "Record already exists",
+              details: pe.meta ?? null,
+            },
           });
           return;
 
@@ -119,7 +163,11 @@ export function registerErrorHandler(app: FastifyInstance): void {
         case "P2003":
           void reply.status(400).send({
             success: false,
-            error: { code: "INVALID_REFERENCE", message: "Referenced record not found", details: pe.meta ?? null },
+            error: {
+              code: "INVALID_REFERENCE",
+              message: "Referenced record not found",
+              details: pe.meta ?? null,
+            },
           });
           return;
 
@@ -127,7 +175,11 @@ export function registerErrorHandler(app: FastifyInstance): void {
         case "P2025":
           void reply.status(404).send({
             success: false,
-            error: { code: "NOT_FOUND", message: "Record not found", details: pe.meta ?? null },
+            error: {
+              code: "NOT_FOUND",
+              message: "Record not found",
+              details: pe.meta ?? null,
+            },
           });
           return;
 
@@ -147,7 +199,12 @@ export function registerErrorHandler(app: FastifyInstance): void {
     // 6. Unhandled errors → 500
     void reply.status(500).send({
       success: false,
-      error: { code: ErrorCodes.INTERNAL_ERROR, message: error instanceof Error ? error.message : "Internal server error", details: error instanceof Error ? error.stack : null },
+      error: {
+        code: ErrorCodes.INTERNAL_ERROR,
+        message:
+          error instanceof Error ? error.message : "Internal server error",
+        details: error instanceof Error ? error.stack : null,
+      },
     });
   });
 }

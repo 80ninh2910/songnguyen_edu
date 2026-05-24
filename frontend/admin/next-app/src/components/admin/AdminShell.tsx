@@ -107,13 +107,6 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        <div className="admin-sidebar-cta-wrap">
-          <button className="admin-sidebar-cta" type="button">
-            <AdminIcon name="add" />
-            Thêm lớp học mới
-          </button>
-        </div>
-
         <div className="admin-sidebar-profile">
           <div className="admin-user-row">
             <div className="admin-user-avatar-circle">AD</div>

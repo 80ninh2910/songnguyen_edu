@@ -137,6 +137,7 @@ export default function ClassesPage() {
   const [applicants, setApplicants] = useState<AdminClassApplicant[]>([]);
   const [applicantsLoading, setApplicantsLoading] = useState(false);
   const [applicantsError, setApplicantsError] = useState<string | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
@@ -309,10 +310,6 @@ export default function ClassesPage() {
       setSelectedClassId("");
       return;
     }
-
-    if (!selectedClassId) {
-      setSelectedClassId(records[0].id);
-    }
   }, [records, selectedClassId]);
 
   useEffect(() => {
@@ -378,6 +375,10 @@ export default function ClassesPage() {
     setIsFormOpen(false);
   }, [formLoading]);
 
+  const handleCloseDetailModal = useCallback(() => {
+    setIsDetailOpen(false);
+  }, []);
+
   const handleCloseCloseModal = useCallback(() => {
     if (closeLoading) {
       return;
@@ -386,7 +387,7 @@ export default function ClassesPage() {
   }, [closeLoading]);
 
   useEffect(() => {
-    if (!isFormOpen && !isCloseOpen) {
+    if (!isFormOpen && !isCloseOpen && !isDetailOpen) {
       return;
     }
 
@@ -394,12 +395,20 @@ export default function ClassesPage() {
       if (event.key === "Escape") {
         handleCloseForm();
         handleCloseCloseModal();
+        handleCloseDetailModal();
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleCloseCloseModal, handleCloseForm, isCloseOpen, isFormOpen]);
+  }, [
+    handleCloseCloseModal,
+    handleCloseDetailModal,
+    handleCloseForm,
+    isCloseOpen,
+    isDetailOpen,
+    isFormOpen,
+  ]);
 
   const handleSubmitForm = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -467,7 +476,7 @@ export default function ClassesPage() {
 
       setIsFormOpen(false);
       await Promise.all([loadClasses(), loadStats()]);
-      
+
       if (createdId) {
         setSelectedClassId(createdId);
       } else if (detail) {
@@ -654,7 +663,7 @@ export default function ClassesPage() {
         </form>
       </section>
 
-      <section className="audit-grid">
+      <section className="audit-grid audit-grid-full">
         <div className="admin-table-wrap">
           <table className="admin-table">
             <thead>
@@ -686,18 +695,9 @@ export default function ClassesPage() {
               ) : (
                 records.map((record) => {
                   const metaInfo = STATUS_META[record.status];
-                  const isSelected = record.id === selectedClassId;
 
                   return (
-                    <tr
-                      key={record.id}
-                      onClick={() => setSelectedClassId(record.id)}
-                      style={
-                        isSelected
-                          ? { background: "rgba(219, 234, 254, 0.35)" }
-                          : undefined
-                      }
-                    >
+                    <tr key={record.id}>
                       <td style={{ fontWeight: 700 }}>
                         {formatClassCode(record.id)}
                       </td>
@@ -724,6 +724,7 @@ export default function ClassesPage() {
                             onClick={(event) => {
                               event.stopPropagation();
                               setSelectedClassId(record.id);
+                              setIsDetailOpen(true);
                             }}
                             type="button"
                           >
@@ -738,312 +739,6 @@ export default function ClassesPage() {
             </tbody>
           </table>
         </div>
-
-        <aside className="admin-panel">
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: "0.75rem",
-            }}
-          >
-            <div>
-              <h3 className="admin-panel-title" style={{ margin: 0 }}>
-                Chi tiết lớp học
-              </h3>
-              <p className="admin-panel-subtitle">
-                {detail ? formatClassCode(detail.id) : "Chưa chọn lớp"}
-              </p>
-            </div>
-            {selectedMeta ? (
-              <AdminStatusBadge
-                label={selectedMeta.label}
-                tone={selectedMeta.tone}
-                dotColor={selectedMeta.dotColor}
-              />
-            ) : null}
-          </div>
-
-          {detailLoading ? (
-            <p style={{ marginTop: "1rem", color: "#64748b" }}>
-              Đang tải chi tiết...
-            </p>
-          ) : detailError ? (
-            <p style={{ marginTop: "1rem", color: "#ba1a1a" }}>{detailError}</p>
-          ) : detail ? (
-            <div style={{ marginTop: "1rem", display: "grid", gap: "1rem" }}>
-              <section>
-                <p
-                  style={{
-                    margin: "0 0 0.45rem",
-                    fontSize: "0.72rem",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.08em",
-                    fontWeight: 800,
-                    color: "#64748b",
-                  }}
-                >
-                  Thông tin lớp
-                </p>
-                <div className="payments-info-grid">
-                  <div>
-                    <p className="payments-info-label">Tiêu đề</p>
-                    <p className="payments-info-value">{detail.title}</p>
-                  </div>
-                  <div>
-                    <p className="payments-info-label">Môn - Lớp</p>
-                    <p className="payments-info-value">
-                      {detail.subject} - {detail.grade}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="payments-info-label">Khu vực</p>
-                    <p className="payments-info-value">{detail.district}</p>
-                  </div>
-                  <div>
-                    <p className="payments-info-label">Học phí</p>
-                    <p className="payments-info-value">
-                      {formatCurrency(detail.feePerHour)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="payments-info-label">Lịch học</p>
-                    <p className="payments-info-value">
-                      {detail.schedule ?? "-"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="payments-info-label">Ngày tạo</p>
-                    <p className="payments-info-value">
-                      {formatDate(detail.createdAt)}
-                    </p>
-                  </div>
-                </div>
-              </section>
-
-              {detail.sourceRequest ? (
-                <section className="admin-panel soft">
-                  <p
-                    style={{
-                      margin: "0 0 0.45rem",
-                      fontSize: "0.72rem",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.08em",
-                      fontWeight: 800,
-                      color: "#64748b",
-                    }}
-                  >
-                    Nguồn yêu cầu
-                  </p>
-                  <div className="payments-info-grid">
-                    <div>
-                      <p className="payments-info-label">Yêu cầu</p>
-                      <p className="payments-info-value">
-                        {formatRequestCode(detail.sourceRequest.id)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="payments-info-label">Phụ huynh</p>
-                      <p className="payments-info-value">
-                        {detail.sourceRequest.parentName}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="payments-info-label">SĐT</p>
-                      <p className="payments-info-value">
-                        {detail.sourceRequest.parentPhone}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="payments-info-label">Học phí dự kiến</p>
-                      <p className="payments-info-value">
-                        {formatCurrency(detail.sourceRequest.budgetPerHour)}
-                      </p>
-                    </div>
-                  </div>
-                </section>
-              ) : null}
-
-              <section>
-                <p
-                  style={{
-                    margin: "0 0 0.45rem",
-                    fontSize: "0.72rem",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.08em",
-                    fontWeight: 800,
-                    color: "#64748b",
-                  }}
-                >
-                  Học viên
-                </p>
-                {detail.members.length === 0 ? (
-                  <p style={{ margin: 0, color: "#64748b" }}>
-                    Chưa có thông tin học viên.
-                  </p>
-                ) : (
-                  <div className="pairing-user-list">
-                    {detail.members.map((member) => (
-                      <div className="pairing-user-item" key={member.id}>
-                        <div className="pairing-user-left">
-                          <div className="pairing-user-avatar">
-                            {getInitials(member.studentName)}
-                          </div>
-                          <div>
-                            <p className="pairing-user-name">
-                              {member.studentName}
-                            </p>
-                            <p className="pairing-user-sub">
-                              {member.studentGrade ?? "-"}
-                            </p>
-                          </div>
-                        </div>
-                        <div style={{ textAlign: "right" }}>
-                          <p className="pairing-user-name">
-                            {member.parentName}
-                          </p>
-                          <p className="pairing-user-sub">
-                            {member.parentPhone}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </section>
-
-              <section>
-                <p
-                  style={{
-                    margin: "0 0 0.45rem",
-                    fontSize: "0.72rem",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.08em",
-                    fontWeight: 800,
-                    color: "#64748b",
-                  }}
-                >
-                  Ung vien
-                </p>
-                {applicantsLoading ? (
-                  <p style={{ margin: 0, color: "#64748b" }}>
-                    Dang tai ung vien...
-                  </p>
-                ) : applicantsError ? (
-                  <p style={{ margin: 0, color: "#ba1a1a" }}>
-                    {applicantsError}
-                  </p>
-                ) : applicants.length === 0 ? (
-                  <p style={{ margin: 0, color: "#64748b" }}>
-                    Chua co ung vien.
-                  </p>
-                ) : (
-                  <div className="pairing-user-list">
-                    {applicants.map((item) => (
-                      <div className="pairing-user-item" key={item.id}>
-                        <div className="pairing-user-left">
-                          <div className="pairing-user-avatar">
-                            {getInitials(item.tutor.fullName)}
-                          </div>
-                          <div>
-                            <p className="pairing-user-name">
-                              {item.tutor.fullName}
-                            </p>
-                            <p className="pairing-user-sub">
-                              {item.tutor.email}
-                            </p>
-                          </div>
-                        </div>
-                        <div style={{ textAlign: "right" }}>
-                          <p className="pairing-user-name">
-                            {item.tutor.subjects.join(", ") || "-"}
-                          </p>
-                          <p className="pairing-user-sub">
-                            {item.tutor.districts.join(", ") || "-"}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </section>
-
-              <section>
-                <p
-                  style={{
-                    margin: "0 0 0.45rem",
-                    fontSize: "0.72rem",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.08em",
-                    fontWeight: 800,
-                    color: "#64748b",
-                  }}
-                >
-                  Phân lớp
-                </p>
-                {detail.assignment ? (
-                  <div className="pairing-user-item">
-                    <div className="pairing-user-left">
-                      <div className="pairing-user-avatar">
-                        {getInitials(detail.assignment.tutor.fullName)}
-                      </div>
-                      <div>
-                        <p className="pairing-user-name">
-                          {detail.assignment.tutor.fullName}
-                        </p>
-                        <p className="pairing-user-sub">
-                          {detail.assignment.tutor.email}
-                        </p>
-                      </div>
-                    </div>
-                    <div style={{ textAlign: "right" }}>
-                      <p className="pairing-user-name">
-                        {detail.assignment.assignedBy.fullName}
-                      </p>
-                      <p className="pairing-user-sub">
-                        {formatDate(detail.assignment.createdAt)}
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <p style={{ margin: 0, color: "#64748b" }}>
-                    Chưa phân lớp cho gia sư.
-                  </p>
-                )}
-              </section>
-            </div>
-          ) : (
-            <p style={{ marginTop: "1rem", color: "#64748b" }}>
-              Chọn một lớp để xem chi tiết.
-            </p>
-          )}
-
-          {detail ? (
-            <div
-              className="payments-action-stack"
-              style={{ marginTop: "1.1rem" }}
-            >
-              <button
-                className="admin-btn primary"
-                disabled={!canEdit}
-                onClick={handleOpenEdit}
-                type="button"
-              >
-                <AdminIcon name="edit" />
-                Chỉnh sửa lớp
-              </button>
-              <button
-                className="admin-btn danger"
-                onClick={() => setIsCloseOpen(true)}
-                type="button"
-              >
-                <AdminIcon name="cancel" />
-                Đóng lớp
-              </button>
-            </div>
-          ) : null}
-        </aside>
       </section>
 
       <div
@@ -1289,6 +984,319 @@ export default function ClassesPage() {
                   {closeLoading ? "Đang đóng..." : "Xác nhận đóng"}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {isDetailOpen ? (
+        <div className="admin-dialog-backdrop" role="dialog" aria-modal>
+          <div className="admin-dialog" style={{ maxWidth: "72rem" }}>
+            <div className="admin-dialog-header">
+              <div>
+                <p className="admin-dialog-eyebrow">Chi tiết lớp học</p>
+                <h3 className="admin-dialog-title">
+                  {detail ? formatClassCode(detail.id) : "Đang tải..."}
+                </h3>
+              </div>
+              <button
+                className="admin-dialog-close"
+                onClick={handleCloseDetailModal}
+                type="button"
+              >
+                <AdminIcon name="cancel" />
+              </button>
+            </div>
+
+            <div className="admin-dialog-body" style={{ paddingTop: 0 }}>
+              {selectedMeta ? (
+                <div style={{ marginBottom: "1rem" }}>
+                  <AdminStatusBadge
+                    label={selectedMeta.label}
+                    tone={selectedMeta.tone}
+                    dotColor={selectedMeta.dotColor}
+                  />
+                </div>
+              ) : null}
+
+              {detailLoading ? (
+                <p style={{ marginTop: "1rem", color: "#64748b" }}>
+                  Đang tải chi tiết...
+                </p>
+              ) : detailError ? (
+                <p style={{ marginTop: "1rem", color: "#ba1a1a" }}>
+                  {detailError}
+                </p>
+              ) : detail ? (
+                <div style={{ display: "grid", gap: "1rem" }}>
+                  <section>
+                    <p
+                      style={{
+                        margin: "0 0 0.45rem",
+                        fontSize: "0.72rem",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.08em",
+                        fontWeight: 800,
+                        color: "#64748b",
+                      }}
+                    >
+                      Thông tin lớp
+                    </p>
+                    <div className="payments-info-grid">
+                      <div>
+                        <p className="payments-info-label">Tiêu đề</p>
+                        <p className="payments-info-value">{detail.title}</p>
+                      </div>
+                      <div>
+                        <p className="payments-info-label">Môn - Lớp</p>
+                        <p className="payments-info-value">
+                          {detail.subject} - {detail.grade}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="payments-info-label">Khu vực</p>
+                        <p className="payments-info-value">{detail.district}</p>
+                      </div>
+                      <div>
+                        <p className="payments-info-label">Học phí</p>
+                        <p className="payments-info-value">
+                          {formatCurrency(detail.feePerHour)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="payments-info-label">Lịch học</p>
+                        <p className="payments-info-value">
+                          {detail.schedule ?? "-"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="payments-info-label">Ngày tạo</p>
+                        <p className="payments-info-value">
+                          {formatDate(detail.createdAt)}
+                        </p>
+                      </div>
+                    </div>
+                  </section>
+
+                  {detail.sourceRequest ? (
+                    <section className="admin-panel soft">
+                      <p
+                        style={{
+                          margin: "0 0 0.45rem",
+                          fontSize: "0.72rem",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.08em",
+                          fontWeight: 800,
+                          color: "#64748b",
+                        }}
+                      >
+                        Nguồn yêu cầu
+                      </p>
+                      <div className="payments-info-grid">
+                        <div>
+                          <p className="payments-info-label">Yêu cầu</p>
+                          <p className="payments-info-value">
+                            {formatRequestCode(detail.sourceRequest.id)}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="payments-info-label">Phụ huynh</p>
+                          <p className="payments-info-value">
+                            {detail.sourceRequest.parentName}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="payments-info-label">SĐT</p>
+                          <p className="payments-info-value">
+                            {detail.sourceRequest.parentPhone}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="payments-info-label">Học phí dự kiến</p>
+                          <p className="payments-info-value">
+                            {formatCurrency(detail.sourceRequest.budgetPerHour)}
+                          </p>
+                        </div>
+                      </div>
+                    </section>
+                  ) : null}
+
+                  <section>
+                    <p
+                      style={{
+                        margin: "0 0 0.45rem",
+                        fontSize: "0.72rem",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.08em",
+                        fontWeight: 800,
+                        color: "#64748b",
+                      }}
+                    >
+                      Học viên
+                    </p>
+                    {detail.members.length === 0 ? (
+                      <p style={{ margin: 0, color: "#64748b" }}>
+                        Chưa có thông tin học viên.
+                      </p>
+                    ) : (
+                      <div className="pairing-user-list">
+                        {detail.members.map((member) => (
+                          <div className="pairing-user-item" key={member.id}>
+                            <div className="pairing-user-left">
+                              <div className="pairing-user-avatar">
+                                {getInitials(member.studentName)}
+                              </div>
+                              <div>
+                                <p className="pairing-user-name">
+                                  {member.studentName}
+                                </p>
+                                <p className="pairing-user-sub">
+                                  {member.studentGrade ?? "-"}
+                                </p>
+                              </div>
+                            </div>
+                            <div style={{ textAlign: "right" }}>
+                              <p className="pairing-user-name">
+                                {member.parentName}
+                              </p>
+                              <p className="pairing-user-sub">
+                                {member.parentPhone}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+
+                  <section>
+                    <p
+                      style={{
+                        margin: "0 0 0.45rem",
+                        fontSize: "0.72rem",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.08em",
+                        fontWeight: 800,
+                        color: "#64748b",
+                      }}
+                    >
+                      Ung vien
+                    </p>
+                    {applicantsLoading ? (
+                      <p style={{ margin: 0, color: "#64748b" }}>
+                        Dang tai ung vien...
+                      </p>
+                    ) : applicantsError ? (
+                      <p style={{ margin: 0, color: "#ba1a1a" }}>
+                        {applicantsError}
+                      </p>
+                    ) : applicants.length === 0 ? (
+                      <p style={{ margin: 0, color: "#64748b" }}>
+                        Chua co ung vien.
+                      </p>
+                    ) : (
+                      <div className="pairing-user-list">
+                        {applicants.map((item) => (
+                          <div className="pairing-user-item" key={item.id}>
+                            <div className="pairing-user-left">
+                              <div className="pairing-user-avatar">
+                                {getInitials(item.tutor.fullName)}
+                              </div>
+                              <div>
+                                <p className="pairing-user-name">
+                                  {item.tutor.fullName}
+                                </p>
+                                <p className="pairing-user-sub">
+                                  {item.tutor.email}
+                                </p>
+                              </div>
+                            </div>
+                            <div style={{ textAlign: "right" }}>
+                              <p className="pairing-user-name">
+                                {item.tutor.subjects.join(", ") || "-"}
+                              </p>
+                              <p className="pairing-user-sub">
+                                {item.tutor.districts.join(", ") || "-"}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+
+                  <section>
+                    <p
+                      style={{
+                        margin: "0 0 0.45rem",
+                        fontSize: "0.72rem",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.08em",
+                        fontWeight: 800,
+                        color: "#64748b",
+                      }}
+                    >
+                      Phân lớp
+                    </p>
+                    {detail.assignment ? (
+                      <div className="pairing-user-item">
+                        <div className="pairing-user-left">
+                          <div className="pairing-user-avatar">
+                            {getInitials(detail.assignment.tutor.fullName)}
+                          </div>
+                          <div>
+                            <p className="pairing-user-name">
+                              {detail.assignment.tutor.fullName}
+                            </p>
+                            <p className="pairing-user-sub">
+                              {detail.assignment.tutor.email}
+                            </p>
+                          </div>
+                        </div>
+                        <div style={{ textAlign: "right" }}>
+                          <p className="pairing-user-name">
+                            {detail.assignment.assignedBy.fullName}
+                          </p>
+                          <p className="pairing-user-sub">
+                            {formatDate(detail.assignment.createdAt)}
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p style={{ margin: 0, color: "#64748b" }}>
+                        Chưa phân lớp cho gia sư.
+                      </p>
+                    )}
+                  </section>
+
+                  <div
+                    className="payments-action-stack"
+                    style={{ marginTop: "0.5rem" }}
+                  >
+                    <button
+                      className="admin-btn primary"
+                      disabled={!canEdit}
+                      onClick={handleOpenEdit}
+                      type="button"
+                    >
+                      <AdminIcon name="edit" />
+                      Chỉnh sửa lớp
+                    </button>
+                    <button
+                      className="admin-btn danger"
+                      onClick={() => setIsCloseOpen(true)}
+                      type="button"
+                    >
+                      <AdminIcon name="cancel" />
+                      Đóng lớp
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <p style={{ marginTop: "1rem", color: "#64748b" }}>
+                  Chọn một lớp để xem chi tiết.
+                </p>
+              )}
             </div>
           </div>
         </div>
