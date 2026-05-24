@@ -18,11 +18,15 @@ import {
   getAdminClassById,
   listAdminClassApplicants,
   listAdminClasses,
+  listAdminCenterTeachers,
   updateAdminClass,
   type AdminClassApplicant,
   type AdminClassDetail,
   type AdminClassStatus,
   type AdminClassSummary,
+  type AdminClassType,
+  type AdminCenterTeacherSummary,
+  type AdminTutorType,
 } from "@/lib/adminApi";
 
 const PAGE_SIZE = 10;
@@ -35,6 +39,13 @@ const STATUS_META: Record<
   ASSIGNED: { label: "ĐÃ PHÂN", tone: "approved", dotColor: "#059669" },
   CLOSED: { label: "ĐÃ ĐÓNG", tone: "processing", dotColor: "#64748b" },
 };
+
+const CLASS_TYPE_LABELS: Record<AdminClassType, string> = {
+  LOP_GIA_SU_TU_DO: "Lớp gia sư tự do",
+  LOP_GIA_SU_DAO_TAO: "Lớp gia sư đào tạo",
+  LOP_TRUNG_TAM: "Lớp trung tâm",
+};
+
 
 type ToastTone = "success" | "error";
 
@@ -49,7 +60,10 @@ type ClassFormState = {
   grade: string;
   district: string;
   feePerHour: string;
-  schedule: string;
+  scheduleDays: string[];
+  classType: "" | AdminClassType;
+  tutorType: "" | AdminTutorType;
+  centerTeacherId: string;
 };
 
 const emptyClassForm: ClassFormState = {
@@ -58,7 +72,10 @@ const emptyClassForm: ClassFormState = {
   grade: "",
   district: "",
   feePerHour: "",
-  schedule: "",
+  scheduleDays: [],
+  classType: "",
+  tutorType: "",
+  centerTeacherId: "",
 };
 
 const buildClassForm = (detail?: AdminClassDetail | null): ClassFormState => {
@@ -66,13 +83,23 @@ const buildClassForm = (detail?: AdminClassDetail | null): ClassFormState => {
     return { ...emptyClassForm };
   }
 
+  const scheduleDays = detail.schedule
+    ? detail.schedule
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean)
+    : [];
+
   return {
     title: detail.title,
     subject: detail.subject,
     grade: detail.grade,
     district: detail.district,
     feePerHour: detail.feePerHour ? String(detail.feePerHour) : "",
-    schedule: detail.schedule ?? "",
+    scheduleDays,
+    classType: detail.classType,
+    tutorType: detail.tutorType,
+    centerTeacherId: detail.centerTeacherId ?? "",
   };
 };
 
@@ -85,13 +112,50 @@ function formatDate(value?: string | null): string {
 
 function formatCurrency(value?: number | null): string {
   if (!value) return "-";
-  return `${new Intl.NumberFormat("vi-VN").format(value)}đ/giờ`;
+  return `${new Intl.NumberFormat("vi-VN").format(value)}đ/buổi`;
+}
+
+function formatVnd(value: string): string {
+  if (!value) return "";
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return value;
+  return new Intl.NumberFormat("vi-VN").format(amount);
 }
 
 function formatClassCode(id: string): string {
   const code = id.split("-")[0] ?? id.slice(0, 6);
   return `LH-${code.toUpperCase()}`;
 }
+
+function getClassTypeBadgeStyle(type: AdminClassType): React.CSSProperties {
+  switch (type) {
+    case "LOP_GIA_SU_TU_DO":
+      return {
+        background: "rgba(37, 99, 235, 0.12)",
+        color: "#1d4ed8",
+        border: "1px solid rgba(37, 99, 235, 0.28)",
+      };
+    case "LOP_GIA_SU_DAO_TAO":
+      return {
+        background: "rgba(245, 158, 11, 0.16)",
+        color: "#b45309",
+        border: "1px solid rgba(245, 158, 11, 0.35)",
+      };
+    case "LOP_TRUNG_TAM":
+      return {
+        background: "rgba(16, 185, 129, 0.16)",
+        color: "#047857",
+        border: "1px solid rgba(16, 185, 129, 0.35)",
+      };
+    default:
+      return {
+        background: "rgba(148, 163, 184, 0.2)",
+        color: "#475569",
+        border: "1px solid rgba(148, 163, 184, 0.4)",
+      };
+  }
+}
+
 
 function formatRequestCode(id: string): string {
   const code = id.split("-")[0] ?? id.slice(0, 6);
@@ -107,6 +171,8 @@ function getInitials(name: string): string {
     .join("");
 }
 
+const WEEK_DAYS = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
+
 export default function ClassesPage() {
   const router = useRouter();
   const pathname = usePathname();
@@ -115,6 +181,7 @@ export default function ClassesPage() {
   const status = searchParams.get("status") ?? "all";
   const subjectQuery = searchParams.get("subject") ?? "";
   const districtQuery = searchParams.get("district") ?? "";
+  const classTypeQuery = searchParams.get("classType") ?? "all";
   const page = Number(searchParams.get("page") ?? "1");
 
   const [subjectInput, setSubjectInput] = useState(subjectQuery);
@@ -145,6 +212,9 @@ export default function ClassesPage() {
   const [formLoading, setFormLoading] = useState(false);
   const [isCloseOpen, setIsCloseOpen] = useState(false);
   const [closeLoading, setCloseLoading] = useState(false);
+  const [centerTeachers, setCenterTeachers] = useState<AdminCenterTeacherSummary[]>([]);
+  const [centerTeachersLoading, setCenterTeachersLoading] = useState(false);
+  const [centerTeachersError, setCenterTeachersError] = useState<string | null>(null);
 
   const [toast, setToast] = useState<ToastState | null>(null);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -152,6 +222,12 @@ export default function ClassesPage() {
   const statusFilter = useMemo(() => {
     return status === "all" ? undefined : (status as AdminClassStatus);
   }, [status]);
+
+  const classTypeFilter = useMemo(() => {
+    return classTypeQuery === "all"
+      ? undefined
+      : (classTypeQuery as AdminClassType);
+  }, [classTypeQuery]);
 
   const subjectFilter = subjectQuery.trim() ? subjectQuery.trim() : undefined;
   const districtFilter = districtQuery.trim()
@@ -186,16 +262,36 @@ export default function ClassesPage() {
     setDistrictInput(districtQuery);
   }, [districtQuery]);
 
+  const loadCenterTeachers = useCallback(async () => {
+    setCenterTeachersLoading(true);
+    setCenterTeachersError(null);
+    try {
+      const response = await listAdminCenterTeachers({ page: 1, limit: 100 });
+      setCenterTeachers(response.data);
+    } catch (err) {
+      setCenterTeachersError(
+        err instanceof Error
+          ? err.message
+          : "Không thể tải danh sách giáo viên trung tâm.",
+      );
+      setCenterTeachers([]);
+    } finally {
+      setCenterTeachersLoading(false);
+    }
+  }, []);
+
   const updateQuery = (next: {
     status?: string;
     subject?: string;
     district?: string;
+    classType?: string;
     page?: number;
   }) => {
     const params = new URLSearchParams(searchParams.toString());
     const nextStatus = next.status ?? status;
     const nextSubject = next.subject ?? subjectQuery;
     const nextDistrict = next.district ?? districtQuery;
+    const nextClassType = next.classType ?? classTypeQuery;
     const nextPage = next.page ?? page;
 
     if (nextStatus === "all") {
@@ -214,6 +310,12 @@ export default function ClassesPage() {
       params.delete("district");
     } else {
       params.set("district", nextDistrict);
+    }
+
+    if (nextClassType === "all") {
+      params.delete("classType");
+    } else {
+      params.set("classType", nextClassType);
     }
 
     if (nextPage <= 1) {
@@ -237,6 +339,7 @@ export default function ClassesPage() {
         status: statusFilter,
         subject: subjectFilter,
         district: districtFilter,
+        classType: classTypeFilter,
       });
       setRecords(response.data);
       setMeta(response.meta);
@@ -247,7 +350,7 @@ export default function ClassesPage() {
     } finally {
       setLoading(false);
     }
-  }, [districtFilter, page, statusFilter, subjectFilter]);
+  }, [classTypeFilter, districtFilter, page, statusFilter, subjectFilter]);
 
   const loadStats = useCallback(async () => {
     try {
@@ -410,6 +513,13 @@ export default function ClassesPage() {
     isFormOpen,
   ]);
 
+  useEffect(() => {
+    if (!isFormOpen || formState.classType !== "LOP_TRUNG_TAM") {
+      return;
+    }
+    void loadCenterTeachers();
+  }, [formState.classType, isFormOpen, loadCenterTeachers]);
+
   const handleSubmitForm = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -421,8 +531,15 @@ export default function ClassesPage() {
     const subject = formState.subject.trim();
     const grade = formState.grade.trim();
     const district = formState.district.trim();
-    const schedule = formState.schedule.trim();
     const feeValue = Number(formState.feePerHour);
+    const classType = formState.classType;
+    const centerTeacherId = formState.centerTeacherId;
+    const derivedTutorType: AdminTutorType | null = (() => {
+      if (classType === "LOP_GIA_SU_TU_DO") return "GIA_SU_TU_DO";
+      if (classType === "LOP_GIA_SU_DAO_TAO") return "GIA_SU_DAO_TAO";
+      if (classType === "LOP_TRUNG_TAM") return "GIAO_VIEN_TRUNG_TAM";
+      return null;
+    })();
 
     if (!title) {
       showToast("error", "Vui lòng nhập tiêu đề lớp.");
@@ -430,7 +547,22 @@ export default function ClassesPage() {
     }
 
     if (!Number.isFinite(feeValue) || feeValue <= 0) {
-      showToast("error", "Học phí/giờ không hợp lệ.");
+      showToast("error", "Học phí/buổi không hợp lệ.");
+      return;
+    }
+
+    if (!classType) {
+      showToast("error", "Vui lòng chọn loại lớp.");
+      return;
+    }
+
+    if (!derivedTutorType) {
+      showToast("error", "Vui lòng chọn loại lớp.");
+      return;
+    }
+
+    if (classType === "LOP_TRUNG_TAM" && !centerTeacherId) {
+      showToast("error", "Vui lòng chọn giáo viên trung tâm.");
       return;
     }
 
@@ -452,7 +584,13 @@ export default function ClassesPage() {
           grade,
           district,
           feePerHour: Math.round(feeValue),
-          schedule: schedule || undefined,
+          schedule:
+            formState.scheduleDays.length > 0
+              ? formState.scheduleDays.join(", ")
+              : undefined,
+          classType,
+          tutorType: derivedTutorType,
+          centerTeacherId: classType === "LOP_TRUNG_TAM" ? centerTeacherId : null,
         });
         createdId = result.id;
         showToast("success", "Đã tạo lớp học mới.");
@@ -461,13 +599,20 @@ export default function ClassesPage() {
           title?: string;
           feePerHour?: number;
           schedule?: string;
+          classType?: AdminClassType;
+          tutorType?: AdminTutorType;
+          centerTeacherId?: string | null;
         } = {
           title,
           feePerHour: Math.round(feeValue),
+          classType,
+          tutorType: derivedTutorType,
+          centerTeacherId: classType === "LOP_TRUNG_TAM" ? centerTeacherId : null,
         };
-        if (schedule) {
-          payload.schedule = schedule;
-        }
+        payload.schedule =
+          formState.scheduleDays.length > 0
+            ? formState.scheduleDays.join(", ")
+            : undefined;
 
         const updated = await updateAdminClass(detail.id, payload);
         setDetail(updated);
@@ -633,6 +778,22 @@ export default function ClassesPage() {
           </label>
 
           <label>
+            <span className="tutors-select-label">Loại lớp</span>
+            <select
+              className="tutors-select"
+              onChange={(event) =>
+                updateQuery({ classType: event.target.value, page: 1 })
+              }
+              value={classTypeQuery}
+            >
+              <option value="all">Tất cả loại</option>
+              <option value="LOP_GIA_SU_TU_DO">Gia sư tự do</option>
+              <option value="LOP_GIA_SU_DAO_TAO">Gia sư đào tạo</option>
+              <option value="LOP_TRUNG_TAM">Trung tâm</option>
+            </select>
+          </label>
+
+          <label>
             <span className="tutors-select-label">Môn học</span>
             <input
               className="tutors-select"
@@ -673,6 +834,7 @@ export default function ClassesPage() {
                 <th>Môn - Lớp</th>
                 <th>Khu vực</th>
                 <th>Học phí</th>
+                <th>Loại lớp</th>
                 <th>Ứng viên</th>
                 <th>Ngày tạo</th>
                 <th>Trạng thái</th>
@@ -682,13 +844,13 @@ export default function ClassesPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={9} style={{ textAlign: "center" }}>
+                  <td colSpan={10} style={{ textAlign: "center" }}>
                     Đang tải dữ liệu...
                   </td>
                 </tr>
               ) : records.length === 0 ? (
                 <tr>
-                  <td colSpan={9} style={{ textAlign: "center" }}>
+                  <td colSpan={10} style={{ textAlign: "center" }}>
                     Chưa có lớp nào.
                   </td>
                 </tr>
@@ -707,6 +869,21 @@ export default function ClassesPage() {
                       </td>
                       <td>{record.district}</td>
                       <td>{formatCurrency(record.feePerHour)}</td>
+                      <td>
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            padding: "0.15rem 0.6rem",
+                            borderRadius: "999px",
+                            fontSize: "0.78rem",
+                            fontWeight: 700,
+                            ...getClassTypeBadgeStyle(record.classType),
+                          }}
+                        >
+                          {CLASS_TYPE_LABELS[record.classType]}
+                        </span>
+                      </td>
                       <td>{record._count.applications}</td>
                       <td>{formatDate(record.createdAt)}</td>
                       <td>
@@ -850,6 +1027,42 @@ export default function ClassesPage() {
                 </label>
 
                 <label className="admin-dialog-field">
+                  Loại lớp
+                  <select
+                    onChange={(event) => {
+                      const nextType = event.target.value as
+                        | ""
+                        | AdminClassType;
+                      setFormState((prev) => {
+                        const isCenter = nextType === "LOP_TRUNG_TAM";
+                        const nextTutorType = isCenter
+                          ? "GIAO_VIEN_TRUNG_TAM"
+                          : nextType === "LOP_GIA_SU_TU_DO"
+                            ? "GIA_SU_TU_DO"
+                            : nextType === "LOP_GIA_SU_DAO_TAO"
+                              ? "GIA_SU_DAO_TAO"
+                              : "";
+
+                        return {
+                          ...prev,
+                          classType: nextType,
+                          tutorType: nextTutorType,
+                          centerTeacherId: isCenter
+                            ? prev.centerTeacherId
+                            : "",
+                        };
+                      });
+                    }}
+                    value={formState.classType}
+                  >
+                    <option value="">Chọn loại lớp</option>
+                    <option value="LOP_GIA_SU_TU_DO">Gia sư tự do</option>
+                    <option value="LOP_GIA_SU_DAO_TAO">Gia sư đào tạo</option>
+                    <option value="LOP_TRUNG_TAM">Trung tâm</option>
+                  </select>
+                </label>
+
+                <label className="admin-dialog-field">
                   Môn học
                   <input
                     disabled={formMode === "edit"}
@@ -895,33 +1108,101 @@ export default function ClassesPage() {
                 </label>
 
                 <label className="admin-dialog-field">
-                  Học phí/giờ
+                  Học phí/buổi
                   <input
                     onChange={(event) =>
                       setFormState((prev) => ({
                         ...prev,
-                        feePerHour: event.target.value,
+                        feePerHour: event.target.value.replace(/\D/g, ""),
                       }))
                     }
-                    type="number"
-                    min={0}
-                    value={formState.feePerHour}
+                    inputMode="numeric"
+                    type="text"
+                    value={formatVnd(formState.feePerHour)}
                   />
                 </label>
 
                 <label className="admin-dialog-field admin-dialog-field-full">
                   Lịch học (tuỳ chọn)
-                  <input
-                    onChange={(event) =>
-                      setFormState((prev) => ({
-                        ...prev,
-                        schedule: event.target.value,
-                      }))
-                    }
-                    type="text"
-                    value={formState.schedule}
-                  />
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
+                      gap: "0.5rem",
+                      marginTop: "0.5rem",
+                    }}
+                  >
+                    {WEEK_DAYS.map((day) => {
+                      const selectedDays = formState.scheduleDays ?? [];
+                      const checked = selectedDays.includes(day);
+                      return (
+                        <label
+                          key={day}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.35rem",
+                            fontWeight: 600,
+                            color: "#0f172a",
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={(event) => {
+                              if (event.target.checked) {
+                                setFormState((prev) => ({
+                                  ...prev,
+                                  scheduleDays: [...prev.scheduleDays, day],
+                                }));
+                              } else {
+                                setFormState((prev) => ({
+                                  ...prev,
+                                  scheduleDays: prev.scheduleDays.filter(
+                                    (item) => item !== day,
+                                  ),
+                                }));
+                              }
+                            }}
+                          />
+                          {day}
+                        </label>
+                      );
+                    })}
+                  </div>
                 </label>
+
+                {formState.classType === "LOP_TRUNG_TAM" ? (
+                  <label className="admin-dialog-field admin-dialog-field-full">
+                    Giáo viên trung tâm
+                    <select
+                      onChange={(event) =>
+                        setFormState((prev) => ({
+                          ...prev,
+                          centerTeacherId: event.target.value,
+                        }))
+                      }
+                      value={formState.centerTeacherId}
+                    >
+                      <option value="">Chọn giáo viên trung tâm</option>
+                      {centerTeachers.map((teacher) => (
+                        <option key={teacher.id} value={teacher.id}>
+                          {teacher.fullName} ({teacher.email})
+                        </option>
+                      ))}
+                    </select>
+                    {centerTeachersLoading ? (
+                      <span style={{ fontSize: "0.8rem", color: "#64748b" }}>
+                        Đang tải danh sách giáo viên...
+                      </span>
+                    ) : null}
+                    {centerTeachersError ? (
+                      <span style={{ fontSize: "0.8rem", color: "#ba1a1a" }}>
+                        {centerTeachersError}
+                      </span>
+                    ) : null}
+                  </label>
+                ) : null}
               </div>
 
               <div className="admin-dialog-actions">
@@ -1056,6 +1337,22 @@ export default function ClassesPage() {
                       <div>
                         <p className="payments-info-label">Khu vực</p>
                         <p className="payments-info-value">{detail.district}</p>
+                      </div>
+                      <div>
+                        <p className="payments-info-label">Loại lớp</p>
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            padding: "0.2rem 0.75rem",
+                            borderRadius: "999px",
+                            fontSize: "0.82rem",
+                            fontWeight: 700,
+                            ...getClassTypeBadgeStyle(detail.classType),
+                          }}
+                        >
+                          {CLASS_TYPE_LABELS[detail.classType]}
+                        </span>
                       </div>
                       <div>
                         <p className="payments-info-label">Học phí</p>

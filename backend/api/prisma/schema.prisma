@@ -11,6 +11,7 @@ enum Role {
   ADMIN
   SUPERADMIN
   TUTOR
+  CENTER_TEACHER
 }
 
 enum AdminRole {
@@ -22,6 +23,30 @@ enum TutorStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+enum TutorType {
+  GIA_SU_TU_DO
+  GIA_SU_DAO_TAO
+  GIAO_VIEN_TRUNG_TAM
+  ANY
+}
+
+enum RequestType {
+  GIA_SU_TU_DO
+  GIA_SU_DAO_TAO
+  TRUNG_TAM
+}
+
+enum ClassType {
+  LOP_GIA_SU_TU_DO
+  LOP_GIA_SU_DAO_TAO
+  LOP_TRUNG_TAM
+}
+
+enum CenterTeacherStatus {
+  ACTIVE
+  INACTIVE
 }
 
 enum ClassStatus {
@@ -83,6 +108,7 @@ model Admin {
   assignedClasses   ClassAssignment[]
   reviewedPayments  Payment[]      @relation("PaymentReviewedBy")
   updatedSettings   SystemSetting[] @relation("SettingUpdatedBy")
+  createdCenterTeachers CenterTeacher[] @relation("CenterTeacherCreatedBy")
 
   @@map("admins")
 }
@@ -130,6 +156,26 @@ model TutorDocument {
   @@map("tutor_documents")
 }
 
+model CenterTeacher {
+  id          String              @id @default(uuid())
+  email       String              @unique
+  phone       String?
+  fullName    String              @map("full_name")
+  status      CenterTeacherStatus @default(ACTIVE)
+  subjects    String[]            @default([])
+  districts   String[]            @default([])
+  createdById String?             @map("created_by_id")
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+
+  createdBy   Admin?              @relation("CenterTeacherCreatedBy", fields: [createdById], references: [id])
+  classes     Class[]
+
+  @@index([status])
+  @@index([subjects], type: Gin)
+  @@map("center_teachers")
+}
+
 model ClassRequest {
   id            String       @id @default(uuid())
   studentName   String?      @map("student_name")
@@ -140,6 +186,8 @@ model ClassRequest {
   grade         String
   district      String
   budgetPerHour Int          @map("budget_per_hour")
+  requestType   RequestType  @default(GIA_SU_TU_DO) @map("request_type")
+  tutorType     TutorType    @default(GIA_SU_TU_DO) @map("tutor_type")
   note          String?
   status        RequestStatus @default(PENDING)
   processedAt   DateTime?     @map("processed_at")
@@ -152,6 +200,8 @@ model ClassRequest {
   members       ClassMember[]
 
   @@index([status])
+  @@index([requestType])
+  @@index([tutorType])
   @@map("class_requests")
 }
 
@@ -162,6 +212,9 @@ model Class {
   grade           String
   district        String
   feePerHour      Int              @map("fee_per_hour")
+  classType       ClassType        @default(LOP_GIA_SU_TU_DO) @map("class_type")
+  tutorType       TutorType        @default(GIA_SU_TU_DO) @map("tutor_type")
+  centerTeacherId String?          @map("center_teacher_id")
   schedule        String?
   status          ClassStatus      @default(OPEN)
   sourceRequestId String?          @map("source_request_id")
@@ -171,6 +224,7 @@ model Class {
   updatedAt       DateTime         @updatedAt @map("updated_at")
 
   sourceRequest   ClassRequest?    @relation(fields: [sourceRequestId], references: [id])
+  centerTeacher   CenterTeacher?   @relation(fields: [centerTeacherId], references: [id])
   createdBy       Admin            @relation("ClassCreatedBy", fields: [createdById], references: [id])
   applications    ClassApplication[]
   assignment      ClassAssignment?
@@ -180,6 +234,8 @@ model Class {
 
   @@index([status])
   @@index([status, subject, district])
+  @@index([classType])
+  @@index([tutorType])
   @@map("classes")
 }
 

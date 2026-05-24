@@ -537,7 +537,7 @@ function ParentRegistrationForm({
     studentForm.studentCount,
     studentForm.sessionsPerWeek,
     studentForm.monthlyBudget,
-    tutorForm.level,
+    ...(mode === "parent" ? [tutorForm.level] : []),
   ];
 
   const completedFields = requiredFields.filter((value) => value.trim().length > 0).length;
@@ -644,7 +644,9 @@ function ParentRegistrationForm({
     if (!studentForm.sessionsPerWeek) nextErrors.sessionsPerWeek = "Vui lòng chọn số buổi.";
     if (!studentForm.studentCount) nextErrors.studentCount = "Vui lòng chọn số học viên.";
     if (!studentForm.monthlyBudget.trim()) nextErrors.monthlyBudget = "Vui lòng nhập học phí mong muốn.";
-    if (!tutorForm.level) nextErrors.tutorLevel = "Vui lòng chọn trình độ gia sư.";
+    if (mode === "parent" && !tutorForm.level) {
+      nextErrors.tutorLevel = "Vui lòng chọn trình độ gia sư.";
+    }
     if (activeWeekdays.length === 0) nextErrors.weekdays = "Hãy chọn ít nhất 1 ngày học.";
     if (activeTimeSlots.length === 0) nextErrors.timeSlots = "Hãy chọn ít nhất 1 khung giờ.";
 
@@ -662,12 +664,15 @@ function ParentRegistrationForm({
     const sessionFeeValue = Number(studentForm.monthlyBudget) || 0;
     const baseSessionFee = sessionFeeValue > 0 ? sessionFeeValue : estimatedFee;
     const budgetPerHour = baseSessionFee > 0 ? Math.round(baseSessionFee) : undefined;
+    const tutorType =
+      tutorForm.level === "Gia sư đào tạo" ? "GIA_SU_DAO_TAO" : "GIA_SU_TU_DO";
     const noteParts = [
       studentForm.gender ? `Gioi tinh hoc vien: ${studentForm.gender}` : null,
       `So hoc vien: ${studentForm.studentCount}`,
       `So buoi/tuan: ${studentForm.sessionsPerWeek}`,
       sessionFeeValue > 0 ? `Hoc phi mong muon/buoi: ${formatVnd(sessionFeeValue)}` : null,
       `Lich hoc: ${activeWeekdays.join(", ") || "Chua chon"} | ${activeTimeSlots.join(", ") || "Chua chon"}`,
+      mode === "parent" ? `Loai gia su: ${tutorForm.level || "Chua chon"}` : null,
       tutorForm.gender ? `Gioi tinh gia su: ${tutorForm.gender}` : null,
       tutorForm.level ? `Trinh do gia su: ${tutorForm.level}` : null,
       tutorForm.detail ? `Yeu cau chi tiet: ${tutorForm.detail}` : null,
@@ -684,6 +689,8 @@ function ParentRegistrationForm({
           grade: studentForm.level,
           district: studentForm.location,
           budgetPerHour,
+          formType: mode === "center" ? "TRUNG_TAM" : "GIA_SU",
+          tutorType: mode === "center" ? undefined : tutorType,
           note: noteParts.join("; "),
         },
       });
@@ -851,16 +858,18 @@ function ParentRegistrationForm({
                       placeholder="Yêu cầu chi tiết"
                       className="min-h-[70px] w-full rounded-xl border border-[#d5dff1] bg-white/95 px-4 py-3 text-[15px] font-medium text-[#243b72] outline-none transition-all duration-300 placeholder:text-[#6b7aa0] focus:border-[#4f86ff] focus:ring-4 focus:ring-[#8ab4ff]/25"
                     />
-                    <select
-                      ref={tutorLevelRef}
-                      value={tutorForm.level}
-                      onChange={(e) => setTutorForm((prev) => ({ ...prev, level: e.target.value }))}
-                      className={errorInputClass(!!errors.tutorLevel)}
-                    >
-                      <option value="">Trình độ</option>
-                      <option value="Gia sư tự do">Gia sư tự do</option>
-                      <option value="Gia sư đào tạo">Gia sư đào tạo</option>
-                    </select>
+                    {mode === "parent" && (
+                      <select
+                        ref={tutorLevelRef}
+                        value={tutorForm.level}
+                        onChange={(e) => setTutorForm((prev) => ({ ...prev, level: e.target.value }))}
+                        className={errorInputClass(!!errors.tutorLevel)}
+                      >
+                        <option value="">Loại gia sư</option>
+                        <option value="Gia sư tự do">Gia sư tự do</option>
+                        <option value="Gia sư đào tạo">Gia sư đào tạo</option>
+                      </select>
+                    )}
                   </div>
                   <a
                     href="#"
@@ -868,7 +877,7 @@ function ParentRegistrationForm({
                   >
                     * Tìm hiểu về các cấp độ gia sư tại đây
                   </a>
-                  {errors.tutorLevel && (
+                  {mode === "parent" && errors.tutorLevel && (
                     <p className="mt-2 text-sm font-semibold text-[#cc1f1f]">{errors.tutorLevel}</p>
                   )}
                 </div>

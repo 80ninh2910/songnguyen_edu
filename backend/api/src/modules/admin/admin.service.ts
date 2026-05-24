@@ -43,6 +43,7 @@ type TopTutor = {
 };
 
 type SystemHealthItem = {
+  
   service: string;
   status: string;
   ratio: string;
@@ -199,6 +200,7 @@ function isPrismaConstraintError(error: unknown, code: string): boolean {
     error !== null &&
     "code" in error &&
     (error as { code?: string }).code === code
+  
   );
 }
 
@@ -271,6 +273,7 @@ export const adminService = {
       openClasses: number;
       pendingPayments: number;
     };
+  
     recentAudit: Array<{
       id: string;
       action: string;
@@ -406,6 +409,106 @@ export const adminService = {
         },
       }),
       prisma.tutor.count({ where }),
+    ]);
+
+    return {
+      data,
+      meta: buildMeta(page, limit, total),
+    };
+  },
+
+  async listCenterTeachers(query: {
+    page?: string | number;
+    limit?: string | number;
+    status?: "ACTIVE" | "INACTIVE";
+    search?: string;
+    phone?: string;
+    subject?: string;
+    subjects?: string[];
+    district?: string;
+    districts?: string[];
+  }): Promise<{
+    data: Array<{
+      id: string;
+      fullName: string;
+      email: string;
+      phone: string | null;
+      status: "ACTIVE" | "INACTIVE";
+      subjects: string[];
+      districts: string[];
+      createdAt: Date;
+      updatedAt: Date;
+    }>;
+    meta: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  }> {
+    const { page, limit, skip } = parsePagination(query);
+
+    const where: any = { AND: [] };
+
+    if (query.status) {
+      where.AND.push({ status: query.status });
+    }
+
+    if (query.search) {
+      where.AND.push({
+        OR: [
+          { email: { contains: query.search, mode: "insensitive" } },
+          { fullName: { contains: query.search, mode: "insensitive" } },
+          { phone: { contains: query.search, mode: "insensitive" } },
+        ],
+      });
+    }
+
+    if (query.phone) {
+      where.AND.push({
+        phone: { contains: query.phone, mode: "insensitive" },
+      });
+    }
+
+    if (query.subject) {
+      where.AND.push({ subjects: { has: query.subject } });
+    }
+
+    if (query.subjects && query.subjects.length > 0) {
+      where.AND.push({ subjects: { hasSome: query.subjects } });
+    }
+
+    if (query.district) {
+      where.AND.push({ districts: { has: query.district } });
+    }
+
+    if (query.districts && query.districts.length > 0) {
+      where.AND.push({ districts: { hasSome: query.districts } });
+    }
+
+    if (where.AND.length === 0) {
+      delete where.AND;
+    }
+
+    const [data, total] = await Promise.all([
+      prisma.centerTeacher.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          phone: true,
+          status: true,
+          subjects: true,
+          districts: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      }),
+      prisma.centerTeacher.count({ where }),
     ]);
 
     return {
@@ -787,6 +890,8 @@ export const adminService = {
     page?: string | number;
     limit?: string | number;
     status?: "PENDING" | "CONVERTED" | "REJECTED";
+    requestType?: "GIA_SU_TU_DO" | "GIA_SU_DAO_TAO" | "TRUNG_TAM";
+    tutorType?: "GIA_SU_TU_DO" | "GIA_SU_DAO_TAO" | "GIAO_VIEN_TRUNG_TAM" | "ANY";
   }): Promise<{
     data: Array<{
       id: string;
@@ -797,6 +902,8 @@ export const adminService = {
       grade: string;
       district: string;
       budgetPerHour: number;
+      requestType: "GIA_SU_TU_DO" | "GIA_SU_DAO_TAO" | "TRUNG_TAM";
+      tutorType: "GIA_SU_TU_DO" | "GIA_SU_DAO_TAO" | "GIAO_VIEN_TRUNG_TAM" | "ANY";
       status: "PENDING" | "CONVERTED" | "REJECTED";
       createdAt: Date;
     }>;
@@ -815,6 +922,14 @@ export const adminService = {
       where.status = query.status;
     }
 
+    if (query.requestType) {
+      where.requestType = query.requestType;
+    }
+
+    if (query.tutorType) {
+      where.tutorType = query.tutorType;
+    }
+
     const [data, total] = await Promise.all([
       prisma.classRequest.findMany({
         where,
@@ -830,6 +945,8 @@ export const adminService = {
           grade: true,
           district: true,
           budgetPerHour: true,
+          requestType: true,
+          tutorType: true,
           status: true,
           createdAt: true,
         },
@@ -894,6 +1011,7 @@ export const adminService = {
       title?: string;
       feePerHour?: number;
       schedule?: string;
+      centerTeacherId?: string;
     },
   ): Promise<{ classId: string; converted: true }> {
     const request = await prisma.classRequest.findUnique({
@@ -914,6 +1032,27 @@ export const adminService = {
 
     const actorName = await resolveActorName(actor);
 
+    const classType =
+      request.requestType === "TRUNG_TAM"
+        ? "LOP_TRUNG_TAM"
+        : request.requestType === "GIA_SU_DAO_TAO"
+          ? "LOP_GIA_SU_DAO_TAO"
+          : "LOP_GIA_SU_TU_DO";
+    const tutorType =
+      request.requestType === "TRUNG_TAM"
+        ? "GIAO_VIEN_TRUNG_TAM"
+        : request.requestType === "GIA_SU_DAO_TAO"
+          ? "GIA_SU_DAO_TAO"
+          : "GIA_SU_TU_DO";
+
+    if (classType === "LOP_TRUNG_TAM" && !input.centerTeacherId) {
+      throw new AppError(
+        "CENTER_TEACHER_REQUIRED",
+        400,
+        "Center teacher is required for center classes",
+      );
+    }
+
     const createdClass = await prisma.$transaction(async (tx: any) => {
       const newClass = await tx.class.create({
         data: {
@@ -926,6 +1065,9 @@ export const adminService = {
           status: "OPEN",
           sourceRequestId: request.id,
           createdById: actor.id,
+          classType,
+          tutorType,
+          centerTeacherId: input.centerTeacherId ?? null,
         },
         select: {
           id: true,
@@ -970,6 +1112,9 @@ export const adminService = {
           payload: {
             classId: newClass.id,
             migratedMembers: updatedMembers.count,
+            classType,
+            tutorType,
+            centerTeacherId: input.centerTeacherId ?? null,
           },
         },
         tx,
@@ -1045,6 +1190,7 @@ export const adminService = {
     status?: "OPEN" | "ASSIGNED" | "CLOSED";
     subject?: string;
     district?: string;
+    classType?: "LOP_GIA_SU_TU_DO" | "LOP_GIA_SU_DAO_TAO" | "LOP_TRUNG_TAM";
   }): Promise<{
     data: Array<{
       id: string;
@@ -1054,6 +1200,9 @@ export const adminService = {
       district: string;
       feePerHour: number;
       status: "OPEN" | "ASSIGNED" | "CLOSED";
+      classType: "LOP_GIA_SU_TU_DO" | "LOP_GIA_SU_DAO_TAO" | "LOP_TRUNG_TAM";
+      tutorType: "GIA_SU_TU_DO" | "GIA_SU_DAO_TAO" | "GIAO_VIEN_TRUNG_TAM" | "ANY";
+      centerTeacherId: string | null;
       createdAt: Date;
       _count: {
         applications: number;
@@ -1083,6 +1232,10 @@ export const adminService = {
       where.district = { contains: query.district, mode: "insensitive" };
     }
 
+    if (query.classType) {
+      where.classType = query.classType;
+    }
+
     const [data, total] = await Promise.all([
       prisma.class.findMany({
         where,
@@ -1097,6 +1250,9 @@ export const adminService = {
           district: true,
           feePerHour: true,
           status: true,
+          classType: true,
+          tutorType: true,
+          centerTeacherId: true,
           createdAt: true,
           _count: {
             select: {
@@ -1125,9 +1281,20 @@ export const adminService = {
       feePerHour: number;
       schedule?: string;
       sourceRequestId?: string;
+      classType?: "LOP_GIA_SU_TU_DO" | "LOP_GIA_SU_DAO_TAO" | "LOP_TRUNG_TAM";
+      tutorType?: "GIA_SU_TU_DO" | "GIA_SU_DAO_TAO" | "GIAO_VIEN_TRUNG_TAM" | "ANY";
+      centerTeacherId?: string;
     },
   ) {
     const actorName = await resolveActorName(actor);
+
+    if (input.classType === "LOP_TRUNG_TAM" && !input.centerTeacherId) {
+      throw new AppError(
+        "CENTER_TEACHER_REQUIRED",
+        400,
+        "Center teacher is required for center classes",
+      );
+    }
 
     const created = await prisma.$transaction(async (tx: any) => {
       const newClass = await tx.class.create({
@@ -1141,6 +1308,9 @@ export const adminService = {
           sourceRequestId: input.sourceRequestId,
           createdById: actor.id,
           status: "OPEN",
+          classType: input.classType,
+          tutorType: input.tutorType,
+          centerTeacherId: input.centerTeacherId ?? null,
         },
       });
 
@@ -1241,6 +1411,9 @@ export const adminService = {
       district?: string;
       feePerHour?: number;
       schedule?: string;
+      classType?: "LOP_GIA_SU_TU_DO" | "LOP_GIA_SU_DAO_TAO" | "LOP_TRUNG_TAM";
+      tutorType?: "GIA_SU_TU_DO" | "GIA_SU_DAO_TAO" | "GIAO_VIEN_TRUNG_TAM" | "ANY";
+      centerTeacherId?: string;
     },
   ) {
     const classItem = await prisma.class.findUnique({
@@ -1256,12 +1429,30 @@ export const adminService = {
       invalidState("Closed class cannot be updated");
     }
 
+    if (input.classType === "LOP_TRUNG_TAM" && !input.centerTeacherId) {
+      throw new AppError(
+        "CENTER_TEACHER_REQUIRED",
+        400,
+        "Center teacher is required for center classes",
+      );
+    }
+
     const actorName = await resolveActorName(actor);
 
     return prisma.$transaction(async (tx: any) => {
       const updated = await tx.class.update({
         where: { id: classId },
-        data: input,
+        data: {
+          title: input.title,
+          subject: input.subject,
+          grade: input.grade,
+          district: input.district,
+          feePerHour: input.feePerHour,
+          schedule: input.schedule,
+          classType: input.classType,
+          tutorType: input.tutorType,
+          centerTeacherId: input.centerTeacherId ?? undefined,
+        },
       });
 
       await auditLogService.log(

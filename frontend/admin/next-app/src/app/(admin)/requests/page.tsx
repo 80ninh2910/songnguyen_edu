@@ -21,11 +21,15 @@ import {
   listAdminClassApplicants,
   assignAdminClass,
   rejectAdminClassApplicant,
+  listAdminCenterTeachers,
   type AdminClassRequestDetail,
   type AdminClassRequestStatus,
   type AdminClassRequestSummary,
   type AdminClassSummary,
   type AdminClassApplicant,
+  type AdminCenterTeacherSummary,
+  type AdminRequestType,
+  type AdminTutorType,
 } from "@/lib/adminApi";
 
 const PAGE_SIZE = 10;
@@ -50,12 +54,14 @@ type ConvertForm = {
   title: string;
   feePerHour: string;
   scheduleDays: string[];
+  centerTeacherId: string;
 };
 
 const emptyConvertForm: ConvertForm = {
   title: "",
   feePerHour: "",
   scheduleDays: [],
+  centerTeacherId: "",
 };
 
 function buildConvertForm(
@@ -69,10 +75,24 @@ function buildConvertForm(
     title: `${detail.subject} ${detail.grade}`.trim(),
     feePerHour: detail.budgetPerHour ? String(detail.budgetPerHour) : "",
     scheduleDays: [],
+    centerTeacherId: "",
   };
 }
 
 const WEEK_DAYS = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
+
+const REQUEST_TYPE_LABELS: Record<AdminRequestType, string> = {
+  GIA_SU_TU_DO: "Gia sư tự do",
+  GIA_SU_DAO_TAO: "Gia sư đào tạo",
+  TRUNG_TAM: "Trung tâm",
+};
+
+const TUTOR_TYPE_LABELS: Record<AdminTutorType, string> = {
+  GIA_SU_TU_DO: "Gia sư tự do",
+  GIA_SU_DAO_TAO: "Gia sư đào tạo",
+  GIAO_VIEN_TRUNG_TAM: "Giáo viên trung tâm",
+  ANY: "Không giới hạn",
+};
 
 function formatVnd(value: string): string {
   if (!value) return "";
@@ -112,6 +132,35 @@ function formatClassCode(id: string): string {
   return `LH-${code.toUpperCase()}`;
 }
 
+function getTutorTypeBadgeStyle(type: AdminTutorType): React.CSSProperties {
+  switch (type) {
+    case "GIA_SU_TU_DO":
+      return {
+        background: "rgba(37, 99, 235, 0.12)",
+        color: "#1d4ed8",
+        border: "1px solid rgba(37, 99, 235, 0.28)",
+      };
+    case "GIA_SU_DAO_TAO":
+      return {
+        background: "rgba(245, 158, 11, 0.16)",
+        color: "#b45309",
+        border: "1px solid rgba(245, 158, 11, 0.35)",
+      };
+    case "GIAO_VIEN_TRUNG_TAM":
+      return {
+        background: "rgba(16, 185, 129, 0.16)",
+        color: "#047857",
+        border: "1px solid rgba(16, 185, 129, 0.35)",
+      };
+    default:
+      return {
+        background: "rgba(148, 163, 184, 0.2)",
+        color: "#475569",
+        border: "1px solid rgba(148, 163, 184, 0.4)",
+      };
+  }
+}
+
 // -------------------------------------------------------------
 // PARENT REQUESTS TAB
 // -------------------------------------------------------------
@@ -125,6 +174,7 @@ function ParentRequestsTab({
   const searchParams = useSearchParams();
 
   const status = searchParams.get("status") ?? "PENDING";
+  const requestTypeQuery = searchParams.get("requestType") ?? "all";
   const page = Number(searchParams.get("page") ?? "1");
 
   const [records, setRecords] = useState<AdminClassRequestSummary[]>([]);
@@ -154,19 +204,36 @@ function ParentRequestsTab({
   const [rejectReason, setRejectReason] = useState("");
   const [convertLoading, setConvertLoading] = useState(false);
   const [rejectLoading, setRejectLoading] = useState(false);
+  const [centerTeachers, setCenterTeachers] = useState<AdminCenterTeacherSummary[]>([]);
+  const [centerTeachersLoading, setCenterTeachersLoading] = useState(false);
+  const [centerTeachersError, setCenterTeachersError] = useState<string | null>(null);
 
   const statusFilter = useMemo(() => {
     return status === "all" ? undefined : (status as AdminClassRequestStatus);
   }, [status]);
 
-  const updateQuery = (next: { status?: string; page?: number }) => {
+  const requestTypeFilter = useMemo(() => {
+    return requestTypeQuery === "all"
+      ? undefined
+      : (requestTypeQuery as AdminRequestType);
+  }, [requestTypeQuery]);
+
+  const updateQuery = (next: {
+    status?: string;
+    requestType?: string;
+    page?: number;
+  }) => {
     const params = new URLSearchParams(searchParams.toString());
     const nextStatus = next.status ?? status;
+    const nextRequestType = next.requestType ?? requestTypeQuery;
     const nextPage = next.page ?? page;
 
     if (nextStatus === "PENDING") params.delete("status");
     else if (nextStatus === "all") params.set("status", "all");
     else params.set("status", nextStatus);
+
+    if (nextRequestType === "all") params.delete("requestType");
+    else params.set("requestType", nextRequestType);
 
     if (nextPage <= 1) params.delete("page");
     else params.set("page", String(nextPage));
@@ -183,6 +250,7 @@ function ParentRequestsTab({
         page: Number.isFinite(page) && page > 0 ? page : 1,
         limit: PAGE_SIZE,
         status: statusFilter,
+        requestType: requestTypeFilter,
       });
       setRecords(response.data);
       setMeta(response.meta);
@@ -195,14 +263,29 @@ function ParentRequestsTab({
     } finally {
       setLoading(false);
     }
-  }, [page, statusFilter]);
+  }, [page, requestTypeFilter, statusFilter]);
 
   const loadStats = useCallback(async () => {
     try {
       const [pending, converted, rejected] = await Promise.all([
-        listAdminClassRequests({ page: 1, limit: 1, status: "PENDING" }),
-        listAdminClassRequests({ page: 1, limit: 1, status: "CONVERTED" }),
-        listAdminClassRequests({ page: 1, limit: 1, status: "REJECTED" }),
+        listAdminClassRequests({
+          page: 1,
+          limit: 1,
+          status: "PENDING",
+          requestType: requestTypeFilter,
+        }),
+        listAdminClassRequests({
+          page: 1,
+          limit: 1,
+          status: "CONVERTED",
+          requestType: requestTypeFilter,
+        }),
+        listAdminClassRequests({
+          page: 1,
+          limit: 1,
+          status: "REJECTED",
+          requestType: requestTypeFilter,
+        }),
       ]);
 
       setStats({
@@ -212,6 +295,24 @@ function ParentRequestsTab({
       });
     } catch {
       setStats({ pending: 0, converted: 0, rejected: 0 });
+    }
+  }, [requestTypeFilter]);
+
+  const loadCenterTeachers = useCallback(async () => {
+    setCenterTeachersLoading(true);
+    setCenterTeachersError(null);
+    try {
+      const response = await listAdminCenterTeachers({ page: 1, limit: 100 });
+      setCenterTeachers(response.data);
+    } catch (err) {
+      setCenterTeachersError(
+        err instanceof Error
+          ? err.message
+          : "Không thể tải danh sách giáo viên trung tâm.",
+      );
+      setCenterTeachers([]);
+    } finally {
+      setCenterTeachersLoading(false);
     }
   }, []);
 
@@ -238,6 +339,18 @@ function ParentRequestsTab({
   useEffect(() => {
     void loadStats();
   }, [loadStats]);
+
+  useEffect(() => {
+    if (!isConvertOpen || !detail || detail.requestType !== "TRUNG_TAM") {
+      return;
+    }
+    void loadCenterTeachers();
+  }, [detail, isConvertOpen, loadCenterTeachers]);
+
+  useEffect(() => {
+    if (!isConvertOpen) return;
+    setConvertForm(buildConvertForm(detail));
+  }, [detail, isConvertOpen]);
 
   useEffect(() => {
     if (!records.length) {
@@ -293,10 +406,15 @@ function ParentRequestsTab({
     setConvertLoading(true);
 
     try {
+      if (detail.requestType === "TRUNG_TAM" && !convertForm.centerTeacherId) {
+        showToast("error", "Vui lòng chọn giáo viên trung tâm.");
+        return;
+      }
       const payload: {
         title?: string;
         feePerHour?: number;
         schedule?: string;
+        centerTeacherId?: string;
       } = {};
       const trimmedTitle = convertForm.title.trim();
       const feeValue = Number(convertForm.feePerHour);
@@ -307,6 +425,9 @@ function ParentRequestsTab({
       }
       if (convertForm.scheduleDays.length > 0) {
         payload.schedule = WEEK_DAYS.filter((day) => convertForm.scheduleDays.includes(day)).join(", ");
+      }
+      if (convertForm.centerTeacherId) {
+        payload.centerTeacherId = convertForm.centerTeacherId;
       }
 
       await convertAdminClassRequest(detail.id, payload);
@@ -420,6 +541,21 @@ function ParentRequestsTab({
               <option value="REJECTED">Đã từ chối</option>
             </select>
           </label>
+          <label>
+            <span className="tutors-select-label">Loại yêu cầu</span>
+            <select
+              className="tutors-select"
+              onChange={(e) =>
+                updateQuery({ requestType: e.target.value, page: 1 })
+              }
+              value={requestTypeQuery}
+            >
+              <option value="all">Tất cả loại</option>
+              <option value="GIA_SU_TU_DO">Gia sư tự do</option>
+              <option value="GIA_SU_DAO_TAO">Gia sư đào tạo</option>
+              <option value="TRUNG_TAM">Trung tâm</option>
+            </select>
+          </label>
         </div>
       </section>
 
@@ -433,6 +569,7 @@ function ParentRequestsTab({
                 <th>Môn - Lớp</th>
                 <th>Khu vực</th>
                 <th>Học phí/buổi</th>
+                <th>Loại gia sư</th>
                 <th>Ngày gửi</th>
                 <th>Trạng thái</th>
                 <th>Action</th>
@@ -441,13 +578,13 @@ function ParentRequestsTab({
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={8} style={{ textAlign: "center" }}>
+                  <td colSpan={9} style={{ textAlign: "center" }}>
                     Đang tải dữ liệu...
                   </td>
                 </tr>
               ) : records.length === 0 ? (
                 <tr>
-                  <td colSpan={8} style={{ textAlign: "center" }}>
+                  <td colSpan={9} style={{ textAlign: "center" }}>
                     Chưa có yêu cầu mở lớp.
                   </td>
                 </tr>
@@ -491,6 +628,21 @@ function ParentRequestsTab({
                       </td>
                       <td>{record.district}</td>
                       <td>{formatCurrency(record.budgetPerHour)}</td>
+                      <td>
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            padding: "0.15rem 0.6rem",
+                            borderRadius: "999px",
+                            fontSize: "0.78rem",
+                            fontWeight: 700,
+                            ...getTutorTypeBadgeStyle(record.tutorType),
+                          }}
+                        >
+                          {TUTOR_TYPE_LABELS[record.tutorType]}
+                        </span>
+                      </td>
                       <td>{formatDate(record.createdAt)}</td>
                       <td>
                         <AdminStatusBadge
@@ -687,6 +839,37 @@ function ParentRequestsTab({
                     })}
                   </div>
                 </label>
+                {detail.requestType === "TRUNG_TAM" && (
+                  <label className="admin-dialog-field">
+                    Giáo viên trung tâm
+                    <select
+                      value={convertForm.centerTeacherId}
+                      onChange={(e) =>
+                        setConvertForm({
+                          ...convertForm,
+                          centerTeacherId: e.target.value,
+                        })
+                      }
+                    >
+                      <option value="">Chọn giáo viên trung tâm</option>
+                      {centerTeachers.map((teacher) => (
+                        <option key={teacher.id} value={teacher.id}>
+                          {teacher.fullName} ({teacher.email})
+                        </option>
+                      ))}
+                    </select>
+                    {centerTeachersLoading && (
+                      <span style={{ fontSize: "0.8rem", color: "#64748b" }}>
+                        Đang tải danh sách giáo viên...
+                      </span>
+                    )}
+                    {centerTeachersError && (
+                      <span style={{ fontSize: "0.8rem", color: "#ba1a1a" }}>
+                        {centerTeachersError}
+                      </span>
+                    )}
+                  </label>
+                )}
               </div>
               <div className="admin-dialog-actions">
                 <button
@@ -856,6 +1039,28 @@ function ParentRequestsTab({
                         <p className="payments-info-value">{detail.district}</p>
                       </div>
                       <div>
+                        <p className="payments-info-label">Loại yêu cầu</p>
+                        <p className="payments-info-value">
+                          {REQUEST_TYPE_LABELS[detail.requestType]}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="payments-info-label">Loại gia sư</p>
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            padding: "0.2rem 0.75rem",
+                            borderRadius: "999px",
+                            fontSize: "0.82rem",
+                            fontWeight: 700,
+                            ...getTutorTypeBadgeStyle(detail.tutorType),
+                          }}
+                        >
+                          {TUTOR_TYPE_LABELS[detail.tutorType]}
+                        </span>
+                      </div>
+                      <div>
                         <p className="payments-info-label">Học phí/buổi</p>
                         <p className="payments-info-value">
                           {formatCurrency(detail.budgetPerHour)}
@@ -959,7 +1164,10 @@ function ParentRequestsTab({
                     >
                       <button
                         className="admin-btn primary"
-                        onClick={() => setIsConvertOpen(true)}
+                        onClick={() => {
+                          setIsDetailOpen(false);
+                          setIsConvertOpen(true);
+                        }}
                         type="button"
                       >
                         <AdminIcon name="verified" /> Tạo lớp từ yêu cầu

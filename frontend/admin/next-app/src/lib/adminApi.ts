@@ -100,6 +100,16 @@ export type AdminTutorDetail = {
 };
 
 export type AdminClassRequestStatus = "PENDING" | "CONVERTED" | "REJECTED";
+export type AdminRequestType = "GIA_SU_TU_DO" | "GIA_SU_DAO_TAO" | "TRUNG_TAM";
+export type AdminTutorType =
+  | "GIA_SU_TU_DO"
+  | "GIA_SU_DAO_TAO"
+  | "GIAO_VIEN_TRUNG_TAM"
+  | "ANY";
+export type AdminClassType =
+  | "LOP_GIA_SU_TU_DO"
+  | "LOP_GIA_SU_DAO_TAO"
+  | "LOP_TRUNG_TAM";
 
 export type AdminClassRequestSummary = {
   id: string;
@@ -109,6 +119,8 @@ export type AdminClassRequestSummary = {
   grade: string;
   district: string;
   budgetPerHour: number;
+  requestType: AdminRequestType;
+  tutorType: AdminTutorType;
   status: AdminClassRequestStatus;
   createdAt: string;
 };
@@ -133,6 +145,8 @@ export type AdminClassRequestDetail = {
   grade: string;
   district: string;
   budgetPerHour: number;
+  requestType: AdminRequestType;
+  tutorType: AdminTutorType;
   note: string | null;
   status: AdminClassRequestStatus;
   processedAt: string | null;
@@ -157,6 +171,9 @@ export type AdminClassSummary = {
   grade: string;
   district: string;
   feePerHour: number;
+  classType: AdminClassType;
+  tutorType: AdminTutorType;
+  centerTeacherId: string | null;
   status: AdminClassStatus;
   createdAt: string;
   _count: {
@@ -183,6 +200,9 @@ export type AdminClassDetail = {
   district: string;
   feePerHour: number;
   schedule: string | null;
+  classType: AdminClassType;
+  tutorType: AdminTutorType;
+  centerTeacherId: string | null;
   status: AdminClassStatus;
   createdAt: string;
   closedAt: string | null;
@@ -249,6 +269,32 @@ export type AdminTutorCreatePayload = {
 };
 
 export type AdminTutorUpdatePayload = Partial<AdminTutorCreatePayload>;
+
+export type AdminCenterTeacherStatus = "ACTIVE" | "INACTIVE";
+
+export type AdminCenterTeacherSummary = {
+  id: string;
+  fullName: string;
+  email: string;
+  phone: string | null;
+  status: AdminCenterTeacherStatus;
+  subjects: string[];
+  districts: string[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AdminCenterTeacherCreatePayload = {
+  fullName: string;
+  email: string;
+  phone?: string;
+  subjects: string[];
+  districts: string[];
+  status?: AdminCenterTeacherStatus;
+};
+
+export type AdminCenterTeacherUpdatePayload =
+  Partial<AdminCenterTeacherCreatePayload>;
 
 function getApiBaseUrl(): string {
   const raw =
@@ -411,6 +457,46 @@ export async function listAdminTutors(params: {
   return { data: payload.data, meta: payload.meta };
 }
 
+export async function listAdminCenterTeachers(params: {
+  page?: number;
+  limit?: number;
+  status?: AdminCenterTeacherStatus;
+  subject?: string;
+  subjects?: string[];
+  district?: string;
+  districts?: string[];
+  search?: string;
+  phone?: string;
+}): Promise<{
+  data: AdminCenterTeacherSummary[];
+  meta: ApiSuccessList<unknown>["meta"];
+}> {
+  const searchParams = new URLSearchParams();
+
+  if (params.page) searchParams.set("page", String(params.page));
+  if (params.limit) searchParams.set("limit", String(params.limit));
+  if (params.status) searchParams.set("status", params.status);
+  if (params.subject) searchParams.set("subject", params.subject);
+  if (params.search) searchParams.set("search", params.search);
+  if (params.phone) searchParams.set("phone", params.phone);
+  if (params.district) searchParams.set("district", params.district);
+  if (params.subjects) searchParams.set("subjects", params.subjects.join(","));
+  if (params.districts) searchParams.set("districts", params.districts.join(","));
+
+  const queryString = searchParams.toString();
+  const response = await adminFetch(
+    `/admin/center-teachers${queryString ? `?${queryString}` : ""}`,
+  );
+
+  if (!response.ok) {
+    throw new Error("Không thể tải danh sách giáo viên trung tâm.");
+  }
+
+  const payload =
+    await parseJson<ApiSuccessList<AdminCenterTeacherSummary>>(response);
+  return { data: payload.data, meta: payload.meta };
+}
+
 export async function getAdminTutorById(id: string): Promise<AdminTutorDetail> {
   const response = await adminFetch(`/admin/tutors/${id}`);
 
@@ -426,6 +512,8 @@ export async function listAdminClassRequests(params: {
   page?: number;
   limit?: number;
   status?: AdminClassRequestStatus;
+  requestType?: AdminRequestType;
+  tutorType?: AdminTutorType;
 }): Promise<{
   data: AdminClassRequestSummary[];
   meta: ApiSuccessList<unknown>["meta"];
@@ -435,6 +523,8 @@ export async function listAdminClassRequests(params: {
   if (params.page) searchParams.set("page", String(params.page));
   if (params.limit) searchParams.set("limit", String(params.limit));
   if (params.status) searchParams.set("status", params.status);
+  if (params.requestType) searchParams.set("requestType", params.requestType);
+  if (params.tutorType) searchParams.set("tutorType", params.tutorType);
 
   const queryString = searchParams.toString();
   const response = await adminFetch(
@@ -466,7 +556,12 @@ export async function getAdminClassRequestById(
 
 export async function convertAdminClassRequest(
   id: string,
-  payload: { title?: string; feePerHour?: number; schedule?: string },
+  payload: {
+    title?: string;
+    feePerHour?: number;
+    schedule?: string;
+    centerTeacherId?: string;
+  },
 ): Promise<{ classId: string; converted: true }> {
   const response = await adminFetch(`/admin/class-requests/${id}/convert`, {
     method: "PATCH",
@@ -502,6 +597,7 @@ export async function listAdminClasses(params: {
   status?: AdminClassStatus;
   subject?: string;
   district?: string;
+  classType?: AdminClassType;
 }): Promise<{
   data: AdminClassSummary[];
   meta: ApiSuccessList<unknown>["meta"];
@@ -513,6 +609,7 @@ export async function listAdminClasses(params: {
   if (params.status) searchParams.set("status", params.status);
   if (params.subject) searchParams.set("subject", params.subject);
   if (params.district) searchParams.set("district", params.district);
+  if (params.classType) searchParams.set("classType", params.classType);
 
   const queryString = searchParams.toString();
   const response = await adminFetch(
@@ -559,6 +656,9 @@ export async function createAdminClass(payload: {
   feePerHour: number;
   schedule?: string;
   sourceRequestId?: string;
+  classType?: AdminClassType;
+  tutorType?: AdminTutorType;
+  centerTeacherId?: string | null;
 }): Promise<{ id: string }> {
   const response = await adminFetch("/admin/classes", {
     method: "POST",
@@ -579,6 +679,9 @@ export async function updateAdminClass(
     title?: string;
     feePerHour?: number;
     schedule?: string;
+    classType?: AdminClassType;
+    tutorType?: AdminTutorType;
+    centerTeacherId?: string | null;
   },
 ): Promise<AdminClassDetail> {
   const response = await adminFetch(`/admin/classes/${id}`, {
@@ -623,6 +726,22 @@ export async function createAdminTutor(
   return data.data;
 }
 
+export async function createAdminCenterTeacher(
+  payload: AdminCenterTeacherCreatePayload,
+): Promise<{ id: string }> {
+  const response = await adminFetch("/admin/center-teachers", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error("Không thể tạo giáo viên trung tâm.");
+  }
+
+  const data = await parseJson<ApiSuccess<{ id: string }>>(response);
+  return data.data;
+}
+
 export async function updateAdminTutor(
   id: string,
   payload: AdminTutorUpdatePayload,
@@ -640,6 +759,23 @@ export async function updateAdminTutor(
   }
 
   const data = await parseJson<ApiSuccess<AdminTutorDetail>>(response);
+  return data.data;
+}
+
+export async function updateAdminCenterTeacher(
+  id: string,
+  payload: AdminCenterTeacherUpdatePayload,
+): Promise<AdminCenterTeacherSummary> {
+  const response = await adminFetch(`/admin/center-teachers/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    throw new Error("Không thể cập nhật giáo viên trung tâm.");
+  }
+
+  const data = await parseJson<ApiSuccess<AdminCenterTeacherSummary>>(response);
   return data.data;
 }
 

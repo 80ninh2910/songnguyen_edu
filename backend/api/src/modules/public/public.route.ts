@@ -28,6 +28,11 @@ const classRequestBodySchema = {
     district: { type: "string" },
     budgetPerHour: { type: "number" },
     note: { type: "string" },
+    formType: { type: "string", enum: ["GIA_SU", "TRUNG_TAM"] },
+    tutorType: {
+      type: "string",
+      enum: ["GIA_SU_TU_DO", "GIA_SU_DAO_TAO"],
+    },
   },
 };
 
@@ -246,7 +251,21 @@ export async function registerPublicRoutes(
         district: string;
         budgetPerHour?: number;
         note?: string;
+        formType?: "GIA_SU" | "TRUNG_TAM";
+        tutorType?: "GIA_SU_TU_DO" | "GIA_SU_DAO_TAO";
       };
+
+      const formType = body.formType ?? "GIA_SU";
+      const resolvedTutorType =
+        formType === "TRUNG_TAM"
+          ? "GIAO_VIEN_TRUNG_TAM"
+          : body.tutorType ?? "GIA_SU_TU_DO";
+      const requestType =
+        formType === "TRUNG_TAM"
+          ? "TRUNG_TAM"
+          : resolvedTutorType === "GIA_SU_DAO_TAO"
+            ? "GIA_SU_DAO_TAO"
+            : "GIA_SU_TU_DO";
 
       const created = await prisma.classRequest.create({
         data: {
@@ -258,6 +277,8 @@ export async function registerPublicRoutes(
           grade: body.grade,
           district: body.district,
           budgetPerHour: Math.max(Math.round(body.budgetPerHour ?? 0), 0),
+          requestType,
+          tutorType: resolvedTutorType,
           note: body.note,
         },
         select: { id: true },

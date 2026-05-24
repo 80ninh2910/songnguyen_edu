@@ -15,6 +15,7 @@ import {
   confirmPaymentHandler,
   convertClassRequestHandler,
   createClassHandler,
+  createCenterTeacherHandler,
   createTutorHandler,
   dashboardHandler,
   dashboardStatsHandler,
@@ -29,6 +30,7 @@ import {
   listClassesHandler,
   listClassSessionsHandler,
   listClassRequestsHandler,
+  listCenterTeachersHandler,
   listSessionFeedbacksHandler,
   listPaymentsHandler,
   listTutorsHandler,
@@ -36,6 +38,7 @@ import {
   rejectClassRequestHandler,
   rejectPaymentHandler,
   rejectTutorHandler,
+  updateCenterTeacherHandler,
   updateClassHandler,
   updateTutorHandler,
 } from "./admin.handler.js";
@@ -43,6 +46,7 @@ import {
   AdminListAuditLogsQuerySchema,
   AdminListClassesQuerySchema,
   AdminListClassRequestsQuerySchema,
+  AdminListCenterTeachersQuerySchema,
   AdminListPaymentsQuerySchema,
   AdminListTutorsQuerySchema,
   AssignClassBodySchema,
@@ -52,6 +56,7 @@ import {
   ConvertRequestBodySchema,
   CreateSessionBodySchema,
   CreateClassBodySchema,
+  CreateCenterTeacherBodySchema,
   CreateTutorBodySchema,
   IdParamSchema,
   MemberIdParamSchema,
@@ -60,6 +65,7 @@ import {
   RejectRequestBodySchema,
   RejectTutorBodySchema,
   SessionIdParamSchema,
+  UpdateCenterTeacherBodySchema,
   UpdateTutorBodySchema,
   UpdateClassBodySchema,
 } from "./admin.schema.js";
@@ -135,6 +141,26 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
     listTutorsHandler,
   );
 
+  app.get(
+    "/center-teachers",
+    {
+      preHandler: requireAdmin,
+      schema: {
+        tags: ["Admin"],
+        summary: "List center teachers",
+        security: [{ bearerAuth: [] }],
+        querystring: fromZodSchema(AdminListCenterTeachersQuerySchema),
+        response: {
+          200: successListSchema(listItemSchema),
+          400: errorResponseSchema,
+          401: errorResponseSchema,
+          403: errorResponseSchema,
+        },
+      },
+    },
+    listCenterTeachersHandler,
+  );
+
   app.post(
     "/tutors",
     {
@@ -154,6 +180,27 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
       },
     },
     createTutorHandler,
+  );
+
+  app.post(
+    "/center-teachers",
+    {
+      preHandler: requireAdmin,
+      schema: {
+        tags: ["Admin"],
+        summary: "Create center teacher",
+        security: [{ bearerAuth: [] }],
+        body: fromZodSchema(CreateCenterTeacherBodySchema),
+        response: {
+          200: successSchema(anyDataSchema),
+          400: errorResponseSchema,
+          401: errorResponseSchema,
+          403: errorResponseSchema,
+          409: errorResponseSchema,
+        },
+      },
+    },
+    createCenterTeacherHandler,
   );
 
   app.get(
@@ -198,6 +245,29 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
       },
     },
     updateTutorHandler,
+  );
+
+  app.patch(
+    "/center-teachers/:id",
+    {
+      preHandler: requireAdmin,
+      schema: {
+        tags: ["Admin"],
+        summary: "Update center teacher",
+        security: [{ bearerAuth: [] }],
+        params: fromZodSchema(IdParamSchema),
+        body: fromZodSchema(UpdateCenterTeacherBodySchema),
+        response: {
+          200: successSchema(anyDataSchema),
+          400: errorResponseSchema,
+          401: errorResponseSchema,
+          403: errorResponseSchema,
+          404: errorResponseSchema,
+          409: errorResponseSchema,
+        },
+      },
+    },
+    updateCenterTeacherHandler,
   );
 
   app.patch(

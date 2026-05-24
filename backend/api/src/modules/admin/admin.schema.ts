@@ -62,6 +62,16 @@ export const AdminListTutorsQuerySchema = PaginationQuerySchema.extend({
   sort: z.enum(["newest", "active-most", "rating"]).optional(),
 });
 
+export const AdminListCenterTeachersQuerySchema = PaginationQuerySchema.extend({
+  status: z.enum(["ACTIVE", "INACTIVE"]).optional(),
+  search: z.string().trim().min(1).optional(),
+  phone: z.string().trim().min(3).optional(),
+  subject: z.string().trim().min(1).optional(),
+  subjects: CsvArraySchema.optional(),
+  district: z.string().trim().min(1).optional(),
+  districts: CsvArraySchema.optional(),
+});
+
 const TutorSubjectsSchema = z
   .array(z.string().trim().min(1))
   .min(1, "At least one subject is required");
@@ -78,6 +88,15 @@ export const CreateTutorBodySchema = z.object({
   districts: TutorDistrictsSchema,
 });
 
+export const CreateCenterTeacherBodySchema = z.object({
+  fullName: z.string().trim().min(3).max(200),
+  email: z.string().trim().email().max(200),
+  phone: z.string().trim().min(3).max(30).optional(),
+  subjects: TutorSubjectsSchema,
+  districts: TutorDistrictsSchema,
+  status: z.enum(["ACTIVE", "INACTIVE"]).optional(),
+});
+
 export const UpdateTutorBodySchema = z
   .object({
     fullName: z.string().trim().min(3).max(200).optional(),
@@ -90,18 +109,43 @@ export const UpdateTutorBodySchema = z
     message: "At least one field is required",
   });
 
+export const UpdateCenterTeacherBodySchema = z
+  .object({
+    fullName: z.string().trim().min(3).max(200).optional(),
+    email: z.string().trim().email().max(200).optional(),
+    phone: z.string().trim().min(3).max(30).optional(),
+    subjects: TutorSubjectsSchema.optional(),
+    districts: TutorDistrictsSchema.optional(),
+    status: z.enum(["ACTIVE", "INACTIVE"]).optional(),
+  })
+  .refine((value) => Object.keys(value).length > 0, {
+    message: "At least one field is required",
+  });
+
 export const RejectTutorBodySchema = z.object({
   reason: z.string().trim().min(3).max(500),
 });
 
 export const AdminListClassRequestsQuerySchema = PaginationQuerySchema.extend({
   status: z.enum(["PENDING", "CONVERTED", "REJECTED"]).optional(),
+  requestType: z
+    .enum(["GIA_SU_TU_DO", "GIA_SU_DAO_TAO", "TRUNG_TAM"])
+    .optional(),
+  tutorType: z
+    .enum([
+      "GIA_SU_TU_DO",
+      "GIA_SU_DAO_TAO",
+      "GIAO_VIEN_TRUNG_TAM",
+      "ANY",
+    ])
+    .optional(),
 });
 
 export const ConvertRequestBodySchema = z.object({
   title: z.string().trim().min(3).max(200).optional(),
   feePerHour: z.number().int().positive().optional(),
   schedule: z.string().trim().min(3).max(200).optional(),
+  centerTeacherId: z.string().uuid().optional(),
 });
 
 export const RejectRequestBodySchema = z.object({
@@ -112,6 +156,9 @@ export const AdminListClassesQuerySchema = PaginationQuerySchema.extend({
   status: z.enum(["OPEN", "ASSIGNED", "CLOSED"]).optional(),
   subject: z.string().trim().min(1).optional(),
   district: z.string().trim().min(1).optional(),
+  classType: z
+    .enum(["LOP_GIA_SU_TU_DO", "LOP_GIA_SU_DAO_TAO", "LOP_TRUNG_TAM"])
+    .optional(),
 });
 
 export const CreateClassBodySchema = z.object({
@@ -122,6 +169,18 @@ export const CreateClassBodySchema = z.object({
   feePerHour: z.number().int().positive(),
   schedule: z.string().trim().min(3).max(200).optional(),
   sourceRequestId: z.string().uuid().optional(),
+  classType: z
+    .enum(["LOP_GIA_SU_TU_DO", "LOP_GIA_SU_DAO_TAO", "LOP_TRUNG_TAM"])
+    .optional(),
+  tutorType: z
+    .enum([
+      "GIA_SU_TU_DO",
+      "GIA_SU_DAO_TAO",
+      "GIAO_VIEN_TRUNG_TAM",
+      "ANY",
+    ])
+    .optional(),
+  centerTeacherId: z.string().uuid().optional(),
 });
 
 export const UpdateClassBodySchema = z
@@ -132,6 +191,18 @@ export const UpdateClassBodySchema = z
     district: z.string().trim().min(1).max(100).optional(),
     feePerHour: z.number().int().positive().optional(),
     schedule: z.string().trim().min(3).max(200).optional(),
+    classType: z
+      .enum(["LOP_GIA_SU_TU_DO", "LOP_GIA_SU_DAO_TAO", "LOP_TRUNG_TAM"])
+      .optional(),
+    tutorType: z
+      .enum([
+        "GIA_SU_TU_DO",
+        "GIA_SU_DAO_TAO",
+        "GIAO_VIEN_TRUNG_TAM",
+        "ANY",
+      ])
+      .optional(),
+    centerTeacherId: z.string().uuid().optional(),
   })
   .refine((value) => Object.keys(value).length > 0, {
     message: "At least one field is required",

@@ -6,6 +6,7 @@ import {
   AdminListAuditLogsQuerySchema,
   AdminListClassesQuerySchema,
   AdminListClassRequestsQuerySchema,
+  AdminListCenterTeachersQuerySchema,
   AdminListPaymentsQuerySchema,
   AdminListTutorsQuerySchema,
   AssignClassBodySchema,
@@ -15,6 +16,7 @@ import {
   ConvertRequestBodySchema,
   CreateSessionBodySchema,
   CreateTutorBodySchema,
+  CreateCenterTeacherBodySchema,
   CreateClassBodySchema,
   IdParamSchema,
   MemberIdParamSchema,
@@ -24,6 +26,7 @@ import {
   RejectTutorBodySchema,
   SessionIdParamSchema,
   UpdateTutorBodySchema,
+  UpdateCenterTeacherBodySchema,
   UpdateClassBodySchema,
 } from "./admin.schema.js";
 
@@ -63,6 +66,15 @@ export async function listTutorsHandler(
   void reply.send(successList(result.data, result.meta));
 }
 
+export async function listCenterTeachersHandler(
+  request: FastifyRequest,
+  reply: FastifyReply,
+): Promise<void> {
+  const query = AdminListCenterTeachersQuerySchema.parse(request.query);
+  const result = await adminService.listCenterTeachers(query);
+  void reply.send(successList(result.data, result.meta));
+}
+
 export async function getTutorByIdHandler(
   request: FastifyRequest,
   reply: FastifyReply,
@@ -81,6 +93,15 @@ export async function createTutorHandler(
   void reply.send(success(result));
 }
 
+export async function createCenterTeacherHandler(
+  request: FastifyRequest,
+  reply: FastifyReply,
+): Promise<void> {
+  const body = CreateCenterTeacherBodySchema.parse(request.body);
+  const result = await adminService.createCenterTeacher(getActor(request), body);
+  void reply.send(success(result));
+}
+
 export async function updateTutorHandler(
   request: FastifyRequest,
   reply: FastifyReply,
@@ -88,6 +109,16 @@ export async function updateTutorHandler(
   const { id } = IdParamSchema.parse(request.params);
   const body = UpdateTutorBodySchema.parse(request.body);
   const result = await adminService.updateTutor(getActor(request), id, body);
+  void reply.send(success(result));
+}
+
+export async function updateCenterTeacherHandler(
+  request: FastifyRequest,
+  reply: FastifyReply,
+): Promise<void> {
+  const { id } = IdParamSchema.parse(request.params);
+  const body = UpdateCenterTeacherBodySchema.parse(request.body);
+  const result = await adminService.updateCenterTeacher(getActor(request), id, body);
   void reply.send(success(result));
 }
 
