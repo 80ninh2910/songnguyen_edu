@@ -138,6 +138,7 @@ function ParentRequestsTab({
   const [detail, setDetail] = useState<AdminClassRequestDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState<string | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   const [isConvertOpen, setIsConvertOpen] = useState(false);
   const [isRejectOpen, setIsRejectOpen] = useState(false);
@@ -339,6 +340,9 @@ function ParentRequestsTab({
   };
 
   const selectedMeta = detail ? STATUS_META[detail.status] : null;
+  const handleCloseDetailModal = () => {
+    setIsDetailOpen(false);
+  };
 
   return (
     <>
@@ -408,7 +412,7 @@ function ParentRequestsTab({
         </div>
       </section>
 
-      <section className="audit-grid">
+      <section className="audit-grid audit-grid-full">
         <div className="admin-table-wrap">
           <table className="admin-table">
             <thead>
@@ -443,7 +447,10 @@ function ParentRequestsTab({
                   return (
                     <tr
                       key={record.id}
-                      onClick={() => setSelectedRequestId(record.id)}
+                      onClick={() => {
+                        setSelectedRequestId(record.id);
+                        setIsDetailOpen(true);
+                      }}
                       style={
                         isSelected
                           ? { background: "rgba(219, 234, 254, 0.35)" }
@@ -488,6 +495,7 @@ function ParentRequestsTab({
                             onClick={(e) => {
                               e.stopPropagation();
                               setSelectedRequestId(record.id);
+                              setIsDetailOpen(true);
                             }}
                             type="button"
                           >
@@ -502,225 +510,6 @@ function ParentRequestsTab({
             </tbody>
           </table>
         </div>
-
-        <aside className="admin-panel">
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: "0.75rem",
-            }}
-          >
-            <div>
-              <h3 className="admin-panel-title" style={{ margin: 0 }}>
-                Chi tiết yêu cầu
-              </h3>
-              <p className="admin-panel-subtitle">
-                {detail ? formatRequestCode(detail.id) : "Chưa chọn yêu cầu"}
-              </p>
-            </div>
-            {selectedMeta && (
-              <AdminStatusBadge
-                label={selectedMeta.label}
-                tone={selectedMeta.tone}
-                dotColor={selectedMeta.dotColor}
-              />
-            )}
-          </div>
-
-          {detailLoading ? (
-            <p style={{ marginTop: "1rem", color: "#64748b" }}>
-              Đang tải chi tiết...
-            </p>
-          ) : detailError ? (
-            <p style={{ marginTop: "1rem", color: "#ba1a1a" }}>{detailError}</p>
-          ) : detail ? (
-            <div style={{ marginTop: "1rem", display: "grid", gap: "1rem" }}>
-              <section>
-                <p
-                  style={{
-                    margin: "0 0 0.45rem",
-                    fontSize: "0.72rem",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.08em",
-                    fontWeight: 800,
-                    color: "#64748b",
-                  }}
-                >
-                  Thông tin phụ huynh
-                </p>
-                <div className="payments-info-grid">
-                  <div>
-                    <p className="payments-info-label">Họ tên</p>
-                    <p className="payments-info-value">{detail.parentName}</p>
-                  </div>
-                  <div>
-                    <p className="payments-info-label">Số điện thoại</p>
-                    <p className="payments-info-value">{detail.parentPhone}</p>
-                  </div>
-                  <div>
-                    <p className="payments-info-label">Email</p>
-                    <p className="payments-info-value">
-                      {detail.parentEmail ?? "-"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="payments-info-label">Ngày gửi</p>
-                    <p className="payments-info-value">
-                      {formatDate(detail.createdAt)}
-                    </p>
-                  </div>
-                </div>
-              </section>
-
-              <section>
-                <p
-                  style={{
-                    margin: "0 0 0.45rem",
-                    fontSize: "0.72rem",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.08em",
-                    fontWeight: 800,
-                    color: "#64748b",
-                  }}
-                >
-                  Yêu cầu của phụ huynh
-                </p>
-                <div className="payments-info-grid">
-                  <div>
-                    <p className="payments-info-label">Môn học</p>
-                    <p className="payments-info-value">{detail.subject}</p>
-                  </div>
-                  <div>
-                    <p className="payments-info-label">Lớp</p>
-                    <p className="payments-info-value">{detail.grade}</p>
-                  </div>
-                  <div>
-                    <p className="payments-info-label">Khu vực</p>
-                    <p className="payments-info-value">{detail.district}</p>
-                  </div>
-                  <div>
-                    <p className="payments-info-label">Học phí</p>
-                    <p className="payments-info-value">
-                      {formatCurrency(detail.budgetPerHour)}
-                    </p>
-                  </div>
-                </div>
-                {detail.note && (
-                  <div style={{ marginTop: "0.6rem" }}>
-                    <p className="payments-info-label">Ghi chú</p>
-                    <p className="payments-info-value">{detail.note}</p>
-                  </div>
-                )}
-              </section>
-
-              <section>
-                <p
-                  style={{
-                    margin: "0 0 0.45rem",
-                    fontSize: "0.72rem",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.08em",
-                    fontWeight: 800,
-                    color: "#64748b",
-                  }}
-                >
-                  Học viên trong yêu cầu
-                </p>
-                {detail.members.length === 0 ? (
-                  <p style={{ margin: 0, color: "#64748b" }}>
-                    Chưa có thông tin học viên.
-                  </p>
-                ) : (
-                  <div className="pairing-user-list">
-                    {detail.members.map((member) => (
-                      <div className="pairing-user-item" key={member.id}>
-                        <div className="pairing-user-left">
-                          <div className="pairing-user-avatar">
-                            {getInitials(member.studentName)}
-                          </div>
-                          <div>
-                            <p className="pairing-user-name">
-                              {member.studentName}
-                            </p>
-                            <p className="pairing-user-sub">
-                              {member.studentGrade ?? "-"}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </section>
-
-              {detail.classes.length > 0 && (
-                <section>
-                  <p
-                    style={{
-                      margin: "0 0 0.45rem",
-                      fontSize: "0.72rem",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.08em",
-                      fontWeight: 800,
-                      color: "#64748b",
-                    }}
-                  >
-                    Lớp đã tạo
-                  </p>
-                  <div className="pairing-user-list">
-                    {detail.classes.map((item) => (
-                      <div className="pairing-user-item" key={item.id}>
-                        <div className="pairing-user-left">
-                          <div className="pairing-user-avatar">
-                            {item.title.slice(0, 2).toUpperCase()}
-                          </div>
-                          <div>
-                            <p className="pairing-user-name">{item.title}</p>
-                            <p className="pairing-user-sub">
-                              {formatDate(item.createdAt)}
-                            </p>
-                          </div>
-                        </div>
-                        <AdminStatusBadge
-                          label={item.status}
-                          tone={item.status === "OPEN" ? "open" : "processing"}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </section>
-              )}
-            </div>
-          ) : (
-            <p style={{ marginTop: "1rem", color: "#64748b" }}>
-              Chọn một yêu cầu để xem chi tiết.
-            </p>
-          )}
-
-          {detail?.status === "PENDING" && (
-            <div
-              className="payments-action-stack"
-              style={{ marginTop: "1.1rem" }}
-            >
-              <button
-                className="admin-btn primary"
-                onClick={() => setIsConvertOpen(true)}
-                type="button"
-              >
-                <AdminIcon name="verified" /> Tạo lớp từ yêu cầu
-              </button>
-              <button
-                className="admin-btn danger"
-                onClick={() => setIsRejectOpen(true)}
-                type="button"
-              >
-                <AdminIcon name="cancel" /> Từ chối yêu cầu
-              </button>
-            </div>
-          )}
-        </aside>
       </section>
 
       <div
@@ -912,6 +701,242 @@ function ParentRequestsTab({
           </div>
         </div>
       )}
+
+      {isDetailOpen ? (
+        <div className="admin-dialog-backdrop" role="dialog" aria-modal>
+          <div className="admin-dialog" style={{ maxWidth: "70rem" }}>
+            <div className="admin-dialog-header">
+              <div>
+                <p className="admin-dialog-eyebrow">Chi tiết yêu cầu</p>
+                <h3 className="admin-dialog-title">
+                  {detail ? formatRequestCode(detail.id) : "Đang tải..."}
+                </h3>
+              </div>
+              <button
+                className="admin-dialog-close"
+                onClick={handleCloseDetailModal}
+                type="button"
+              >
+                <AdminIcon name="cancel" />
+              </button>
+            </div>
+
+            <div className="admin-dialog-body" style={{ paddingTop: 0 }}>
+              {selectedMeta && (
+                <div style={{ marginBottom: "1rem" }}>
+                  <AdminStatusBadge
+                    label={selectedMeta.label}
+                    tone={selectedMeta.tone}
+                    dotColor={selectedMeta.dotColor}
+                  />
+                </div>
+              )}
+
+              {detailLoading ? (
+                <p style={{ marginTop: "1rem", color: "#64748b" }}>
+                  Đang tải chi tiết...
+                </p>
+              ) : detailError ? (
+                <p style={{ marginTop: "1rem", color: "#ba1a1a" }}>
+                  {detailError}
+                </p>
+              ) : detail ? (
+                <div style={{ display: "grid", gap: "1rem" }}>
+                  <section>
+                    <p
+                      style={{
+                        margin: "0 0 0.45rem",
+                        fontSize: "0.72rem",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.08em",
+                        fontWeight: 800,
+                        color: "#64748b",
+                      }}
+                    >
+                      Thông tin phụ huynh
+                    </p>
+                    <div className="payments-info-grid">
+                      <div>
+                        <p className="payments-info-label">Họ tên</p>
+                        <p className="payments-info-value">
+                          {detail.parentName}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="payments-info-label">Số điện thoại</p>
+                        <p className="payments-info-value">
+                          {detail.parentPhone}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="payments-info-label">Email</p>
+                        <p className="payments-info-value">
+                          {detail.parentEmail ?? "-"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="payments-info-label">Ngày gửi</p>
+                        <p className="payments-info-value">
+                          {formatDate(detail.createdAt)}
+                        </p>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section>
+                    <p
+                      style={{
+                        margin: "0 0 0.45rem",
+                        fontSize: "0.72rem",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.08em",
+                        fontWeight: 800,
+                        color: "#64748b",
+                      }}
+                    >
+                      Yêu cầu của phụ huynh
+                    </p>
+                    <div className="payments-info-grid">
+                      <div>
+                        <p className="payments-info-label">Môn học</p>
+                        <p className="payments-info-value">{detail.subject}</p>
+                      </div>
+                      <div>
+                        <p className="payments-info-label">Lớp</p>
+                        <p className="payments-info-value">{detail.grade}</p>
+                      </div>
+                      <div>
+                        <p className="payments-info-label">Khu vực</p>
+                        <p className="payments-info-value">{detail.district}</p>
+                      </div>
+                      <div>
+                        <p className="payments-info-label">Học phí</p>
+                        <p className="payments-info-value">
+                          {formatCurrency(detail.budgetPerHour)}
+                        </p>
+                      </div>
+                    </div>
+                    {detail.note && (
+                      <div style={{ marginTop: "0.6rem" }}>
+                        <p className="payments-info-label">Ghi chú</p>
+                        <p className="payments-info-value">{detail.note}</p>
+                      </div>
+                    )}
+                  </section>
+
+                  <section>
+                    <p
+                      style={{
+                        margin: "0 0 0.45rem",
+                        fontSize: "0.72rem",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.08em",
+                        fontWeight: 800,
+                        color: "#64748b",
+                      }}
+                    >
+                      Học viên trong yêu cầu
+                    </p>
+                    {detail.members.length === 0 ? (
+                      <p style={{ margin: 0, color: "#64748b" }}>
+                        Chưa có thông tin học viên.
+                      </p>
+                    ) : (
+                      <div className="pairing-user-list">
+                        {detail.members.map((member) => (
+                          <div className="pairing-user-item" key={member.id}>
+                            <div className="pairing-user-left">
+                              <div className="pairing-user-avatar">
+                                {getInitials(member.studentName)}
+                              </div>
+                              <div>
+                                <p className="pairing-user-name">
+                                  {member.studentName}
+                                </p>
+                                <p className="pairing-user-sub">
+                                  {member.studentGrade ?? "-"}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+
+                  {detail.classes.length > 0 && (
+                    <section>
+                      <p
+                        style={{
+                          margin: "0 0 0.45rem",
+                          fontSize: "0.72rem",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.08em",
+                          fontWeight: 800,
+                          color: "#64748b",
+                        }}
+                      >
+                        Lớp đã tạo
+                      </p>
+                      <div className="pairing-user-list">
+                        {detail.classes.map((item) => (
+                          <div className="pairing-user-item" key={item.id}>
+                            <div className="pairing-user-left">
+                              <div className="pairing-user-avatar">
+                                {item.title.slice(0, 2).toUpperCase()}
+                              </div>
+                              <div>
+                                <p className="pairing-user-name">
+                                  {item.title}
+                                </p>
+                                <p className="pairing-user-sub">
+                                  {formatDate(item.createdAt)}
+                                </p>
+                              </div>
+                            </div>
+                            <AdminStatusBadge
+                              label={item.status}
+                              tone={
+                                item.status === "OPEN" ? "open" : "processing"
+                              }
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+
+                  {detail.status === "PENDING" && (
+                    <div
+                      className="payments-action-stack"
+                      style={{ marginTop: "0.6rem" }}
+                    >
+                      <button
+                        className="admin-btn primary"
+                        onClick={() => setIsConvertOpen(true)}
+                        type="button"
+                      >
+                        <AdminIcon name="verified" /> Tạo lớp từ yêu cầu
+                      </button>
+                      <button
+                        className="admin-btn danger"
+                        onClick={() => setIsRejectOpen(true)}
+                        type="button"
+                      >
+                        <AdminIcon name="cancel" /> Từ chối yêu cầu
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p style={{ marginTop: "1rem", color: "#64748b" }}>
+                  Chọn một yêu cầu để xem chi tiết.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }

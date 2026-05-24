@@ -720,7 +720,7 @@ textarea {
 
 .dashboard-columns {
   display: grid;
-  grid-template-columns: 1.5fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 1.25rem;
 }
 
@@ -728,6 +728,31 @@ textarea {
   margin-top: 1rem;
   display: grid;
   gap: 0.68rem;
+  max-height: 18.5rem;
+  overflow: auto;
+  padding-right: 0.45rem;
+  padding-bottom: 0.35rem;
+}
+
+.dashboard-task-list::-webkit-scrollbar,
+.dashboard-timeline::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dashboard-task-list::-webkit-scrollbar-track,
+.dashboard-timeline::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dashboard-task-list::-webkit-scrollbar-thumb,
+.dashboard-timeline::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.18);
+  border-radius: 999px;
+}
+
+.dashboard-task-list::-webkit-scrollbar-thumb:hover,
+.dashboard-timeline::-webkit-scrollbar-thumb:hover {
+  background: rgba(15, 23, 42, 0.32);
 }
 
 .dashboard-task-item {
@@ -738,12 +763,28 @@ textarea {
   justify-content: space-between;
   align-items: center;
   gap: 0.75rem;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.dashboard-task-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  background: #fff;
 }
 
 .dashboard-task-main {
   display: flex;
   align-items: center;
   gap: 0.65rem;
+}
+
+.dashboard-task-main input[type="checkbox"] {
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: var(--primary);
 }
 
 .dashboard-task-label {
@@ -764,10 +805,14 @@ textarea {
 
 .dashboard-timeline {
   margin-top: 0.9rem;
-  border-left: 2px solid var(--surface-variant);
-  padding-left: 1.05rem;
+  border-left: 2px solid rgba(148, 163, 184, 0.5);
+  padding-left: 1.65rem;
   display: grid;
   gap: 1rem;
+  max-height: 19.5rem;
+  overflow: auto;
+  padding-right: 0.45rem;
+  padding-bottom: 0.35rem;
 }
 
 .dashboard-timeline-item {
@@ -776,13 +821,14 @@ textarea {
 
 .dashboard-timeline-dot {
   position: absolute;
-  left: -1.52rem;
+  left: -1.15rem;
   top: 0.2rem;
-  width: 0.78rem;
-  height: 0.78rem;
+  width: 0.95rem;
+  height: 0.95rem;
   border-radius: 999px;
-  border: 2px solid currentcolor;
-  background: #fff;
+  border: 3px solid currentcolor;
+  background: currentcolor;
+  box-shadow: 0 0 0 4px rgba(148, 163, 184, 0.3);
 }
 
 .dashboard-timeline-time {
@@ -795,6 +841,7 @@ textarea {
   margin: 0.2rem 0 0;
   font-size: 0.86rem;
   font-weight: 600;
+  line-height: 1.4;
 }
 
 .dashboard-bottom-grid {
