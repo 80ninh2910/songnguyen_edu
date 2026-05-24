@@ -18,6 +18,7 @@ import {
   fromZodSchema,
   successSchema,
 } from "../../common/utils/docs.js";
+import { env } from "../../config/env.js";
 
 const authUserSchema = {
   type: "object",
@@ -48,6 +49,12 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
   app.post(
     "/admin/login",
     {
+      config: {
+        rateLimit: {
+          max: env.RATE_LIMIT_MAX_LOGIN,
+          timeWindow: env.RATE_LIMIT_WINDOW_MS,
+        },
+      },
       schema: {
         tags: ["Auth"],
         summary: "Admin login",
@@ -65,6 +72,12 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
   app.post(
     "/tutor/login",
     {
+      config: {
+        rateLimit: {
+          max: env.RATE_LIMIT_MAX_LOGIN,
+          timeWindow: env.RATE_LIMIT_WINDOW_MS,
+        },
+      },
       schema: {
         tags: ["Auth"],
         summary: "Tutor login",
