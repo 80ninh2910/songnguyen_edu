@@ -253,6 +253,118 @@
   line-height: 1.7;
 }
 
+.formSwitch {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 10px;
+  margin: 0 auto 24px;
+  padding: 6px;
+  border-radius: 999px;
+  background: #f1f5ff;
+  border: 1px solid #dbe6ff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  width: min(760px, 100%);
+}
+
+.formSwitchButton {
+  border-radius: 999px;
+  border: 1px solid rgba(27, 95, 209, 0.25);
+  background: #f4f7ff;
+  color: var(--education-blue-dark);
+  padding: 10px 22px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  min-height: 42px;
+  flex: 1 1 50%;
+  text-align: center;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.formSwitchButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(27, 95, 209, 0.16);
+  background: #eef3ff;
+}
+
+.formSwitchButtonActive {
+  background: linear-gradient(135deg, #1b5fd1 0%, #0f3a8a 100%);
+  color: #ffffff;
+  border-color: transparent;
+  box-shadow: 0 14px 28px rgba(15, 58, 138, 0.3);
+}
+
+.formOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 18, 44, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 120;
+  backdrop-filter: blur(6px);
+}
+
+.formModal {
+  width: min(980px, 100%);
+  max-height: 92vh;
+  overflow: hidden;
+  border-radius: 28px;
+  border: 1px solid #d6e1fb;
+  background: #ffffff;
+  box-shadow: 0 30px 90px rgba(4, 16, 50, 0.35);
+  display: flex;
+  flex-direction: column;
+}
+
+.formModalHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5edff;
+  background: linear-gradient(120deg, #f7f9ff 0%, #ffffff 60%, #f6f9ff 100%);
+}
+
+.formModalTitle {
+  font-size: 26px;
+  font-weight: 800;
+  margin: 10px 0 6px;
+  color: var(--education-blue-dark);
+}
+
+.formModalDesc {
+  margin: 0;
+  color: var(--education-muted);
+  line-height: 1.6;
+}
+
+.formCloseButton {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: none;
+  background: #edf3ff;
+  color: #1d4aa8;
+  font-size: 22px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.formCloseButton:hover {
+  background: #dce9ff;
+  transform: scale(1.02);
+}
+
+.formModalBody {
+  padding: 20px 24px 28px;
+  overflow-y: auto;
+}
+
 .sectionTag {
   display: inline-flex;
   padding: 6px 14px;

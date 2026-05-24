@@ -1,0 +1,103 @@
+/* session-form.css */
+
+.session-form-header {
+  margin-bottom: 24px;
+}
+
+.session-form {
+  background: #fff;
+  border-radius: 18px;
+  border: 1px solid #e5e7eb;
+  padding: 24px;
+}
+
+.session-form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.session-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.session-form-field--full {
+  grid-column: span 3;
+}
+
+.session-form-field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.session-form-field input,
+.session-form-field textarea {
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 12px 14px;
+  font-size: 14px;
+  outline: none;
+  font-family: 'Inter', sans-serif;
+  background: #fff;
+}
+
+.session-form-field input:focus,
+.session-form-field textarea:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.session-form-message {
+  margin-top: 18px;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.session-form-message.error {
+  background: #fff1f1;
+  border: 1px solid #fecaca;
+  color: #ef4444;
+}
+
+.session-form-message.success {
+  background: #eafbf0;
+  border: 1px solid #b6e9c5;
+  color: #1a7b3f;
+}
+
+.session-form-actions {
+  margin-top: 20px;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+@media (max-width: 1024px) {
+  .session-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .session-form-field--full {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 640px) {
+  .session-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .session-form-field--full {
+    grid-column: span 1;
+  }
+
+  .session-form-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

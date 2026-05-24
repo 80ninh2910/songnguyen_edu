@@ -19,6 +19,7 @@ const classRequestBodySchema = {
   type: "object",
   required: ["parentName", "parentPhone", "subject", "grade", "district"],
   properties: {
+    studentName: { type: "string" },
     parentName: { type: "string" },
     parentPhone: { type: "string" },
     parentEmail: { type: "string", format: "email" },
@@ -236,6 +237,7 @@ export async function registerPublicRoutes(
     },
     async (request, reply) => {
       const body = request.body as {
+        studentName?: string;
         parentName: string;
         parentPhone: string;
         parentEmail?: string;
@@ -248,6 +250,7 @@ export async function registerPublicRoutes(
 
       const created = await prisma.classRequest.create({
         data: {
+          studentName: body.studentName?.trim() || null,
           parentName: body.parentName,
           parentPhone: body.parentPhone,
           parentEmail: body.parentEmail,

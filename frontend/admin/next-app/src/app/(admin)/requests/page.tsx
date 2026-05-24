@@ -18,14 +18,13 @@ import {
   listAdminClassRequests,
   rejectAdminClassRequest,
   listAdminClasses,
-  getAdminClassById,
   listAdminClassApplicants,
   assignAdminClass,
+  rejectAdminClassApplicant,
   type AdminClassRequestDetail,
   type AdminClassRequestStatus,
   type AdminClassRequestSummary,
   type AdminClassSummary,
-  type AdminClassDetail,
   type AdminClassApplicant,
 } from "@/lib/adminApi";
 
@@ -50,13 +49,13 @@ type ToastState = {
 type ConvertForm = {
   title: string;
   feePerHour: string;
-  schedule: string;
+  scheduleDays: string[];
 };
 
 const emptyConvertForm: ConvertForm = {
   title: "",
   feePerHour: "",
-  schedule: "",
+  scheduleDays: [],
 };
 
 function buildConvertForm(
@@ -69,8 +68,17 @@ function buildConvertForm(
   return {
     title: `${detail.subject} ${detail.grade}`.trim(),
     feePerHour: detail.budgetPerHour ? String(detail.budgetPerHour) : "",
-    schedule: "",
+    scheduleDays: [],
   };
+}
+
+const WEEK_DAYS = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
+
+function formatVnd(value: string): string {
+  if (!value) return "";
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return value;
+  return new Intl.NumberFormat("vi-VN").format(amount);
 }
 
 function getInitials(name: string): string {
@@ -91,7 +99,7 @@ function formatDate(value?: string | null): string {
 
 function formatCurrency(value?: number | null): string {
   if (!value) return "-";
-  return `${new Intl.NumberFormat("vi-VN").format(value)}đ/giờ`;
+  return `${new Intl.NumberFormat("vi-VN").format(value)}đ/buổi`;
 }
 
 function formatRequestCode(id: string): string {
@@ -116,7 +124,7 @@ function ParentRequestsTab({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const status = searchParams.get("status") ?? "all";
+  const status = searchParams.get("status") ?? "PENDING";
   const page = Number(searchParams.get("page") ?? "1");
 
   const [records, setRecords] = useState<AdminClassRequestSummary[]>([]);
@@ -156,7 +164,8 @@ function ParentRequestsTab({
     const nextStatus = next.status ?? status;
     const nextPage = next.page ?? page;
 
-    if (nextStatus === "all") params.delete("status");
+    if (nextStatus === "PENDING") params.delete("status");
+    else if (nextStatus === "all") params.set("status", "all");
     else params.set("status", nextStatus);
 
     if (nextPage <= 1) params.delete("page");
@@ -290,13 +299,15 @@ function ParentRequestsTab({
         schedule?: string;
       } = {};
       const trimmedTitle = convertForm.title.trim();
-      const trimmedSchedule = convertForm.schedule.trim();
       const feeValue = Number(convertForm.feePerHour);
 
       if (trimmedTitle) payload.title = trimmedTitle;
-      if (Number.isFinite(feeValue) && feeValue > 0)
+      if (Number.isFinite(feeValue) && feeValue > 0) {
         payload.feePerHour = Math.round(feeValue);
-      if (trimmedSchedule) payload.schedule = trimmedSchedule;
+      }
+      if (convertForm.scheduleDays.length > 0) {
+        payload.schedule = WEEK_DAYS.filter((day) => convertForm.scheduleDays.includes(day)).join(", ");
+      }
 
       await convertAdminClassRequest(detail.id, payload);
       showToast("success", "Đã tạo lớp từ yêu cầu này.");
@@ -421,7 +432,7 @@ function ParentRequestsTab({
                 <th>Phụ huynh</th>
                 <th>Môn - Lớp</th>
                 <th>Khu vực</th>
-                <th>Học phí</th>
+                <th>Học phí/buổi</th>
                 <th>Ngày gửi</th>
                 <th>Trạng thái</th>
                 <th>Action</th>
@@ -510,6 +521,7 @@ function ParentRequestsTab({
             </tbody>
           </table>
         </div>
+
       </section>
 
       <div
@@ -615,31 +627,65 @@ function ParentRequestsTab({
                   />
                 </label>
                 <label className="admin-dialog-field">
-                  Học phí/giờ
+                  Học phí/buổi
                   <input
-                    type="number"
-                    min={0}
-                    value={convertForm.feePerHour}
-                    onChange={(e) =>
-                      setConvertForm({
-                        ...convertForm,
-                        feePerHour: e.target.value,
-                      })
-                    }
+                    type="text"
+                    inputMode="numeric"
+                    value={formatVnd(convertForm.feePerHour)}
+                    onChange={(e) => {
+                      const digits = e.target.value.replace(/\D/g, "");
+                      setConvertForm({ ...convertForm, feePerHour: digits });
+                    }}
                   />
                 </label>
                 <label className="admin-dialog-field admin-dialog-field-full">
                   Lịch học (tuỳ chọn)
-                  <input
-                    type="text"
-                    value={convertForm.schedule}
-                    onChange={(e) =>
-                      setConvertForm({
-                        ...convertForm,
-                        schedule: e.target.value,
-                      })
-                    }
-                  />
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
+                      gap: "0.5rem",
+                      marginTop: "0.5rem",
+                    }}
+                  >
+                    {WEEK_DAYS.map((day) => {
+                      const selectedDays = convertForm.scheduleDays ?? [];
+                      const checked = selectedDays.includes(day);
+                      return (
+                        <label
+                          key={day}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.35rem",
+                            fontWeight: 600,
+                            color: "#0f172a",
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setConvertForm({
+                                  ...convertForm,
+                                  scheduleDays: [...selectedDays, day],
+                                });
+                              } else {
+                                setConvertForm({
+                                  ...convertForm,
+                                  scheduleDays: selectedDays.filter(
+                                    (item) => item !== day,
+                                  ),
+                                });
+                              }
+                            }}
+                          />
+                          {day}
+                        </label>
+                      );
+                    })}
+                  </div>
                 </label>
               </div>
               <div className="admin-dialog-actions">
@@ -810,7 +856,7 @@ function ParentRequestsTab({
                         <p className="payments-info-value">{detail.district}</p>
                       </div>
                       <div>
-                        <p className="payments-info-label">Học phí</p>
+                        <p className="payments-info-label">Học phí/buổi</p>
                         <p className="payments-info-value">
                           {formatCurrency(detail.budgetPerHour)}
                         </p>
@@ -966,11 +1012,12 @@ function TutorRequestsTab({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [selectedClassId, setSelectedClassId] = useState("");
-  const [detail, setDetail] = useState<AdminClassDetail | null>(null);
-  const [applicants, setApplicants] = useState<AdminClassApplicant[]>([]);
-  const [detailLoading, setDetailLoading] = useState(false);
+  const [expandedClassIds, setExpandedClassIds] = useState<string[]>([]);
+  const [applicantsByClass, setApplicantsByClass] = useState<Record<string, AdminClassApplicant[]>>({});
+  const [applicantsLoading, setApplicantsLoading] = useState<Record<string, boolean>>({});
+  const [applicantsError, setApplicantsError] = useState<Record<string, string | null>>({});
   const [assignLoading, setAssignLoading] = useState(false);
+  const [rejectLoadingId, setRejectLoadingId] = useState<string | null>(null);
 
   const updateQuery = (nextPage: number) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -1002,22 +1049,19 @@ function TutorRequestsTab({
     }
   }, [page]);
 
-  const loadDetail = useCallback(async (classId: string) => {
-    setDetailLoading(true);
+  const loadApplicants = useCallback(async (classId: string) => {
+    setApplicantsLoading((prev) => ({ ...prev, [classId]: true }));
+    setApplicantsError((prev) => ({ ...prev, [classId]: null }));
     try {
-      const [classDetail, classApplicants] = await Promise.all([
-        getAdminClassById(classId),
-        listAdminClassApplicants(classId),
-      ]);
-      setDetail(classDetail);
-      // Filter out rejected or non-pending applicants if necessary, or show all
-      setApplicants(classApplicants);
+      const classApplicants = await listAdminClassApplicants(classId);
+      setApplicantsByClass((prev) => ({ ...prev, [classId]: classApplicants }));
     } catch (err) {
-      console.error(err);
-      setDetail(null);
-      setApplicants([]);
+      setApplicantsError((prev) => ({
+        ...prev,
+        [classId]: err instanceof Error ? err.message : "Không thể tải danh sách ứng viên.",
+      }));
     } finally {
-      setDetailLoading(false);
+      setApplicantsLoading((prev) => ({ ...prev, [classId]: false }));
     }
   }, []);
 
@@ -1026,39 +1070,26 @@ function TutorRequestsTab({
   }, [loadClasses]);
 
   useEffect(() => {
-    if (!records.length) {
-      setSelectedClassId("");
-      return;
-    }
-    if (
-      !selectedClassId ||
-      !records.some((item) => item.id === selectedClassId)
-    ) {
-      setSelectedClassId(records[0].id);
-    }
-  }, [records, selectedClassId]);
+    setExpandedClassIds((prev) =>
+      prev.filter((id) => records.some((item) => item.id === id)),
+    );
+  }, [records]);
 
-  useEffect(() => {
-    if (!selectedClassId) {
-      setDetail(null);
-      setApplicants([]);
-      return;
-    }
-    void loadDetail(selectedClassId);
-  }, [loadDetail, selectedClassId]);
-
-  const handleAssign = async (tutorId: string) => {
-    if (!detail || assignLoading) return;
-
+  const handleAssign = async (classId: string, tutorId: string) => {
+    if (assignLoading) return;
     if (!window.confirm("Bạn có chắc muốn phân lớp cho gia sư này?")) return;
 
     setAssignLoading(true);
     try {
-      await assignAdminClass(detail.id, tutorId, "Phân lớp từ trang yêu cầu");
+      await assignAdminClass(classId, tutorId, "Phân lớp từ trang yêu cầu");
       showToast("success", "Đã phân lớp cho gia sư thành công!");
-      await loadClasses(); // refresh list (the class will no longer be OPEN and disappear)
-      setSelectedClassId("");
-      setDetail(null);
+      await loadClasses();
+      setExpandedClassIds((prev) => prev.filter((id) => id !== classId));
+      setApplicantsByClass((prev) => {
+        const next = { ...prev };
+        delete next[classId];
+        return next;
+      });
     } catch (err) {
       showToast(
         "error",
@@ -1067,6 +1098,42 @@ function TutorRequestsTab({
     } finally {
       setAssignLoading(false);
     }
+  };
+
+  const handleReject = async (classId: string, tutorId: string) => {
+    if (rejectLoadingId) return;
+
+    if (!window.confirm("Bạn có chắc muốn từ chối ứng viên này?")) return;
+
+    const note = window.prompt("Ghi chú từ chối (tùy chọn):", "") ?? undefined;
+
+    setRejectLoadingId(tutorId);
+    try {
+      await rejectAdminClassApplicant(classId, tutorId, note?.trim() || undefined);
+      showToast("success", "Đã từ chối ứng viên.");
+      await loadApplicants(classId);
+    } catch (err) {
+      showToast("error", err instanceof Error ? err.message : "Lỗi khi từ chối ứng viên.");
+    } finally {
+      setRejectLoadingId(null);
+    }
+  };
+
+  const toggleApplicants = (classId: string) => {
+    setExpandedClassIds((prev) => {
+      const isExpanded = prev.includes(classId);
+      return isExpanded ? prev.filter((id) => id !== classId) : [...prev, classId];
+    });
+
+    if (!applicantsByClass[classId] && !applicantsLoading[classId]) {
+      void loadApplicants(classId);
+    }
+  };
+
+  const getApplicantStatusLabel = (status: string) => {
+    if (status === "ACCEPTED") return "Đã nhận";
+    if (status === "REJECTED") return "Từ chối";
+    return "Chờ duyệt";
   };
 
   const pagination = useMemo(() => {
@@ -1126,179 +1193,131 @@ function TutorRequestsTab({
         </div>
       )}
 
-      <section className="audit-grid">
-        <div className="admin-table-wrap">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Lớp học</th>
-                <th>Khu vực</th>
-                <th>Học phí</th>
-                <th>Số ứng viên</th>
-                <th>Trạng thái</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={6} style={{ textAlign: "center" }}>
-                    Đang tải dữ liệu...
-                  </td>
-                </tr>
-              ) : records.length === 0 ? (
-                <tr>
-                  <td colSpan={6} style={{ textAlign: "center" }}>
-                    Không có lớp học nào đang mở.
-                  </td>
-                </tr>
-              ) : (
-                records.map((record) => {
-                  const isSelected = record.id === selectedClassId;
-                  return (
-                    <tr
-                      key={record.id}
-                      onClick={() => setSelectedClassId(record.id)}
-                      style={
-                        isSelected
-                          ? { background: "rgba(219, 234, 254, 0.35)" }
-                          : undefined
-                      }
-                    >
-                      <td style={{ fontWeight: 700 }}>
-                        {formatClassCode(record.id)}
-                      </td>
-                      <td>
-                        <p style={{ margin: 0, fontWeight: 700 }}>
-                          {record.title}
-                        </p>
-                        <p
-                          style={{
-                            margin: 0,
-                            fontSize: "0.85rem",
-                            color: "#64748b",
-                          }}
-                        >
-                          {record.subject} - {record.grade}
-                        </p>
-                      </td>
-                      <td>{record.district}</td>
-                      <td>{formatCurrency(record.feePerHour)}</td>
-                      <td>
-                        {record._count.applications > 0 ? (
-                          <span
-                            style={{ fontWeight: "bold", color: "#0058be" }}
-                          >
-                            {record._count.applications} gia sư
-                          </span>
-                        ) : (
-                          <span style={{ color: "#94a3b8" }}>Chưa có</span>
-                        )}
-                      </td>
-                      <td>
-                        <AdminStatusBadge
-                          label="ĐANG MỞ"
-                          tone="open"
-                          dotColor="#0058be"
-                        />
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        <aside className="admin-panel">
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              gap: "0.75rem",
-            }}
-          >
-            <div>
-              <h3 className="admin-panel-title" style={{ margin: 0 }}>
-                Gia sư ứng tuyển
-              </h3>
-              <p className="admin-panel-subtitle">
-                {detail ? detail.title : "Chưa chọn lớp"}
-              </p>
-            </div>
+      <section style={{ display: "grid", gap: "1rem" }}>
+        {loading ? (
+          <div className="admin-panel" style={{ textAlign: "center" }}>
+            Đang tải dữ liệu...
           </div>
+        ) : records.length === 0 ? (
+          <div className="admin-panel" style={{ textAlign: "center" }}>
+            Không có lớp học nào đang mở.
+          </div>
+        ) : (
+          records.map((record) => {
+            const isExpanded = expandedClassIds.includes(record.id);
+            const applicants = applicantsByClass[record.id] ?? [];
+            const isLoadingApplicants = applicantsLoading[record.id];
+            const applicantsErr = applicantsError[record.id];
 
-          {detailLoading ? (
-            <p style={{ marginTop: "1rem", color: "#64748b" }}>
-              Đang tải danh sách...
-            </p>
-          ) : detail ? (
-            <div style={{ marginTop: "1rem", display: "grid", gap: "1rem" }}>
-              <section>
-                {applicants.length === 0 ? (
-                  <p style={{ margin: 0, color: "#64748b" }}>
-                    Hiện chưa có gia sư nào đăng ký nhận lớp này.
-                  </p>
-                ) : (
-                  <div className="pairing-user-list">
-                    {applicants.map((item) => (
-                      <div
-                        className="pairing-user-item"
-                        key={item.id}
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                        }}
-                      >
-                        <div className="pairing-user-left">
-                          <div className="pairing-user-avatar">
-                            {getInitials(item.tutor.fullName)}
+            return (
+              <div className="admin-panel" key={record.id}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: "1rem",
+                  }}
+                >
+                  <div>
+                    <p style={{ margin: 0, fontSize: "0.75rem", color: "#64748b" }}>
+                      {formatClassCode(record.id)}
+                    </p>
+                    <p style={{ margin: 0, fontWeight: 700, fontSize: "1rem" }}>
+                      {record.title}
+                    </p>
+                    <p style={{ margin: 0, color: "#64748b", fontSize: "0.85rem" }}>
+                      {record.subject} - {record.grade} • {record.district}
+                    </p>
+                    <p
+                      style={{
+                        margin: "0.35rem 0 0",
+                        color: "#0f172a",
+                        fontWeight: 600,
+                        fontSize: "0.85rem",
+                      }}
+                    >
+                      {formatCurrency(record.feePerHour)} • {record._count.applications} ứng viên
+                    </p>
+                  </div>
+                  <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
+                    <AdminStatusBadge label="ĐANG MỞ" tone="open" dotColor="#0058be" />
+                    <button
+                      className="admin-btn tonal"
+                      onClick={() => toggleApplicants(record.id)}
+                      type="button"
+                    >
+                      {isExpanded ? "Ẩn ứng viên" : "Xem ứng viên"}
+                    </button>
+                  </div>
+                </div>
+
+                {isExpanded && (
+                  <div style={{ marginTop: "1rem", display: "grid", gap: "1rem" }}>
+                    {isLoadingApplicants ? (
+                      <p style={{ margin: 0, color: "#64748b" }}>Đang tải danh sách...</p>
+                    ) : applicantsErr ? (
+                      <p style={{ margin: 0, color: "#ba1a1a" }}>{applicantsErr}</p>
+                    ) : applicants.length === 0 ? (
+                      <p style={{ margin: 0, color: "#64748b" }}>
+                        Hiện chưa có gia sư nào đăng ký nhận lớp này.
+                      </p>
+                    ) : (
+                      <div className="pairing-user-list">
+                        {applicants.map((item) => (
+                          <div
+                            className="pairing-user-item"
+                            key={item.id}
+                            style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
+                          >
+                            <div className="pairing-user-left">
+                              <div className="pairing-user-avatar">
+                                {getInitials(item.tutor.fullName)}
+                              </div>
+                              <div>
+                                <p className="pairing-user-name">{item.tutor.fullName}</p>
+                                <p className="pairing-user-sub">
+                                  {item.tutor.email} • {item.tutor.phone ?? "Chưa có SĐT"}
+                                </p>
+                                <p
+                                  className="pairing-user-sub"
+                                  style={{ marginTop: "0.25rem", fontSize: "0.75rem", fontWeight: 600 }}
+                                >
+                                  {getApplicantStatusLabel(item.status)}
+                                </p>
+                                <p className="pairing-user-sub" style={{ marginTop: "0.25rem", fontSize: "0.75rem" }}>
+                                  {item.tutor.subjects.join(", ")} | {item.tutor.districts.join(", ")}
+                                </p>
+                              </div>
+                            </div>
+                            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                              <button
+                                className="admin-btn primary"
+                                onClick={() => handleAssign(record.id, item.tutor.id)}
+                                disabled={assignLoading || item.status !== "PENDING"}
+                                style={{ padding: "0.4rem 0.8rem", fontSize: "0.8rem" }}
+                              >
+                                Phân lớp
+                              </button>
+                              <button
+                                className="admin-btn danger"
+                                onClick={() => handleReject(record.id, item.tutor.id)}
+                                disabled={rejectLoadingId === item.tutor.id || item.status !== "PENDING"}
+                                style={{ padding: "0.4rem 0.8rem", fontSize: "0.8rem" }}
+                              >
+                                Từ chối
+                              </button>
+                            </div>
                           </div>
-                          <div>
-                            <p className="pairing-user-name">
-                              {item.tutor.fullName}
-                            </p>
-                            <p className="pairing-user-sub">
-                              {item.tutor.email} •{" "}
-                              {item.tutor.phone ?? "Chưa có SĐT"}
-                            </p>
-                            <p
-                              className="pairing-user-sub"
-                              style={{
-                                marginTop: "0.25rem",
-                                fontSize: "0.75rem",
-                              }}
-                            >
-                              {item.tutor.subjects.join(", ")} |{" "}
-                              {item.tutor.districts.join(", ")}
-                            </p>
-                          </div>
-                        </div>
-                        <button
-                          className="admin-btn primary"
-                          onClick={() => handleAssign(item.tutor.id)}
-                          disabled={assignLoading}
-                          style={{
-                            padding: "0.4rem 0.8rem",
-                            fontSize: "0.8rem",
-                          }}
-                        >
-                          Phân lớp
-                        </button>
+                        ))}
                       </div>
-                    ))}
+                    )}
                   </div>
                 )}
-              </section>
-            </div>
-          ) : (
-            <p style={{ marginTop: "1rem", color: "#64748b" }}>
-              Chọn một lớp học để xem gia sư ứng tuyển.
-            </p>
-          )}
-        </aside>
+              </div>
+            );
+          })
+        )}
       </section>
 
       <div

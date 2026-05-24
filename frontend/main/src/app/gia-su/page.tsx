@@ -1,7 +1,9 @@
 "use client";
 
 import { Be_Vietnam_Pro } from "next/font/google";
+import { useState } from "react";
 
+import TutorRegistrationForm from "@/components/TutorRegistrationForm";
 import styles from "./page.module.css";
 
 const beVietnamPro = Be_Vietnam_Pro({
@@ -111,6 +113,9 @@ const paymentHighlights = [
 ];
 
 export default function TutorRegistrationProcessPage() {
+  const [activeTrack, setActiveTrack] = useState<"free" | "trained">("free");
+  const [isFormOpen, setIsFormOpen] = useState(false);
+
   return (
     <main className={`${styles.page} ${beVietnamPro.className}`}>
       <section className={styles.hero}>
@@ -129,9 +134,13 @@ export default function TutorRegistrationProcessPage() {
                 trong mọi giai đoạn tuyển chọn.
               </p>
               <div className={styles.heroActions}>
-                <a className={styles.primaryButton} href="/dang-nhap-gia-su">
+                <button
+                  type="button"
+                  onClick={() => setIsFormOpen(true)}
+                  className={styles.primaryButton}
+                >
                   Đăng ký ngay
-                </a>
+                </button>
                 <a className={styles.secondaryButton} href="/hoi-dap-gia-su">
                   Tư vấn thêm
                 </a>
@@ -248,9 +257,13 @@ export default function TutorRegistrationProcessPage() {
                     <li key={detail}>{detail}</li>
                   ))}
                 </ul>
-                <a className={styles.compareCta} href="/dang-nhap-gia-su">
+                <button
+                  type="button"
+                  onClick={() => setIsFormOpen(true)}
+                  className={styles.compareCta}
+                >
                   Đăng ký ngay
-                </a>
+                </button>
               </article>
             ))}
           </div>
@@ -461,9 +474,13 @@ export default function TutorRegistrationProcessPage() {
                 <span>15</span>
                 <p>Hằng tháng</p>
               </div>
-              <a className={styles.primaryButton} href="/dang-nhap-gia-su">
+              <button
+                type="button"
+                onClick={() => setIsFormOpen(true)}
+                className={styles.primaryButton}
+              >
                 Đăng ký ngay
-              </a>
+              </button>
               <p className={styles.paymentNote}>
                 Thanh toán sau khi khấu trừ chi phí quản lý theo thỏa thuận.
               </p>
@@ -481,6 +498,61 @@ export default function TutorRegistrationProcessPage() {
           </div>
         </div>
       </section>
+
+      {isFormOpen && (
+        <div
+          className={styles.formOverlay}
+          role="presentation"
+          onClick={() => setIsFormOpen(false)}
+        >
+          <div
+            className={styles.formModal}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Đăng ký gia sư"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className={styles.formModalHeader}>
+              <div>
+                <span className={styles.sectionTag}>Đăng ký gia sư</span>
+                <h2 className={styles.formModalTitle}>Form đăng ký gia sư</h2>
+                <p className={styles.formModalDesc}>
+                  Điền thông tin để hoàn tất hồ sơ gia sư và chờ xét duyệt.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsFormOpen(false)}
+                className={styles.formCloseButton}
+                aria-label="Đóng form"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className={styles.formSwitch}>
+              <button
+                type="button"
+                onClick={() => setActiveTrack("free")}
+                className={`${styles.formSwitchButton} ${activeTrack === "free" ? styles.formSwitchButtonActive : ""}`}
+              >
+                Gia sư tự do
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTrack("trained")}
+                className={`${styles.formSwitchButton} ${activeTrack === "trained" ? styles.formSwitchButtonActive : ""}`}
+              >
+                Gia sư đào tạo
+              </button>
+            </div>
+
+            <div className={styles.formModalBody}>
+              <TutorRegistrationForm track={activeTrack} />
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

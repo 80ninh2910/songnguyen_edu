@@ -251,7 +251,12 @@ export type AdminTutorCreatePayload = {
 export type AdminTutorUpdatePayload = Partial<AdminTutorCreatePayload>;
 
 function getApiBaseUrl(): string {
-  return process.env.NEXT_PUBLIC_ADMIN_API_BASE_URL ?? DEFAULT_API_BASE_URL;
+  const raw =
+    process.env.NEXT_PUBLIC_ADMIN_API_BASE_URL ??
+    process.env.NEXT_PUBLIC_API_BASE_URL ??
+    DEFAULT_API_BASE_URL;
+
+  return raw.replace(/\/$/, "");
 }
 
 async function parseJson<T>(response: Response): Promise<T> {
@@ -675,5 +680,24 @@ export async function assignAdminClass(
   if (!response.ok) {
     const payload = await parseJson<{ error?: { message?: string } }>(response).catch(() => null);
     throw new Error(payload?.error?.message ?? "Không thể phân lớp cho gia sư.");
+  }
+}
+
+export async function rejectAdminClassApplicant(
+  classId: string,
+  tutorId: string,
+  note?: string,
+): Promise<void> {
+  const response = await adminFetch(
+    `/admin/classes/${classId}/applicants/${tutorId}/reject`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ note }),
+    },
+  );
+
+  if (!response.ok) {
+    const payload = await parseJson<{ error?: { message?: string } }>(response).catch(() => null);
+    throw new Error(payload?.error?.message ?? "Không thể từ chối ứng viên.");
   }
 }

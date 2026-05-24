@@ -11,22 +11,28 @@ import {
   approveTutorHandler,
   assignClassHandler,
   closeClassHandler,
+  createClassSessionHandler,
   confirmPaymentHandler,
   convertClassRequestHandler,
   createClassHandler,
   createTutorHandler,
   dashboardHandler,
   dashboardStatsHandler,
+  getClassProgressHandler,
   getClassByIdHandler,
   getClassRequestByIdHandler,
+  getMemberReportHandler,
   getPaymentByIdHandler,
   getTutorByIdHandler,
   listAuditLogsHandler,
   listClassApplicantsHandler,
   listClassesHandler,
+  listClassSessionsHandler,
   listClassRequestsHandler,
+  listSessionFeedbacksHandler,
   listPaymentsHandler,
   listTutorsHandler,
+  rejectClassApplicantHandler,
   rejectClassRequestHandler,
   rejectPaymentHandler,
   rejectTutorHandler,
@@ -40,14 +46,20 @@ import {
   AdminListPaymentsQuerySchema,
   AdminListTutorsQuerySchema,
   AssignClassBodySchema,
+  ClassTutorParamSchema,
+  ClassIdParamSchema,
   ConfirmPaymentBodySchema,
   ConvertRequestBodySchema,
+  CreateSessionBodySchema,
   CreateClassBodySchema,
   CreateTutorBodySchema,
   IdParamSchema,
+  MemberIdParamSchema,
+  RejectApplicantBodySchema,
   RejectPaymentBodySchema,
   RejectRequestBodySchema,
   RejectTutorBodySchema,
+  SessionIdParamSchema,
   UpdateTutorBodySchema,
   UpdateClassBodySchema,
 } from "./admin.schema.js";
@@ -421,6 +433,112 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
   );
 
   app.get(
+    "/classes/:classId/sessions",
+    {
+      preHandler: requireAdmin,
+      schema: {
+        tags: ["Admin"],
+        summary: "List class sessions",
+        security: [{ bearerAuth: [] }],
+        params: fromZodSchema(ClassIdParamSchema),
+        response: {
+          200: successSchema(anyDataSchema),
+          400: errorResponseSchema,
+          401: errorResponseSchema,
+          403: errorResponseSchema,
+          404: errorResponseSchema,
+        },
+      },
+    },
+    listClassSessionsHandler,
+  );
+
+  app.post(
+    "/classes/:classId/sessions",
+    {
+      preHandler: requireAdmin,
+      schema: {
+        tags: ["Admin"],
+        summary: "Create class session",
+        security: [{ bearerAuth: [] }],
+        params: fromZodSchema(ClassIdParamSchema),
+        body: fromZodSchema(CreateSessionBodySchema),
+        response: {
+          200: successSchema(anyDataSchema),
+          400: errorResponseSchema,
+          401: errorResponseSchema,
+          403: errorResponseSchema,
+          404: errorResponseSchema,
+        },
+      },
+    },
+    createClassSessionHandler,
+  );
+
+  app.get(
+    "/sessions/:sessionId/feedbacks",
+    {
+      preHandler: requireAdmin,
+      schema: {
+        tags: ["Admin"],
+        summary: "List session feedbacks",
+        security: [{ bearerAuth: [] }],
+        params: fromZodSchema(SessionIdParamSchema),
+        response: {
+          200: successSchema(anyDataSchema),
+          400: errorResponseSchema,
+          401: errorResponseSchema,
+          403: errorResponseSchema,
+          404: errorResponseSchema,
+        },
+      },
+    },
+    listSessionFeedbacksHandler,
+  );
+
+  app.get(
+    "/classes/:classId/progress",
+    {
+      preHandler: requireAdmin,
+      schema: {
+        tags: ["Admin"],
+        summary: "Get class progress report",
+        security: [{ bearerAuth: [] }],
+        params: fromZodSchema(ClassIdParamSchema),
+        response: {
+          200: successSchema(anyDataSchema),
+          400: errorResponseSchema,
+          401: errorResponseSchema,
+          403: errorResponseSchema,
+          404: errorResponseSchema,
+        },
+      },
+    },
+    getClassProgressHandler,
+  );
+
+  app.get(
+    "/members/:memberId/report",
+    {
+      preHandler: requireAdmin,
+      schema: {
+        tags: ["Admin"],
+        summary: "Get member report",
+        security: [{ bearerAuth: [] }],
+        params: fromZodSchema(MemberIdParamSchema),
+        response: {
+          200: successSchema(anyDataSchema),
+          400: errorResponseSchema,
+          401: errorResponseSchema,
+          403: errorResponseSchema,
+          404: errorResponseSchema,
+        },
+      },
+    },
+    getMemberReportHandler,
+  );
+
+  app.get(
     "/classes/:id/applicants",
     {
       preHandler: requireAdmin,
@@ -439,6 +557,28 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
       },
     },
     listClassApplicantsHandler,
+  );
+
+  app.patch(
+    "/classes/:id/applicants/:tutorId/reject",
+    {
+      preHandler: requireAdmin,
+      schema: {
+        tags: ["Admin"],
+        summary: "Reject class applicant",
+        security: [{ bearerAuth: [] }],
+        params: fromZodSchema(ClassTutorParamSchema),
+        body: fromZodSchema(RejectApplicantBodySchema),
+        response: {
+          200: successSchema(anyDataSchema),
+          400: errorResponseSchema,
+          401: errorResponseSchema,
+          403: errorResponseSchema,
+          404: errorResponseSchema,
+        },
+      },
+    },
+    rejectClassApplicantHandler,
   );
 
   app.post(

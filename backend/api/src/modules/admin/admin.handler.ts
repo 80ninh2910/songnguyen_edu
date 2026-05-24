@@ -9,14 +9,20 @@ import {
   AdminListPaymentsQuerySchema,
   AdminListTutorsQuerySchema,
   AssignClassBodySchema,
+  ClassTutorParamSchema,
+  ClassIdParamSchema,
   ConfirmPaymentBodySchema,
   ConvertRequestBodySchema,
+  CreateSessionBodySchema,
   CreateTutorBodySchema,
   CreateClassBodySchema,
   IdParamSchema,
+  MemberIdParamSchema,
+  RejectApplicantBodySchema,
   RejectPaymentBodySchema,
   RejectRequestBodySchema,
   RejectTutorBodySchema,
+  SessionIdParamSchema,
   UpdateTutorBodySchema,
   UpdateClassBodySchema,
 } from "./admin.schema.js";
@@ -200,6 +206,56 @@ export async function closeClassHandler(
   void reply.send(success(result));
 }
 
+export async function listClassSessionsHandler(
+  request: FastifyRequest,
+  reply: FastifyReply,
+): Promise<void> {
+  const { classId } = ClassIdParamSchema.parse(request.params);
+  const result = await adminService.listClassSessions(classId);
+  void reply.send(success(result));
+}
+
+export async function createClassSessionHandler(
+  request: FastifyRequest,
+  reply: FastifyReply,
+): Promise<void> {
+  const { classId } = ClassIdParamSchema.parse(request.params);
+  const body = CreateSessionBodySchema.parse(request.body);
+  const result = await adminService.createClassSession(
+    getActor(request),
+    classId,
+    body,
+  );
+  void reply.send(success(result));
+}
+
+export async function listSessionFeedbacksHandler(
+  request: FastifyRequest,
+  reply: FastifyReply,
+): Promise<void> {
+  const { sessionId } = SessionIdParamSchema.parse(request.params);
+  const result = await adminService.listSessionFeedbacks(sessionId);
+  void reply.send(success(result));
+}
+
+export async function getClassProgressHandler(
+  request: FastifyRequest,
+  reply: FastifyReply,
+): Promise<void> {
+  const { classId } = ClassIdParamSchema.parse(request.params);
+  const result = await adminService.getClassProgress(classId);
+  void reply.send(success(result));
+}
+
+export async function getMemberReportHandler(
+  request: FastifyRequest,
+  reply: FastifyReply,
+): Promise<void> {
+  const { memberId } = MemberIdParamSchema.parse(request.params);
+  const result = await adminService.getMemberReport(memberId);
+  void reply.send(success(result));
+}
+
 export async function listClassApplicantsHandler(
   request: FastifyRequest,
   reply: FastifyReply,
@@ -219,6 +275,21 @@ export async function assignClassHandler(
     getActor(request),
     id,
     body.tutorId,
+    body.note,
+  );
+  void reply.send(success(result));
+}
+
+export async function rejectClassApplicantHandler(
+  request: FastifyRequest,
+  reply: FastifyReply,
+): Promise<void> {
+  const { id, tutorId } = ClassTutorParamSchema.parse(request.params);
+  const body = RejectApplicantBodySchema.parse(request.body);
+  const result = await adminService.rejectClassApplicant(
+    getActor(request),
+    id,
+    tutorId,
     body.note,
   );
   void reply.send(success(result));

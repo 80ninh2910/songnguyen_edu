@@ -48,6 +48,19 @@ enum PaymentStatus {
   REJECTED
 }
 
+enum SessionStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
 enum SettingCategory {
   SEO
   PRICING
@@ -93,6 +106,8 @@ model Tutor {
   applications   ClassApplication[]
   assignments    ClassAssignment[]
   payments       Payment[]
+  sessions       ClassSession[]
+  feedbacks      SessionFeedback[]
 
   documents      TutorDocument[]
 
@@ -117,6 +132,7 @@ model TutorDocument {
 
 model ClassRequest {
   id            String       @id @default(uuid())
+  studentName   String?      @map("student_name")
   parentName    String       @map("parent_name")
   parentPhone   String       @map("parent_phone")
   parentEmail   String?      @map("parent_email")
@@ -160,6 +176,7 @@ model Class {
   assignment      ClassAssignment?
   members         ClassMember[]
   payments        Payment[]
+  sessions        ClassSession[]
 
   @@index([status])
   @@index([status, subject, district])
@@ -239,10 +256,62 @@ model ClassMember {
 
   request     ClassRequest? @relation(fields: [requestId], references: [id], onDelete: SetNull)
   class       Class?        @relation(fields: [classId], references: [id], onDelete: SetNull)
+  feedbacks   SessionFeedback[]
 
   @@index([requestId])
   @@index([classId])
   @@map("class_members")
+}
+
+model ClassSession {
+  id            String         @id @default(uuid())
+  classId       String         @map("class_id")
+  tutorId       String         @map("tutor_id")
+  sessionNumber Int            @map("session_number")
+  sessionDate   DateTime       @map("session_date")
+  startTime     String?        @map("start_time")
+  endTime       String?        @map("end_time")
+  topic         String?
+  notes         String?
+  status        SessionStatus  @default(SCHEDULED)
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  class         Class          @relation(fields: [classId], references: [id], onDelete: Cascade)
+  tutor         Tutor          @relation(fields: [tutorId], references: [id])
+  feedbacks     SessionFeedback[]
+
+  @@unique([classId, sessionNumber])
+  @@index([classId, sessionDate])
+  @@index([tutorId, sessionDate])
+  @@map("class_sessions")
+}
+
+model SessionFeedback {
+  id                 String            @id @default(uuid())
+  sessionId          String            @map("session_id")
+  memberId           String            @map("member_id")
+  tutorId            String            @map("tutor_id")
+  attendance         AttendanceStatus  @default(PRESENT)
+  attitudeScore      Int?              @map("attitude_score")
+  comprehensionScore Int?              @map("comprehension_score")
+  homeworkScore      Int?              @map("homework_score")
+  strengths          String?
+  weaknesses         String?
+  recommendation     String?
+  overallComment     String?           @map("overall_comment")
+  createdAt          DateTime          @default(now()) @map("created_at")
+  updatedAt          DateTime          @updatedAt @map("updated_at")
+
+  session            ClassSession      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  member             ClassMember       @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  tutor              Tutor             @relation(fields: [tutorId], references: [id])
+
+  @@unique([sessionId, memberId])
+  @@index([sessionId])
+  @@index([memberId])
+  @@index([tutorId, createdAt(sort: Desc)])
+  @@map("session_feedbacks")
 }
 
 model SystemSetting {

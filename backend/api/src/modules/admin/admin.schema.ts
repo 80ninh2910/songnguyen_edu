@@ -25,6 +25,32 @@ export const IdParamSchema = z.object({
   id: z.string().uuid(),
 });
 
+export const ClassIdParamSchema = z.object({
+  classId: z.string().uuid(),
+});
+
+export const ClassTutorParamSchema = z.object({
+  id: z.string().uuid(),
+  tutorId: z.string().uuid(),
+});
+
+export const SessionIdParamSchema = z.object({
+  sessionId: z.string().uuid(),
+});
+
+export const MemberIdParamSchema = z.object({
+  memberId: z.string().uuid(),
+});
+
+export const CreateSessionBodySchema = z.object({
+  sessionDate: z.coerce.date(),
+  startTime: z.string().trim().min(1).optional(),
+  endTime: z.string().trim().min(1).optional(),
+  topic: z.string().trim().min(1).optional(),
+  notes: z.string().trim().min(1).optional(),
+  tutorId: z.string().uuid().optional(),
+});
+
 export const AdminListTutorsQuerySchema = PaginationQuerySchema.extend({
   status: z.enum(["PENDING", "APPROVED", "REJECTED"]).optional(),
   search: z.string().trim().min(1).optional(),
@@ -113,6 +139,10 @@ export const UpdateClassBodySchema = z
 
 export const AssignClassBodySchema = z.object({
   tutorId: z.string().uuid(),
+  note: z.string().trim().max(500).optional(),
+});
+
+export const RejectApplicantBodySchema = z.object({
   note: z.string().trim().max(500).optional(),
 });
 

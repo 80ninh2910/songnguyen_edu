@@ -790,6 +790,7 @@ export const adminService = {
   }): Promise<{
     data: Array<{
       id: string;
+      studentName: string | null;
       parentName: string;
       parentPhone: string;
       subject: string;
@@ -822,6 +823,7 @@ export const adminService = {
         orderBy: { createdAt: "desc" },
         select: {
           id: true,
+          studentName: true,
           parentName: true,
           parentPhone: true,
           subject: true,
@@ -940,7 +942,7 @@ export const adminService = {
           data: {
             requestId: request.id,
             classId: newClass.id,
-            studentName: "Hoc vien",
+            studentName: (request as any).studentName?.trim() || request.parentName,
             studentGrade: request.grade,
             parentName: request.parentName,
             parentPhone: request.parentPhone,
@@ -1499,6 +1501,66 @@ export const adminService = {
     }
   },
 
+  async rejectClassApplicant(
+    actor: AdminActor,
+    classId: string,
+    tutorId: string,
+    note?: string,
+  ) {
+    const classItem = await prisma.class.findUnique({
+      where: { id: classId },
+      select: { id: true, status: true },
+    });
+
+    if (!classItem) {
+      throw new AppError("CLASS_NOT_FOUND", 404, "Class not found");
+    }
+
+    if (classItem.status !== "OPEN") {
+      invalidState("Only OPEN classes can reject applicants");
+    }
+
+    const application = await prisma.classApplication.findUnique({
+      where: { classId_tutorId: { classId, tutorId } },
+      select: { id: true, status: true },
+    });
+
+    if (!application) {
+      throw new AppError("APPLICATION_NOT_FOUND", 404, "Application not found");
+    }
+
+    if (application.status !== "PENDING") {
+      invalidState("Only pending applications can be rejected");
+    }
+
+    const actorName = await resolveActorName(actor);
+
+    return prisma.$transaction(async (tx: any) => {
+      const updated = await tx.classApplication.update({
+        where: { classId_tutorId: { classId, tutorId } },
+        data: { status: "REJECTED", note },
+      });
+
+      await auditLogService.log(
+        {
+          actorId: actor.id,
+          actorName,
+          action: "REJECT_CLASS_APPLICANT",
+          targetType: "CLASS_APPLICATION",
+          targetId: application.id,
+          payload: {
+            classId,
+            tutorId,
+            note,
+          },
+        },
+        tx,
+      );
+
+      return updated;
+    });
+  },
+
   async listPayments(query: {
     page?: string | number;
     limit?: string | number;
@@ -1874,6 +1936,393 @@ export const adminService = {
 
       return updated;
     });
+  },
+
+  async listClassSessions(classId: string) {
+    const classItem = await prisma.class.findUnique({
+      where: { id: classId },
+      select: {
+        id: true,
+        title: true,
+        subject: true,
+        grade: true,
+        district: true,
+      },
+    });
+
+    if (!classItem) {
+      throw new AppError("CLASS_NOT_FOUND", 404, "Class not found");
+    }
+
+    const memberCount = await prisma.classMember.count({ where: { classId } });
+    const sessions = await prisma.classSession.findMany({
+      where: { classId },
+      orderBy: { sessionNumber: "asc" },
+      select: {
+        id: true,
+        sessionNumber: true,
+        sessionDate: true,
+        startTime: true,
+        endTime: true,
+        topic: true,
+        notes: true,
+        status: true,
+        tutor: { select: { id: true, fullName: true } },
+        _count: { select: { feedbacks: true } },
+      },
+    });
+
+    return {
+      class: classItem,
+      memberCount,
+      sessions: sessions.map((session) => ({
+        ...session,
+        feedbackCount: session._count.feedbacks,
+        totalMembers: memberCount,
+      })),
+    };
+  },
+
+  async createClassSession(
+    actor: AdminActor,
+    classId: string,
+    input: {
+      sessionDate: Date;
+      startTime?: string;
+      endTime?: string;
+      topic?: string;
+      notes?: string;
+      tutorId?: string;
+    },
+  ) {
+    const classItem = await prisma.class.findUnique({
+      where: { id: classId },
+      select: { id: true },
+    });
+
+    if (!classItem) {
+      throw new AppError("CLASS_NOT_FOUND", 404, "Class not found");
+    }
+
+    const assignment = await prisma.classAssignment.findUnique({
+      where: { classId },
+      select: { tutorId: true },
+    });
+
+    if (!assignment && !input.tutorId) {
+      throw new AppError("TUTOR_REQUIRED", 400, "Tutor is required for this class");
+    }
+
+    if (assignment && input.tutorId && input.tutorId !== assignment.tutorId) {
+      throw new AppError("INVALID_TUTOR", 400, "Tutor does not match class assignment");
+    }
+
+    const tutorId = input.tutorId ?? assignment?.tutorId;
+
+    if (!tutorId) {
+      throw new AppError("TUTOR_REQUIRED", 400, "Tutor is required for this class");
+    }
+
+    const actorName = await resolveActorName(actor);
+
+    return prisma.$transaction(async (tx: any) => {
+      const maxRow = await tx.classSession.aggregate({
+        where: { classId },
+        _max: { sessionNumber: true },
+      });
+      const nextNumber = (maxRow._max.sessionNumber ?? 0) + 1;
+
+      const created = await tx.classSession.create({
+        data: {
+          classId,
+          tutorId,
+          sessionNumber: nextNumber,
+          sessionDate: input.sessionDate,
+          startTime: input.startTime,
+          endTime: input.endTime,
+          topic: input.topic,
+          notes: input.notes,
+        },
+      });
+
+      await auditLogService.log(
+        {
+          actorId: actor.id,
+          actorName,
+          action: "CREATE_CLASS_SESSION",
+          targetType: "CLASS_SESSION",
+          targetId: created.id,
+          payload: {
+            classId,
+            tutorId,
+            sessionNumber: created.sessionNumber,
+          },
+        },
+        tx,
+      );
+
+      return created;
+    });
+  },
+
+  async listSessionFeedbacks(sessionId: string) {
+    const session = await prisma.classSession.findUnique({
+      where: { id: sessionId },
+      select: {
+        id: true,
+        sessionNumber: true,
+        sessionDate: true,
+        classId: true,
+      },
+    });
+
+    if (!session) {
+      throw new AppError("SESSION_NOT_FOUND", 404, "Session not found");
+    }
+
+    const feedbacks = await prisma.sessionFeedback.findMany({
+      where: { sessionId },
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        memberId: true,
+        attendance: true,
+        attitudeScore: true,
+        comprehensionScore: true,
+        homeworkScore: true,
+        strengths: true,
+        weaknesses: true,
+        recommendation: true,
+        overallComment: true,
+        createdAt: true,
+        updatedAt: true,
+        member: {
+          select: {
+            studentName: true,
+            parentName: true,
+            parentPhone: true,
+          },
+        },
+        tutor: {
+          select: { id: true, fullName: true },
+        },
+      },
+    });
+
+    return { session, feedbacks };
+  },
+
+  async getClassProgress(classId: string) {
+    const classItem = await prisma.class.findUnique({
+      where: { id: classId },
+      select: { id: true, title: true, subject: true, grade: true },
+    });
+
+    if (!classItem) {
+      throw new AppError("CLASS_NOT_FOUND", 404, "Class not found");
+    }
+
+    const [members, sessionsCount, feedbacks] = await Promise.all([
+      prisma.classMember.findMany({
+        where: { classId },
+        select: { id: true, studentName: true, parentName: true, parentPhone: true },
+      }),
+      prisma.classSession.count({ where: { classId } }),
+      prisma.sessionFeedback.findMany({
+        where: { session: { classId } },
+        select: {
+          memberId: true,
+          attendance: true,
+          attitudeScore: true,
+          comprehensionScore: true,
+          homeworkScore: true,
+        },
+      }),
+    ]);
+
+    const statsByMember = new Map<string, {
+      total: number;
+      present: number;
+      absent: number;
+      late: number;
+      excused: number;
+      attitudeSum: number;
+      attitudeCount: number;
+      comprehensionSum: number;
+      comprehensionCount: number;
+      homeworkSum: number;
+      homeworkCount: number;
+    }>();
+
+    for (const member of members) {
+      statsByMember.set(member.id, {
+        total: 0,
+        present: 0,
+        absent: 0,
+        late: 0,
+        excused: 0,
+        attitudeSum: 0,
+        attitudeCount: 0,
+        comprehensionSum: 0,
+        comprehensionCount: 0,
+        homeworkSum: 0,
+        homeworkCount: 0,
+      });
+    }
+
+    for (const feedback of feedbacks) {
+      const stat = statsByMember.get(feedback.memberId);
+      if (!stat) continue;
+      stat.total += 1;
+      if (feedback.attendance === "PRESENT") stat.present += 1;
+      if (feedback.attendance === "ABSENT") stat.absent += 1;
+      if (feedback.attendance === "LATE") stat.late += 1;
+      if (feedback.attendance === "EXCUSED") stat.excused += 1;
+
+      if (feedback.attitudeScore !== null && feedback.attitudeScore !== undefined) {
+        stat.attitudeSum += feedback.attitudeScore;
+        stat.attitudeCount += 1;
+      }
+
+      if (feedback.comprehensionScore !== null && feedback.comprehensionScore !== undefined) {
+        stat.comprehensionSum += feedback.comprehensionScore;
+        stat.comprehensionCount += 1;
+      }
+
+      if (feedback.homeworkScore !== null && feedback.homeworkScore !== undefined) {
+        stat.homeworkSum += feedback.homeworkScore;
+        stat.homeworkCount += 1;
+      }
+    }
+
+    const memberProgress = members.map((member) => {
+      const stat = statsByMember.get(member.id) ?? {
+        total: 0,
+        present: 0,
+        absent: 0,
+        late: 0,
+        excused: 0,
+        attitudeSum: 0,
+        attitudeCount: 0,
+        comprehensionSum: 0,
+        comprehensionCount: 0,
+        homeworkSum: 0,
+        homeworkCount: 0,
+      };
+
+      return {
+        ...member,
+        totals: {
+          totalSessions: stat.total,
+          present: stat.present,
+          absent: stat.absent,
+          late: stat.late,
+          excused: stat.excused,
+        },
+        averages: {
+          attitude: stat.attitudeCount ? Math.round((stat.attitudeSum / stat.attitudeCount) * 10) / 10 : null,
+          comprehension: stat.comprehensionCount ? Math.round((stat.comprehensionSum / stat.comprehensionCount) * 10) / 10 : null,
+          homework: stat.homeworkCount ? Math.round((stat.homeworkSum / stat.homeworkCount) * 10) / 10 : null,
+        },
+      };
+    });
+
+    return {
+      class: classItem,
+      totalSessions: sessionsCount,
+      members: memberProgress,
+    };
+  },
+
+  async getMemberReport(memberId: string) {
+    const member = await prisma.classMember.findUnique({
+      where: { id: memberId },
+      select: {
+        id: true,
+        studentName: true,
+        parentName: true,
+        parentPhone: true,
+        classId: true,
+        class: {
+          select: { id: true, title: true, subject: true, grade: true },
+        },
+      },
+    });
+
+    if (!member) {
+      throw new AppError("MEMBER_NOT_FOUND", 404, "Member not found");
+    }
+
+    const feedbacks = await prisma.sessionFeedback.findMany({
+      where: { memberId },
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        attendance: true,
+        attitudeScore: true,
+        comprehensionScore: true,
+        homeworkScore: true,
+        strengths: true,
+        weaknesses: true,
+        recommendation: true,
+        overallComment: true,
+        createdAt: true,
+        session: {
+          select: { id: true, sessionNumber: true, sessionDate: true, classId: true },
+        },
+        tutor: { select: { id: true, fullName: true } },
+      },
+    });
+
+    let attitudeSum = 0;
+    let attitudeCount = 0;
+    let comprehensionSum = 0;
+    let comprehensionCount = 0;
+    let homeworkSum = 0;
+    let homeworkCount = 0;
+
+    const attendanceTotals = {
+      totalSessions: feedbacks.length,
+      present: 0,
+      absent: 0,
+      late: 0,
+      excused: 0,
+    };
+
+    for (const feedback of feedbacks) {
+      if (feedback.attendance === "PRESENT") attendanceTotals.present += 1;
+      if (feedback.attendance === "ABSENT") attendanceTotals.absent += 1;
+      if (feedback.attendance === "LATE") attendanceTotals.late += 1;
+      if (feedback.attendance === "EXCUSED") attendanceTotals.excused += 1;
+
+      if (feedback.attitudeScore !== null && feedback.attitudeScore !== undefined) {
+        attitudeSum += feedback.attitudeScore;
+        attitudeCount += 1;
+      }
+
+      if (feedback.comprehensionScore !== null && feedback.comprehensionScore !== undefined) {
+        comprehensionSum += feedback.comprehensionScore;
+        comprehensionCount += 1;
+      }
+
+      if (feedback.homeworkScore !== null && feedback.homeworkScore !== undefined) {
+        homeworkSum += feedback.homeworkScore;
+        homeworkCount += 1;
+      }
+    }
+
+    const averages = {
+      attitude: attitudeCount ? Math.round((attitudeSum / attitudeCount) * 10) / 10 : null,
+      comprehension: comprehensionCount ? Math.round((comprehensionSum / comprehensionCount) * 10) / 10 : null,
+      homework: homeworkCount ? Math.round((homeworkSum / homeworkCount) * 10) / 10 : null,
+    };
+
+    return {
+      member,
+      attendance: attendanceTotals,
+      averages,
+      feedbacks,
+    };
   },
 
   async listAuditLogs(query: {
