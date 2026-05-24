@@ -91,19 +91,21 @@ export default function ClassSessionListPage() {
           style={{ textDecoration: 'none' }}
         >
           + Tạo buổi học mới
-                <div className="session-member-links">
-                  {data.class.members?.length ? data.class.members.map((member) => (
-                    <Link
-                      key={member.id}
-                      href={`/tai-khoan-gia-su/lop-cua-toi/${data.class.id}/hoc-sinh/${member.id}`}
-                      className="btn-text"
-                      style={{ textDecoration: 'none' }}
-                    >
-                      Tien do: {member.studentName}
-                    </Link>
-                  )) : null}
-                </div>
         </Link>
+        {data?.class?.members?.length ? (
+          <div className="session-member-links">
+            {data.class.members.map((member) => (
+              <Link
+                key={member.id}
+                href={`/tai-khoan-gia-su/lop-cua-toi/${data.class.id}/hoc-sinh/${member.id}`}
+                className="btn-text"
+                style={{ textDecoration: 'none' }}
+              >
+                Tien do: {member.studentName}
+              </Link>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       <div className="session-summary">
