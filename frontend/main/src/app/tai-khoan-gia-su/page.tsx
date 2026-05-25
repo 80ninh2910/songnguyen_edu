@@ -12,7 +12,13 @@ export default function Dashboard() {
 
   const userName = profile.fullName || 'Gia su';
   const greeting = 'Chào mừng bạn đến với Trung tâm Song Nguyên!';
-  const profileStatus = profile.status || 'Gia Su';
+  const profileStatus = profile.tutorType === 'GIA_SU_DAO_TAO'
+    ? 'Gia sư đào tạo'
+    : profile.tutorType === 'GIA_SU_TU_DO'
+      ? 'Gia sư tự do'
+      : profile.tutorType === 'GIAO_VIEN_TRUNG_TAM'
+        ? 'Giáo viên trung tâm'
+        : 'Gia sư';
   const updates = [
     {
       icon: 'chalkboard-teacher',

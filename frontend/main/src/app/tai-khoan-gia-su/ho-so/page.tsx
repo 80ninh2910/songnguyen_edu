@@ -12,6 +12,14 @@ export default function Profile() {
 
   const { profile, setProfile } = useProfile();
 
+  const tutorTypeLabel = profile.tutorType === 'GIA_SU_DAO_TAO'
+    ? 'Gia sư đào tạo'
+    : profile.tutorType === 'GIA_SU_TU_DO'
+      ? 'Gia sư tự do'
+      : profile.tutorType === 'GIAO_VIEN_TRUNG_TAM'
+        ? 'Giáo viên trung tâm'
+        : '-';
+
   const handleUpdate = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -24,7 +32,6 @@ export default function Profile() {
     if (formData.get('phone')) updatedProfile.phone = formData.get('phone') as string;
     if (formData.get('email')) updatedProfile.email = formData.get('email') as string;
     if (formData.get('language')) updatedProfile.language = formData.get('language') as string;
-    if (formData.get('status')) updatedProfile.status = formData.get('status') as string;
     if (formData.get('experience')) updatedProfile.experience = formData.get('experience') as string;
     if (formData.get('bio')) updatedProfile.bio = formData.get('bio') as string;
 
@@ -122,20 +129,24 @@ export default function Profile() {
             )}
             <div className="avatar-badge"></div>
           </div>
-          <h1 className="profile-name">{profile.name}</h1>
+          <h1 className="profile-name">{profile.name || 'Chưa cập nhật'}</h1>
           <div className="subject-tags">
-            {profile.subjects.map((subj, idx) => (
-              <span className="subject-tag" key={idx}>{subj}</span>
-            ))}
+            {profile.subjects.length > 0 ? (
+              profile.subjects.map((subj, idx) => (
+                <span className="subject-tag" key={idx}>{subj}</span>
+              ))
+            ) : (
+              <span className="subject-tag">Chưa cập nhật</span>
+            )}
           </div>
           <div className="profile-stats">
             <div className="stat">
               <div className="stat-label">Vai trò</div>
-              <div className="stat-value">{profile.status}</div>
+              <div className="stat-value">{tutorTypeLabel}</div>
             </div>
             <div className="stat">
               <div className="stat-label">Kinh nghiệm</div>
-              <div className="stat-value">{profile.experience}</div>
+              <div className="stat-value">{profile.experience || '-'}</div>
             </div>
           </div>
         </div>
@@ -145,23 +156,23 @@ export default function Profile() {
           <div className="info-grid">
             <div className="info-item">
               <div className="info-label">Họ và Tên</div>
-              <div className="info-value">{profile.fullName}</div>
+              <div className="info-value">{profile.fullName || '-'}</div>
             </div>
             <div className="info-item">
               <div className="info-label">Địa Chỉ Email</div>
-              <div className="info-value">{profile.email}</div>
+              <div className="info-value">{profile.email || '-'}</div>
             </div>
             <div className="info-item">
               <div className="info-label">Số Điện Thoại</div>
-              <div className="info-value">{profile.phone}</div>
+              <div className="info-value">{profile.phone || '-'}</div>
             </div>
             <div className="info-item">
               <div className="info-label">Ngôn Ngữ Chính</div>
-              <div className="info-value">{profile.language}</div>
+              <div className="info-value">{profile.language || '-'}</div>
             </div>
             <div className="bio-text">
               <div className="info-label">Giới Thiệu</div>
-              <p>{profile.bio}</p>
+              <p>{profile.bio || 'Chưa cập nhật.'}</p>
             </div>
           </div>
         </div>
@@ -179,23 +190,31 @@ export default function Profile() {
               <div className="avail-status"><div className="dot"></div> Đang hoạt động</div>
             </div>
             <div className="days-row">
-              {profile.days.map((day, idx) => (
-                <div className="day-label" key={idx}>
-                  {day.label}
-                  <div className={`day-check ${day.available ? 'yes' : 'partial'}`}>
-                    <i className={`fas ${day.available ? 'fa-check' : 'fa-minus'}`}></i>
+              {profile.days.length > 0 ? (
+                profile.days.map((day, idx) => (
+                  <div className="day-label" key={idx}>
+                    {day.label}
+                    <div className={`day-check ${day.available ? 'yes' : 'partial'}`}>
+                      <i className={`fas ${day.available ? 'fa-check' : 'fa-minus'}`}></i>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : (
+                <div style={{ color: '#94a3b8', fontSize: '14px' }}>Chưa cập nhật lịch dạy.</div>
+              )}
             </div>
           </div>
 
           <div className="expertise-card">
             <h3>Chuyên Môn & Kỹ Năng</h3>
             <div className="skill-list">
-              {profile.skills.map((skill, idx) => (
-                <div className="skill-item" key={idx}>{skill}</div>
-              ))}
+              {profile.skills.length > 0 ? (
+                profile.skills.map((skill, idx) => (
+                  <div className="skill-item" key={idx}>{skill}</div>
+                ))
+              ) : (
+                <div style={{ color: '#94a3b8', fontSize: '14px' }}>Chưa cập nhật kỹ năng.</div>
+              )}
             </div>
           </div>
         </div>
@@ -207,50 +226,54 @@ export default function Profile() {
           <button onClick={() => { setEditingCertIndex(null); setCertModalOpen(true); }} className="btn-add"><i className="fas fa-plus-circle"></i> Thêm Mới</button>
         </div>
         <div className="cred-list" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px', marginTop: '16px' }}>
-          {profile.credentials.map((cred: any, idx) => (
-            <div className="cred-item" key={idx} style={{ background: '#F9FAFB', padding: '16px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '16px', border: '1px solid #f1f5f9' }}>
-              <div className="cred-icon" style={{ background: '#3B82F6', color: 'white', width: '48px', height: '48px', minWidth: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}><i className={`fas fa-${cred.icon}`}></i></div>
-              <div className="cred-info" style={{ flex: 1 }}>
-                <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', color: '#1e293b' }}>{cred.title}</h4>
-                <p style={{ margin: 0, fontSize: '12px', color: '#94a3b8' }}>{cred.detail}</p>
-                {cred.imageUrl && (
-                  <div style={{ marginTop: '12px' }}>
-                    <img src={cred.imageUrl} alt="minh chứng" style={{ maxHeight: '120px', borderRadius: '6px', border: '1px solid #e2e8f0', objectFit: 'cover' }} />
-                  </div>
-                )}
-              </div>
-              <div className="cred-verified" style={{ display: 'flex', gap: '8px' }}>
-                <div 
-                  onClick={() => {
-                    if (window.confirm('Bạn có chắc chắn muốn xóa chứng chỉ này?')) {
-                      const newCreds = profile.credentials.filter((_, i) => i !== idx);
-                      setProfile({ ...profile, credentials: newCreds });
-                    }
-                  }}
-                  style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#FEF2F2', color: '#EF4444', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                  title="Xóa chứng chỉ"
-                >
-                  <i className="fas fa-trash-alt"></i>
+          {profile.credentials.length > 0 ? (
+            profile.credentials.map((cred: any, idx) => (
+              <div className="cred-item" key={idx} style={{ background: '#F9FAFB', padding: '16px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '16px', border: '1px solid #f1f5f9' }}>
+                <div className="cred-icon" style={{ background: '#3B82F6', color: 'white', width: '48px', height: '48px', minWidth: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}><i className={`fas fa-${cred.icon}`}></i></div>
+                <div className="cred-info" style={{ flex: 1 }}>
+                  <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', color: '#1e293b' }}>{cred.title}</h4>
+                  <p style={{ margin: 0, fontSize: '12px', color: '#94a3b8' }}>{cred.detail}</p>
+                  {cred.imageUrl && (
+                    <div style={{ marginTop: '12px' }}>
+                      <img src={cred.imageUrl} alt="minh chứng" style={{ maxHeight: '120px', borderRadius: '6px', border: '1px solid #e2e8f0', objectFit: 'cover' }} />
+                    </div>
+                  )}
                 </div>
-                <div 
-                  onClick={() => { setEditingCertIndex(idx); setCertModalOpen(true); }}
-                  style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#F1F5F9', color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                  title="Chỉnh sửa"
-                >
-                  <i className="fas fa-edit"></i>
+                <div className="cred-verified" style={{ display: 'flex', gap: '8px' }}>
+                  <div 
+                    onClick={() => {
+                      if (window.confirm('Bạn có chắc chắn muốn xóa chứng chỉ này?')) {
+                        const newCreds = profile.credentials.filter((_, i) => i !== idx);
+                        setProfile({ ...profile, credentials: newCreds });
+                      }
+                    }}
+                    style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#FEF2F2', color: '#EF4444', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                    title="Xóa chứng chỉ"
+                  >
+                    <i className="fas fa-trash-alt"></i>
+                  </div>
+                  <div 
+                    onClick={() => { setEditingCertIndex(idx); setCertModalOpen(true); }}
+                    style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#F1F5F9', color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                    title="Chỉnh sửa"
+                  >
+                    <i className="fas fa-edit"></i>
+                  </div>
+                  {cred.imageUrl ? (
+                    <div onClick={() => setPreviewImage(cred.imageUrl as string)} style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#EFF6FF', color: '#3B82F6', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }} title="Xem minh chứng">
+                      <i className="fas fa-eye"></i>
+                    </div>
+                  ) : (
+                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#F1F5F9', color: '#CBD5E1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <i className="fas fa-eye"></i>
+                    </div>
+                  )}
                 </div>
-                {cred.imageUrl ? (
-                  <div onClick={() => setPreviewImage(cred.imageUrl as string)} style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#EFF6FF', color: '#3B82F6', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }} title="Xem minh chứng">
-                    <i className="fas fa-eye"></i>
-                  </div>
-                ) : (
-                  <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#F1F5F9', color: '#CBD5E1', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <i className="fas fa-eye"></i>
-                  </div>
-                )}
               </div>
-            </div>
-          ))}
+            ))
+          ) : (
+            <div style={{ color: '#94a3b8', fontSize: '14px' }}>Chưa có chứng chỉ nào.</div>
+          )}
         </div>
       </div>
 
@@ -321,10 +344,6 @@ export default function Profile() {
                 <div className="form-group">
                   <label>Ngôn Ngữ</label>
                   <input type="text" name="language" defaultValue={profile.language} className="form-input" />
-                </div>
-                <div className="form-group">
-                  <label>Vai Trò</label>
-                  <input type="text" name="status" defaultValue={profile.status} className="form-input" />
                 </div>
                 <div className="form-group">
                   <label>Kinh Nghiệm</label>

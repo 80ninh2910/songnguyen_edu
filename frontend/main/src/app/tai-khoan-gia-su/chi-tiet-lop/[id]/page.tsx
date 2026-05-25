@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { apiRequest, apiRequestWithAuth, getStoredAccessToken } from '@/lib/api';
+import { useProfile } from '@/context/ProfileContext';
 
 export default function ClassDetail() {
   const params = useParams<{ id: string }>();
@@ -15,12 +16,21 @@ export default function ClassDetail() {
     feePerHour: number;
     schedule: string | null;
     status: string;
+    tutorType: string;
   };
 
   const [course, setCourse] = useState<PublicClass | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
   const [applyMessage, setApplyMessage] = useState('');
+  const { profile } = useProfile();
+
+  const isRoleMatch =
+    !course ||
+    !profile.tutorType ||
+    course.tutorType === 'ANY' ||
+    course.tutorType === profile.tutorType;
+  const canApply = Boolean(course && course.status === 'OPEN' && isRoleMatch);
 
   useEffect(() => {
     if (!params?.id) return;
@@ -44,6 +54,16 @@ export default function ClassDetail() {
     }
 
     if (!course) return;
+
+    if (!isRoleMatch) {
+      setApplyMessage('Ban khong duoc phep nhan lop nay do khac loai gia su.');
+      return;
+    }
+
+    if (course.status !== 'OPEN') {
+      setApplyMessage('Lop nay khong con dang tuyen.');
+      return;
+    }
 
     try {
       await apiRequestWithAuth(`/tutor/classes/${course.id}/apply`, { method: 'POST', body: {} });
@@ -73,7 +93,11 @@ export default function ClassDetail() {
 
       <div className="page-container">
         {isLoading && <p>Dang tai...</p>}
-        {!isLoading && error && <p style={{ color: '#ef4444' }}>{error}</p>}
+        {!isLoading && error && (
+          <p style={{ color: '#ef4444' }}>
+            Lop nay khong con dang tuyen hoac da duoc phan.
+          </p>
+        )}
         {!isLoading && !error && course && (
           <>
             <div className="course-badges">
@@ -196,7 +220,11 @@ export default function ClassDetail() {
                   <span className="mini-badge rejected">Từ chối</span>
                 </div>
               </div>
-              <button className="btn-register" onClick={handleApply}>
+              <button
+                className="btn-register"
+                onClick={handleApply}
+                disabled={!canApply}
+              >
                 Dang ky lop <i className="fas fa-chevron-right"></i>
               </button>
               {applyMessage && <p style={{ marginTop: '12px', color: '#2563EB' }}>{applyMessage}</p>}

@@ -30,7 +30,13 @@ export default function LoginPage() {
       const session = await apiRequest<{
         accessToken: string;
         refreshToken: string;
-        user: { id: string; role: string; email: string; fullName: string };
+        user: {
+          id: string;
+          role: string;
+          email: string;
+          fullName: string;
+          mustChangePassword?: boolean;
+        };
       }>("/auth/tutor/login", {
         method: "POST",
         body: { email, password },
@@ -40,7 +46,11 @@ export default function LoginPage() {
       localStorage.setItem('sne_refresh_token', session.refreshToken);
       localStorage.setItem('sne_user', JSON.stringify(session.user));
 
-      router.push('/tai-khoan-gia-su');
+      if (session.user.mustChangePassword) {
+        router.push('/tai-khoan-gia-su/doi-mat-khau');
+      } else {
+        router.push('/tai-khoan-gia-su');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Dang nhap khong thanh cong.');
       setIsLoading(false);

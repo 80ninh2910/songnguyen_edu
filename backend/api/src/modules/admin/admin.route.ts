@@ -38,6 +38,8 @@ import {
   rejectClassRequestHandler,
   rejectPaymentHandler,
   rejectTutorHandler,
+  resetTutorPasswordHandler,
+  resetTutorPasswordHandler,
   updateCenterTeacherHandler,
   updateClassHandler,
   updateTutorHandler,
@@ -245,6 +247,27 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
       },
     },
     updateTutorHandler,
+  );
+
+  app.post(
+    "/tutors/:id/reset-password",
+    {
+      preHandler: requireAdmin,
+      schema: {
+        tags: ["Admin"],
+        summary: "Reset tutor password",
+        security: [{ bearerAuth: [] }],
+        params: fromZodSchema(IdParamSchema),
+        response: {
+          200: successSchema(anyDataSchema),
+          400: errorResponseSchema,
+          401: errorResponseSchema,
+          403: errorResponseSchema,
+          404: errorResponseSchema,
+        },
+      },
+    },
+    resetTutorPasswordHandler,
   );
 
   app.patch(

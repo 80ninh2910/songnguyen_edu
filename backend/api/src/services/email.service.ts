@@ -99,6 +99,27 @@ export const emailService = {
     );
   },
 
+  async sendTutorPasswordReset(
+    to: string,
+    fullName: string,
+    tempPassword: string,
+  ): Promise<void> {
+    await sendEmail(
+      to,
+      "[SNE] Dat lai mat khau gia su",
+      `
+        <h2>Xin chao ${escapeHtml(fullName)},</h2>
+        <p>Mat khau cua ban da duoc dat lai boi admin.</p>
+        <p>Thong tin dang nhap tam thoi:</p>
+        <ul>
+          <li>Email: ${escapeHtml(to)}</li>
+          <li>Mat khau tam: <strong>${escapeHtml(tempPassword)}</strong></li>
+        </ul>
+        <p>Vui long doi mat khau ngay sau lan dang nhap dau tien.</p>
+      `,
+    );
+  },
+
   async sendClassAssignmentFeeRequest(
     to: string,
     fullName: string,

@@ -3,7 +3,6 @@ import crypto from "crypto";
 
 import { AppError } from "../../common/errors/AppError.js";
 import { errorResponseSchema, successSchema } from "../../common/utils/docs.js";
-import { hashPassword } from "../../common/utils/password.js";
 import { success } from "../../common/utils/response.js";
 import { prisma } from "../../config/prisma.js";
 
@@ -38,12 +37,15 @@ const classRequestBodySchema = {
 
 const tutorRegisterBodySchema = {
   type: "object",
-  required: ["fullName", "email", "phone", "password"],
+  required: ["fullName", "email", "phone", "tutorType"],
   properties: {
     fullName: { type: "string" },
     email: { type: "string", format: "email" },
     phone: { type: "string" },
-    password: { type: "string", minLength: 6 },
+    tutorType: {
+      type: "string",
+      enum: ["GIA_SU_TU_DO", "GIA_SU_DAO_TAO"],
+    },
     subjects: {
       type: "array",
       items: { type: "string" },
@@ -141,6 +143,7 @@ export async function registerPublicRoutes(
           feePerHour: true,
           schedule: true,
           status: true,
+          tutorType: true,
         },
       });
       void reply.send(success(classes));
@@ -168,8 +171,8 @@ export async function registerPublicRoutes(
     },
     async (request, reply) => {
       const id = (request.params as { id: string }).id;
-      const classItem = await prisma.class.findUnique({
-        where: { id },
+      const classItem = await prisma.class.findFirst({
+        where: { id, status: "OPEN" },
         select: {
           id: true,
           title: true,
@@ -179,6 +182,7 @@ export async function registerPublicRoutes(
           feePerHour: true,
           schedule: true,
           status: true,
+          tutorType: true,
         },
       });
 
@@ -313,7 +317,7 @@ export async function registerPublicRoutes(
         fullName: string;
         email: string;
         phone: string;
-        password: string;
+        tutorType: "GIA_SU_TU_DO" | "GIA_SU_DAO_TAO";
         subjects?: string[];
         districts?: string[];
       };
@@ -327,13 +331,12 @@ export async function registerPublicRoutes(
         throw new AppError("TUTOR_EXISTS", 409, "Tutor already registered");
       }
 
-      const passwordHash = await hashPassword(body.password);
       const tutor = await prisma.tutor.create({
         data: {
           fullName: body.fullName,
           email: body.email,
           phone: body.phone,
-          passwordHash,
+          tutorType: body.tutorType,
           subjects: body.subjects ?? [],
           districts: body.districts ?? [],
         },

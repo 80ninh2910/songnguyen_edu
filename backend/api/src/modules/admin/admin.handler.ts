@@ -112,6 +112,15 @@ export async function updateTutorHandler(
   void reply.send(success(result));
 }
 
+export async function resetTutorPasswordHandler(
+  request: FastifyRequest,
+  reply: FastifyReply,
+): Promise<void> {
+  const { id } = IdParamSchema.parse(request.params);
+  const result = await adminService.resetTutorPassword(getActor(request), id);
+  void reply.send(success(result));
+}
+
 export async function updateCenterTeacherHandler(
   request: FastifyRequest,
   reply: FastifyReply,

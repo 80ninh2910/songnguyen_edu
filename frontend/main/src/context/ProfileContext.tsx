@@ -11,7 +11,7 @@ export type ProfileData = {
   language: string;
   rating: string;
   reviews: number;
-  status: string;
+  tutorType: string;
   experience: string;
   joinDate: string;
   bio: string;
@@ -25,56 +25,24 @@ export type ProfileData = {
 };
 
 const defaultProfile: ProfileData = {
-  name: 'Nguyễn Hải Vân',
-  fullName: 'Nguyễn Hải Vân',
-  email: 'haivan@songnguyen.edu.vn',
-  phone: '+84 (0) 909 234 890',
-  language: 'Tiếng Việt (Bản ngữ), Tiếng Anh (Thành thạo)',
-  rating: '5.0',
-  reviews: 124,
-  status: 'Gia Sư Chính Thức',
-  experience: '3 Năm tại Trung tâm',
-  joinDate: '15/09/2021',
-  bio: 'Tốt nghiệp Đại học Bách Khoa TP.HCM, chuyên ngành Vật lý Ứng dụng. Đã giảng dạy tại Trung tâm Song Nguyên từ năm 2021. Phong cách giảng dạy tập trung vào tư duy logic và ứng dụng thực tế. Yêu thích việc truyền cảm hứng học tập cho học sinh.',
-  subjects: ['Toán', 'Vật lý', 'Tiếng Anh'],
-  locations: [
-    { name: 'Quận 7, TP.HCM', color: '#10B981' },
-    { name: 'Quận 4, TP.HCM', color: '#3B82F6' }
-  ],
-  skills: [
-    'Toán THPT',
-    'Vật lý cơ bản & nâng cao',
-    'Luyện thi Đại học',
-    'Tiếng Anh giao tiếp',
-    'Quản lý lớp học',
-    'Hỗ trợ cá nhân',
-  ],
-  days: [
-    { label: 'T2', available: true },
-    { label: 'T3', available: true },
-    { label: 'T4', available: false },
-    { label: 'T5', available: true },
-    { label: 'T6', available: true },
-    { label: 'T7', available: true },
-    { label: 'CN', available: false },
-  ],
-  credentials: [
-    {
-      icon: 'id-card',
-      title: 'Xác Minh Danh Tính',
-      detail: 'CMND/CCCD • Đã xác minh',
-      imageUrl: undefined,
-    },
-    {
-      icon: 'graduation-cap',
-      title: 'Bằng Cử Nhân',
-      detail: 'ĐH Bách Khoa TP.HCM • Đã xác minh',
-    },
-  ],
+  name: '',
+  fullName: '',
+  email: '',
+  phone: '',
+  language: '',
+  rating: '',
+  reviews: 0,
+  tutorType: '',
+  experience: '',
+  joinDate: '',
+  bio: '',
+  subjects: [],
+  locations: [],
+  skills: [],
+  days: [],
+  credentials: [],
   avatarUrl: null,
-  notifications: [
-    { id: 'welcome-1', message: 'Chào mừng bạn quay trở lại Cổng Gia Sư Song Nguyên!', time: 'Hôm nay', read: false }
-  ],
+  notifications: [],
 };
 
 type ProfileContextType = {
@@ -109,7 +77,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
           fullName: data.fullName,
           email: data.email,
           phone: data.phone ?? prev.phone,
-          status: data.status,
+          tutorType: data.tutorType ?? prev.tutorType,
           subjects: data.subjects.length > 0 ? data.subjects : prev.subjects,
           locations: data.districts.length > 0
             ? data.districts.map((district, index) => ({

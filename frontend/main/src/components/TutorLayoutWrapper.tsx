@@ -1,10 +1,27 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 
 export default function TutorLayoutWrapper({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const raw = localStorage.getItem('sne_user');
+    if (!raw) return;
+
+    try {
+      const user = JSON.parse(raw) as { mustChangePassword?: boolean };
+      if (user.mustChangePassword && pathname !== '/tai-khoan-gia-su/doi-mat-khau') {
+        window.location.replace('/tai-khoan-gia-su/doi-mat-khau');
+      }
+    } catch {
+      // Ignore malformed session state.
+    }
+  }, [pathname]);
 
   return (
     <div className="layout">

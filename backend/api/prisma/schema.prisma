@@ -119,10 +119,12 @@ model Tutor {
   phone          String?
   fullName       String      @map("full_name")
   passwordHash   String?     @map("password_hash")
+  tutorType      TutorType   @default(GIA_SU_TU_DO) @map("tutor_type")
   status         TutorStatus @default(PENDING)
   rejectReason   String?     @map("reject_reason")
   subjects       String[]    @default([])
   districts      String[]    @default([])
+  mustChangePassword Boolean  @default(false) @map("must_change_password")
   approvedAt     DateTime?   @map("approved_at")
   approvedById   String?     @map("approved_by_id")
   createdAt      DateTime    @default(now()) @map("created_at")

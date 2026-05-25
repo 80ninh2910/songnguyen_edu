@@ -50,6 +50,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         <Link href="/tai-khoan-gia-su/danh-sach-lop" className={pathname === '/tai-khoan-gia-su/danh-sach-lop' ? 'active' : ''} onClick={onClose}><i className="fas fa-chalkboard"></i> Danh Sách Lớp</Link>
         <Link href="/tai-khoan-gia-su/lop-cua-toi" className={pathname === '/tai-khoan-gia-su/lop-cua-toi' ? 'active' : ''} onClick={onClose}><i className="fas fa-graduation-cap"></i> Lớp Của Tôi</Link>
         <Link href="/tai-khoan-gia-su/ho-so" className={pathname === '/tai-khoan-gia-su/ho-so' ? 'active' : ''} onClick={onClose}><i className="fas fa-user"></i> Hồ Sơ</Link>
+        <Link href="/tai-khoan-gia-su/doi-mat-khau" className={pathname === '/tai-khoan-gia-su/doi-mat-khau' ? 'active' : ''} onClick={onClose}><i className="fas fa-key"></i> Đổi Mật Khẩu</Link>
       </nav>
       <div className="sidebar-bottom">
         <button className="btn-new-lesson"><i className="fas fa-plus"></i> Bài Giảng Mới</button>

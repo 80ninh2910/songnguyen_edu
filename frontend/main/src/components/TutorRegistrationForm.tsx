@@ -31,15 +31,13 @@ export default function TutorRegistrationForm({
     note: "",
   });
   const [tutorForm, setTutorForm] = useState({
-    teachingLevel: "",
-    subject: "",
+    subject: "Toán",
+    level: "cấp 3",
     school: "",
-    area: "",
   });
   const [activeWeekdays, setActiveWeekdays] = useState<string[]>([]);
-  const [activeClasses, setActiveClasses] = useState<string[]>([]);
-  const [otherClassStr, setOtherClassStr] = useState("");
-  const [showClasses, setShowClasses] = useState(false);
+  const [activeDistricts, setActiveDistricts] = useState<string[]>([]);
+  const [showDistricts, setShowDistricts] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -48,75 +46,11 @@ export default function TutorRegistrationForm({
   const emailRef = useRef<HTMLInputElement | null>(null);
   const genderRef = useRef<HTMLSelectElement | null>(null);
   const addressRef = useRef<HTMLInputElement | null>(null);
-  const classDropdownRef = useRef<HTMLDivElement | null>(null);
-  const otherClassRef = useRef<HTMLInputElement | null>(null);
+  const subjectRef = useRef<HTMLSelectElement | null>(null);
+  const levelRef = useRef<HTMLSelectElement | null>(null);
   const schoolRef = useRef<HTMLInputElement | null>(null);
-  const areaRef = useRef<HTMLInputElement | null>(null);
+  const districtDropdownRef = useRef<HTMLDivElement | null>(null);
   const tutorWeekdaysRef = useRef<HTMLDivElement | null>(null);
-
-  const classGroups = [
-    {
-      title: "Tiểu học",
-      options: [
-        { label: "Tiếng Việt", value: "Tiếng Việt (Cấp 1)" },
-        { label: "Toán", value: "Toán (Cấp 1)" },
-        { label: "Đạo đức", value: "Đạo đức (Cấp 1)" },
-        { label: "Tự nhiên & Xã hội", value: "Tự nhiên & Xã hội (Cấp 1)" },
-        { label: "Khoa học", value: "Khoa học (Cấp 1)" },
-        { label: "Lịch sử", value: "Lịch sử (Cấp 1)" },
-        { label: "Địa lí", value: "Địa lí (Cấp 1)" },
-        { label: "Tin học & Công nghệ", value: "Tin học & Công nghệ (Cấp 1)" },
-        { label: "Ngoại ngữ (Tiếng Anh)", value: "Ngoại ngữ (Cấp 1)" },
-        { label: "Nghệ thuật / Năng khiếu", value: "Nghệ thuật (Cấp 1)" },
-      ],
-    },
-    {
-      title: "THCS",
-      options: [
-        { label: "Ngữ văn", value: "Ngữ văn (Cấp 2)" },
-        { label: "Toán", value: "Toán (Cấp 2)" },
-        { label: "Ngoại ngữ (Tiếng Anh)", value: "Ngoại ngữ (Cấp 2)" },
-        { label: "Giáo dục công dân", value: "Giáo dục công dân (Cấp 2)" },
-        { label: "Lịch sử", value: "Lịch sử (Cấp 2)" },
-        { label: "Địa lí", value: "Địa lí (Cấp 2)" },
-        { label: "Vật lí", value: "Vật lí (Cấp 2)" },
-        { label: "Hóa học", value: "Hóa học (Cấp 2)" },
-        { label: "Sinh học", value: "Sinh học (Cấp 2)" },
-        { label: "Công nghệ", value: "Công nghệ (Cấp 2)" },
-        { label: "Tin học", value: "Tin học (Cấp 2)" },
-        { label: "Nghệ thuật / Năng khiếu", value: "Nghệ thuật (Cấp 2)" },
-      ],
-    },
-    {
-      title: "THPT",
-      options: [
-        { label: "Ngữ văn", value: "Ngữ văn (Cấp 3)" },
-        { label: "Toán", value: "Toán (Cấp 3)" },
-        { label: "Ngoại ngữ (Tiếng Anh)", value: "Ngoại ngữ (Cấp 3)" },
-        { label: "Vật lí", value: "Vật lí (Cấp 3)" },
-        { label: "Hóa học", value: "Hóa học (Cấp 3)" },
-        { label: "Sinh học", value: "Sinh học (Cấp 3)" },
-        { label: "Lịch sử", value: "Lịch sử (Cấp 3)" },
-        { label: "Địa lí", value: "Địa lí (Cấp 3)" },
-        { label: "GD kinh tế & pháp luật", value: "GD kinh tế & pháp luật (Cấp 3)" },
-        { label: "Tin học", value: "Tin học (Cấp 3)" },
-        { label: "Công nghệ", value: "Công nghệ (Cấp 3)" },
-        { label: "Nghệ thuật / Năng khiếu", value: "Nghệ thuật (Cấp 3)" },
-      ],
-    },
-    {
-      title: "Khác",
-      options: [
-        { label: "Luyện thi IELTS", value: "Luyện thi IELTS" },
-        { label: "Luyện thi TOEIC", value: "Luyện thi TOEIC" },
-        { label: "Khác", value: "Khác" },
-      ],
-    },
-  ];
-
-  const toggleClass = (c: string) => {
-    setActiveClasses((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]));
-  };
 
   const weekDays = [
     { key: "su", label: "Su", full: "Chủ nhật" },
@@ -126,6 +60,33 @@ export default function TutorRegistrationForm({
     { key: "th", label: "Th", full: "Thứ 5" },
     { key: "fr", label: "Fr", full: "Thứ 6" },
     { key: "sa", label: "Sa", full: "Thứ 7" },
+  ];
+
+  const districtOptions = [
+    "Quận 1",
+    "Quận 2",
+    "Quận 3",
+    "Quận 4",
+    "Quận 5",
+    "Quận 6",
+    "Quận 7",
+    "Quận 8",
+    "Quận 9",
+    "Quận 10",
+    "Quận 11",
+    "Quận 12",
+    "TP. Thủ Đức",
+    "Bình Thạnh",
+    "Gò Vấp",
+    "Phú Nhuận",
+    "Tân Bình",
+    "Tân Phú",
+    "Bình Tân",
+    "Bình Chánh",
+    "Củ Chi",
+    "Hóc Môn",
+    "Nhà Bè",
+    "Cần Giờ",
   ];
 
   const fixedRole = track === "free" ? "Gia sư tự do" : "Gia sư đào tạo";
@@ -141,14 +102,15 @@ export default function TutorRegistrationForm({
     personalForm.email,
     personalForm.gender,
     personalForm.address,
+    tutorForm.subject,
+    tutorForm.level,
     tutorForm.school,
-    tutorForm.area,
   ];
 
   const completionRate = Math.round(
     ((requiredFields.filter((value) => value.trim().length > 0).length +
       (activeWeekdays.length > 0 ? 1 : 0) +
-      (activeClasses.length > 0 ? 1 : 0)) /
+      (activeDistricts.length > 0 ? 1 : 0)) /
       (requiredFields.length + 2)) *
       100
   );
@@ -164,6 +126,12 @@ export default function TutorRegistrationForm({
     );
   };
 
+  const toggleDistrict = (district: string) => {
+    setActiveDistricts((prev) =>
+      prev.includes(district) ? prev.filter((item) => item !== district) : [...prev, district]
+    );
+  };
+
   const focusFirstTutorError = (nextErrors: Record<string, string>) => {
     const focusOrder: Array<keyof typeof nextErrors> = [
       "fullName",
@@ -171,10 +139,10 @@ export default function TutorRegistrationForm({
       "email",
       "gender",
       "address",
-      "classes",
-      "otherClassStr",
+      "subject",
+      "level",
       "school",
-      "area",
+      "districts",
       "weekdays",
     ];
     const refMap: Record<string, RefObject<HTMLElement>> = {
@@ -183,10 +151,10 @@ export default function TutorRegistrationForm({
       email: emailRef as RefObject<HTMLElement>,
       gender: genderRef as RefObject<HTMLElement>,
       address: addressRef as RefObject<HTMLElement>,
-      classes: classDropdownRef as RefObject<HTMLElement>,
-      otherClassStr: otherClassRef as RefObject<HTMLElement>,
+      subject: subjectRef as RefObject<HTMLElement>,
+      level: levelRef as RefObject<HTMLElement>,
       school: schoolRef as RefObject<HTMLElement>,
-      area: areaRef as RefObject<HTMLElement>,
+      districts: districtDropdownRef as RefObject<HTMLElement>,
       weekdays: tutorWeekdaysRef as RefObject<HTMLElement>,
     };
 
@@ -213,12 +181,10 @@ export default function TutorRegistrationForm({
     if (!personalForm.role) nextErrors.role = "Vui lòng chọn vai trò hiện tại.";
     if (!personalForm.gender) nextErrors.gender = "Vui lòng chọn giới tính.";
     if (!personalForm.address.trim()) nextErrors.address = "Vui lòng nhập địa chỉ.";
-    if (activeClasses.length === 0) nextErrors.classes = "Vui lòng chọn môn/lớp dạy.";
-    if (activeClasses.includes("Khác") && !otherClassStr.trim()) {
-      nextErrors.otherClassStr = "Vui lòng nhập môn/lớp dạy khác.";
-    }
+    if (!tutorForm.subject.trim()) nextErrors.subject = "Vui lòng chọn môn học.";
+    if (!tutorForm.level.trim()) nextErrors.level = "Vui lòng chọn cấp học.";
     if (!tutorForm.school.trim()) nextErrors.school = "Vui lòng nhập trường đã/đang học.";
-    if (!tutorForm.area.trim()) nextErrors.area = "Vui lòng nhập khu vực dạy.";
+    if (activeDistricts.length === 0) nextErrors.districts = "Vui lòng chọn khu vực dạy.";
     if (activeWeekdays.length === 0) nextErrors.weekdays = "Vui lòng chọn các buổi có thể dạy.";
 
     setErrors(nextErrors);
@@ -232,15 +198,11 @@ export default function TutorRegistrationForm({
     setIsSubmitting(true);
     setSubmitMessage("");
 
-    const subjects = activeClasses.includes("Khác")
-      ? [...activeClasses.filter((c) => c !== "Khác"), otherClassStr.trim()].filter(Boolean)
-      : activeClasses;
-    const districts = tutorForm.area
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean);
+    const subjects = [`${tutorForm.subject} ${tutorForm.level}`];
+    const districts = activeDistricts;
 
     try {
+      const tutorType = track === "free" ? "GIA_SU_TU_DO" : "GIA_SU_DAO_TAO";
       const registerResult = await apiRequest<{ tutorId: string; uploadToken: string }>(
         "/public/tutors/register",
         {
@@ -249,6 +211,7 @@ export default function TutorRegistrationForm({
             fullName: personalForm.fullName,
             email: personalForm.email,
             phone: personalForm.phone,
+            tutorType,
             subjects: subjects.length > 0 ? subjects : undefined,
             districts: districts.length > 0 ? districts : undefined,
           },
@@ -365,71 +328,34 @@ export default function TutorRegistrationForm({
               <div>
                 <h4 className="text-lg font-bold text-[#1d3979] md:text-xl">Thông tin gia sư</h4>
                 <div className="mt-4 space-y-3">
-                  <div className="relative">
-                    <div
-                      ref={classDropdownRef}
-                      tabIndex={0}
-                      className={`${errorInputClass(!!errors.classes)} flex items-center justify-between cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#8ab4ff]/60`}
-                      onClick={() => setShowClasses(!showClasses)}
-                    >
-                      <span
-                        className={`truncate pr-2 ${
-                          activeClasses.length > 0 ? "text-[#243b72]" : "text-[#6b7aa0]"
-                        }`}
-                      >
-                        {activeClasses.length > 0
-                          ? `Đã chọn: ${activeClasses.join(", ")}`
-                          : "Môn/Lớp dạy (Toán 1, Anh 2...)"}
-                      </span>
-                      <span className="text-xs">▼</span>
-                    </div>
-                    {showClasses && (
-                      <div className="absolute z-50 mt-1 w-full max-h-[350px] overflow-y-auto rounded-xl border border-[#d5dff1] bg-white p-4 shadow-[0_10px_30px_rgba(0,0,0,0.1)]">
-                        <div className="flex flex-col gap-5">
-                          {classGroups.map((group) => (
-                            <div key={group.title}>
-                              <div className="mb-2 text-[13px] font-bold text-[#1d3979] border-b border-[#e5edff] pb-1 uppercase tracking-wide">
-                                {group.title}
-                              </div>
-                              <div className="grid grid-cols-2 gap-x-2 gap-y-1 sm:grid-cols-3">
-                                {group.options.map((opt) => (
-                                  <label
-                                    key={opt.value}
-                                    className="flex cursor-pointer items-start gap-2 rounded-lg px-2 py-1.5 hover:bg-[#f3f7ff]"
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      checked={activeClasses.includes(opt.value)}
-                                      onChange={() => toggleClass(opt.value)}
-                                      className="mt-0.5 h-4 w-4 shrink-0 rounded border-[#b1c3e3] text-[#1b4fb6] focus:ring-[#1b4fb6]"
-                                    />
-                                    <span className="text-[13px] font-medium leading-tight text-[#243b72]">
-                                      {opt.label}
-                                    </span>
-                                  </label>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {activeClasses.includes("Khác") && (
-                      <div>
-                        <input
-                          type="text"
-                          ref={otherClassRef}
-                          value={otherClassStr}
-                          onChange={(e) => setOtherClassStr(e.target.value)}
-                          placeholder="Nhập môn/lớp dạy khác..."
-                          className={`${errorInputClass(!!errors.otherClassStr)} mt-3`}
-                        />
-                        {errors.otherClassStr && (
-                          <p className="mt-1 text-xs text-[#cc1f1f]">{errors.otherClassStr}</p>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                  <select
+                    ref={subjectRef}
+                    value={tutorForm.subject}
+                    onChange={(e) => setTutorForm((prev) => ({ ...prev, subject: e.target.value }))}
+                    className={errorInputClass(!!errors.subject)}
+                  >
+                    <option value="">Chọn môn học</option>
+                    <option value="Toán">Toán</option>
+                    <option value="Vật lý">Vật lý</option>
+                    <option value="Hóa học">Hóa học</option>
+                    <option value="Tiếng Anh">Tiếng Anh</option>
+                    <option value="Ngữ văn">Ngữ văn</option>
+                    <option value="Lịch sử">Lịch sử</option>
+                    <option value="Địa lí">Địa lí</option>
+                    <option value="Sinh học">Sinh học</option>
+                    <option value="Tin học">Tin học</option>
+                  </select>
+                  <select
+                    ref={levelRef}
+                    value={tutorForm.level}
+                    onChange={(e) => setTutorForm((prev) => ({ ...prev, level: e.target.value }))}
+                    className={errorInputClass(!!errors.level)}
+                  >
+                    <option value="">Chọn cấp học</option>
+                    <option value="cấp 1">Cấp 1</option>
+                    <option value="cấp 2">Cấp 2</option>
+                    <option value="cấp 3">Cấp 3</option>
+                  </select>
                   <input
                     ref={schoolRef}
                     value={tutorForm.school}
@@ -437,16 +363,50 @@ export default function TutorRegistrationForm({
                     placeholder="Trường đã/đang học"
                     className={errorInputClass(!!errors.school)}
                   />
-                  <input
-                    ref={areaRef}
-                    value={tutorForm.area}
-                    onChange={(e) => setTutorForm((prev) => ({ ...prev, area: e.target.value }))}
-                    placeholder="Khu vực dạy"
-                    className={errorInputClass(!!errors.area)}
-                  />
+                  <div className="relative">
+                    <div
+                      ref={districtDropdownRef}
+                      tabIndex={0}
+                      className={`${errorInputClass(!!errors.districts)} flex items-center justify-between cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#8ab4ff]/60`}
+                      onClick={() => setShowDistricts(!showDistricts)}
+                    >
+                      <span
+                        className={`truncate pr-2 ${
+                          activeDistricts.length > 0 ? "text-[#243b72]" : "text-[#6b7aa0]"
+                        }`}
+                      >
+                        {activeDistricts.length > 0
+                          ? `Đã chọn: ${activeDistricts.join(", ")}`
+                          : "Khu vực dạy (chọn quận TP.HCM)"}
+                      </span>
+                      <span className="text-xs">▼</span>
+                    </div>
+                    {showDistricts && (
+                      <div className="absolute z-50 mt-1 w-full max-h-[320px] overflow-y-auto rounded-xl border border-[#d5dff1] bg-white p-4 shadow-[0_10px_30px_rgba(0,0,0,0.1)]">
+                        <div className="grid grid-cols-2 gap-x-2 gap-y-1 sm:grid-cols-3">
+                          {districtOptions.map((district) => (
+                            <label
+                              key={district}
+                              className="flex cursor-pointer items-start gap-2 rounded-lg px-2 py-1.5 hover:bg-[#f3f7ff]"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={activeDistricts.includes(district)}
+                                onChange={() => toggleDistrict(district)}
+                                className="mt-0.5 h-4 w-4 shrink-0 rounded border-[#b1c3e3] text-[#1b4fb6] focus:ring-[#1b4fb6]"
+                              />
+                              <span className="text-[13px] font-medium leading-tight text-[#243b72]">
+                                {district}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {(errors.classes || errors.school || errors.area) && (
+                {(errors.subject || errors.level || errors.school || errors.districts) && (
                   <p className="mt-3 text-sm font-semibold text-[#cc1f1f]">
                     Vui lòng điền đầy đủ thông tin gia sư.
                   </p>

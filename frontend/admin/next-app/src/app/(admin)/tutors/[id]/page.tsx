@@ -10,6 +10,7 @@ import {
   approveAdminTutor,
   getAdminTutorById,
   rejectAdminTutor,
+  resetAdminTutorPassword,
   updateAdminTutor,
   type AdminTutorDetail,
   type AdminTutorStatus,
@@ -46,6 +47,7 @@ export default function TutorDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
@@ -58,6 +60,7 @@ export default function TutorDetailPage() {
       phone: detail.phone ?? "",
       subjects: detail.subjects.join(", "),
       districts: detail.districts.join(", "),
+      tutorType: detail.tutorType ?? "GIA_SU_TU_DO",
     };
   }, [detail]);
 
@@ -103,6 +106,7 @@ export default function TutorDetailPage() {
     if (!tutorId) return;
     setProcessing(true);
     setActionError(null);
+    setActionMessage(null);
 
     try {
       await approveAdminTutor(tutorId);
@@ -126,6 +130,7 @@ export default function TutorDetailPage() {
 
     setProcessing(true);
     setActionError(null);
+    setActionMessage(null);
 
     try {
       await rejectAdminTutor(tutorId, rejectReason.trim());
@@ -152,6 +157,7 @@ export default function TutorDetailPage() {
     if (!tutorId) return;
     setProcessing(true);
     setActionError(null);
+    setActionMessage(null);
 
     try {
       const updated = await updateAdminTutor(tutorId, payload);
@@ -160,6 +166,32 @@ export default function TutorDetailPage() {
     } catch (err) {
       setActionError(
         err instanceof Error ? err.message : "Không thể cập nhật hồ sơ.",
+      );
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!tutorId) return;
+
+    const confirmed = window.confirm(
+      "Đặt lại mật khẩu tạm và gửi email cho gia sư?",
+    );
+    if (!confirmed) return;
+
+    setProcessing(true);
+    setActionError(null);
+    setActionMessage(null);
+
+    try {
+      await resetAdminTutorPassword(tutorId);
+      const refreshed = await getAdminTutorById(tutorId);
+      setDetail(refreshed);
+      setActionMessage("Đã đặt lại mật khẩu và gửi email cho gia sư.");
+    } catch (err) {
+      setActionError(
+        err instanceof Error ? err.message : "Không thể đặt lại mật khẩu.",
       );
     } finally {
       setProcessing(false);
@@ -226,6 +258,12 @@ export default function TutorDetailPage() {
         </div>
       ) : null}
 
+      {actionMessage ? (
+        <div className="admin-panel" style={{ marginBottom: "1rem" }}>
+          <p style={{ margin: 0, color: "#166534" }}>{actionMessage}</p>
+        </div>
+      ) : null}
+
       <section className="settings-layout">
         <article className="settings-form-card">
           <div className="settings-card-head">
@@ -277,6 +315,14 @@ export default function TutorDetailPage() {
                       <label>Số điện thoại</label>
                       <p style={{ margin: 0, fontWeight: 700 }}>
                         {detail.phone ?? "-"}
+                      </p>
+                    </div>
+                    <div className="settings-field">
+                      <label>Loại gia sư</label>
+                      <p style={{ margin: 0, fontWeight: 700 }}>
+                        {detail.tutorType === "GIA_SU_DAO_TAO"
+                          ? "Gia sư đào tạo"
+                          : "Gia sư tự do"}
                       </p>
                     </div>
                   </div>
@@ -376,6 +422,19 @@ export default function TutorDetailPage() {
                 Hồ sơ đã được xử lý.
               </p>
             )}
+
+            <div style={{ marginTop: "1rem" }}>
+              <button
+                className="admin-btn tonal"
+                disabled={processing}
+                onClick={handleResetPassword}
+                style={{ width: "100%" }}
+                type="button"
+              >
+                <AdminIcon name="lock_reset" />
+                Đặt lại mật khẩu
+              </button>
+            </div>
           </article>
 
           <article className="admin-panel">
@@ -385,6 +444,14 @@ export default function TutorDetailPage() {
             <div
               style={{ marginTop: "0.8rem", display: "grid", gap: "0.6rem" }}
             >
+              <div>
+                <p style={{ margin: 0, color: "#64748b", fontSize: "0.78rem" }}>
+                  Bắt buộc đổi mật khẩu
+                </p>
+                <p style={{ margin: "0.2rem 0 0", fontWeight: 700 }}>
+                  {detail.mustChangePassword ? "Có" : "Không"}
+                </p>
+              </div>
               <div>
                 <p style={{ margin: 0, color: "#64748b", fontSize: "0.78rem" }}>
                   Người duyệt

@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { apiRequestWithAuth, clearStoredSession, getStoredAccessToken } from '@/lib/api';
+import { useProfile } from '@/context/ProfileContext';
 
 function redirectToLogin() {
   clearStoredSession();
@@ -28,10 +29,12 @@ type ClassItem = {
   feePerHour: number;
   schedule: string | null;
   status: string;
+  tutorType: string;
   applicationStatus?: string | null;
 };
 
 export default function ClassList() {
+  const { profile } = useProfile();
   const [maxTuition, setMaxTuition] = useState(500);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
@@ -44,6 +47,18 @@ export default function ClassList() {
   const itemsPerPage = 6;
 
   const applyToClass = async (classId: string) => {
+    const targetClass = classes.find((item) => item.id === classId);
+    if (targetClass) {
+      const isRoleMatch =
+        !profile.tutorType ||
+        targetClass.tutorType === 'ANY' ||
+        targetClass.tutorType === profile.tutorType;
+      if (!isRoleMatch) {
+        setError('Bạn không được phép nhận lớp này do khác loại gia sư.');
+        return;
+      }
+    }
+
     if (!getStoredAccessToken()) {
       redirectToLogin();
       return;
@@ -220,7 +235,17 @@ export default function ClassList() {
         )}
 
         {!isLoading && !error && renderedClasses.length > 0
-          ? renderedClasses.map((cls) => (
+          ? renderedClasses.map((cls) => {
+              const isRoleMatch =
+                !profile.tutorType ||
+                cls.tutorType === 'ANY' ||
+                cls.tutorType === profile.tutorType;
+              const isDisabled =
+                !isRoleMatch ||
+                cls.applicationStatus === 'PENDING' ||
+                applyingId === cls.id;
+
+              return (
               <div className="class-card" key={cls.id}>
                 <div className="card-header">
                   <div className="badges">
@@ -257,16 +282,19 @@ export default function ClassList() {
                 <button
                   className="btn-view-details"
                   onClick={() => applyToClass(cls.id)}
-                  disabled={cls.applicationStatus === 'PENDING' || applyingId === cls.id}
+                  disabled={isDisabled}
                 >
-                  {applyingId === cls.id
+                  {!isRoleMatch
+                    ? 'Không đúng quyền nhận lớp'
+                    : applyingId === cls.id
                     ? 'Đang gửi...'
                     : cls.applicationStatus === 'PENDING'
                       ? '✓ Đã gửi yêu cầu'
                       : 'Đăng ký nhận lớp'}
                 </button>
               </div>
-            ))
+            );
+            })
           : null}
 
         {!isLoading && !error && renderedClasses.length === 0 && (

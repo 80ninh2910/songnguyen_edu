@@ -9,6 +9,7 @@ import "./styles/session-list.css";
 import "./styles/session-form.css";
 import "./styles/session-feedback.css";
 import "./styles/student-progress.css";
+import "./styles/change-password.css";
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   return (

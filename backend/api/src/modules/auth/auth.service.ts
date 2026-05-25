@@ -148,6 +148,7 @@ export const authService = {
       role: "TUTOR",
       email: tutor.email,
       fullName: tutor.fullName,
+      mustChangePassword: tutor.mustChangePassword ?? false,
     });
   },
 
@@ -230,6 +231,7 @@ export const authService = {
       role: "TUTOR",
       email: tutor.email,
       fullName: tutor.fullName,
+      mustChangePassword: tutor.mustChangePassword ?? false,
     };
   },
 };

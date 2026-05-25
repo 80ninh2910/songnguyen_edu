@@ -1133,7 +1133,9 @@ export default function ClassesPage() {
                     }}
                   >
                     {WEEK_DAYS.map((day) => {
-                      const selectedDays = formState.scheduleDays ?? [];
+                      const selectedDays = Array.isArray(formState.scheduleDays)
+                        ? formState.scheduleDays
+                        : [];
                       const checked = selectedDays.includes(day);
                       return (
                         <label
@@ -1151,17 +1153,31 @@ export default function ClassesPage() {
                             checked={checked}
                             onChange={(event) => {
                               if (event.target.checked) {
-                                setFormState((prev) => ({
-                                  ...prev,
-                                  scheduleDays: [...prev.scheduleDays, day],
-                                }));
+                                setFormState((prev) => {
+                                  const prevDays = Array.isArray(
+                                    prev.scheduleDays,
+                                  )
+                                    ? prev.scheduleDays
+                                    : [];
+                                  return {
+                                    ...prev,
+                                    scheduleDays: [...prevDays, day],
+                                  };
+                                });
                               } else {
-                                setFormState((prev) => ({
-                                  ...prev,
-                                  scheduleDays: prev.scheduleDays.filter(
-                                    (item) => item !== day,
-                                  ),
-                                }));
+                                setFormState((prev) => {
+                                  const prevDays = Array.isArray(
+                                    prev.scheduleDays,
+                                  )
+                                    ? prev.scheduleDays
+                                    : [];
+                                  return {
+                                    ...prev,
+                                    scheduleDays: prevDays.filter(
+                                      (item) => item !== day,
+                                    ),
+                                  };
+                                });
                               }
                             }}
                           />

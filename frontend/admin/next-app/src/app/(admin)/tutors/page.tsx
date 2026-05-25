@@ -8,6 +8,7 @@ import { AdminIcon, type AdminIconName } from "@/components/admin/AdminIcon";
 import {
   listAdminTutors,
   type AdminTutorStatus,
+  type AdminTutorType,
   type AdminTutorSummary,
 } from "@/lib/adminApi";
 
@@ -36,6 +37,42 @@ const STATUS_META: Record<
   REJECTED: { label: "TỪ CHỐI", tone: "rejected", dotColor: "#ba1a1a" },
 };
 
+const TUTOR_TYPE_LABELS: Record<AdminTutorType, string> = {
+  GIA_SU_TU_DO: "Gia sư tự do",
+  GIA_SU_DAO_TAO: "Gia sư đào tạo",
+  GIAO_VIEN_TRUNG_TAM: "Giáo viên trung tâm",
+  ANY: "Không giới hạn",
+};
+
+function getTutorTypeBadgeStyle(type: AdminTutorType): React.CSSProperties {
+  switch (type) {
+    case "GIA_SU_TU_DO":
+      return {
+        background: "rgba(37, 99, 235, 0.12)",
+        color: "#1d4ed8",
+        border: "1px solid rgba(37, 99, 235, 0.28)",
+      };
+    case "GIA_SU_DAO_TAO":
+      return {
+        background: "rgba(245, 158, 11, 0.16)",
+        color: "#b45309",
+        border: "1px solid rgba(245, 158, 11, 0.35)",
+      };
+    case "GIAO_VIEN_TRUNG_TAM":
+      return {
+        background: "rgba(16, 185, 129, 0.16)",
+        color: "#047857",
+        border: "1px solid rgba(16, 185, 129, 0.35)",
+      };
+    default:
+      return {
+        background: "rgba(148, 163, 184, 0.2)",
+        color: "#475569",
+        border: "1px solid rgba(148, 163, 184, 0.4)",
+      };
+  }
+}
+
 function getInitials(name: string): string {
   return name
     .split(" ")
@@ -61,6 +98,7 @@ function buildTutorCsv(rows: AdminTutorSummary[]): string {
     "Họ tên",
     "Email",
     "Điện thoại",
+    "Loại gia sư",
     "Trạng thái",
     "Môn dạy",
     "Khu vực",
@@ -74,6 +112,9 @@ function buildTutorCsv(rows: AdminTutorSummary[]): string {
       escapeCsv(row.fullName),
       escapeCsv(row.email),
       escapeCsv(row.phone ?? ""),
+      escapeCsv(
+        row.tutorType ? TUTOR_TYPE_LABELS[row.tutorType] : "-",
+      ),
       escapeCsv(statusLabel),
       escapeCsv(row.subjects.join(", ")),
       escapeCsv(row.districts.join(", ")),
@@ -447,6 +488,7 @@ export default function TutorsPage() {
           <thead>
             <tr>
               <th>Họ tên và thư điện tử</th>
+              <th>Loại gia sư</th>
               <th>Môn dạy</th>
               <th>Khu vực</th>
               <th>Trạng thái</th>
@@ -458,7 +500,7 @@ export default function TutorsPage() {
             {loading ? (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={6}
                   style={{ textAlign: "center", padding: "2rem" }}
                 >
                   Đang tải dữ liệu...
@@ -469,7 +511,7 @@ export default function TutorsPage() {
             {!loading && records.length === 0 ? (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={6}
                   style={{ textAlign: "center", padding: "2rem" }}
                 >
                   Không có gia sư phù hợp.
@@ -489,6 +531,26 @@ export default function TutorsPage() {
                       <p className="table-user-email">{record.email}</p>
                     </div>
                   </div>
+                </td>
+
+                <td>
+                  {record.tutorType ? (
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        padding: "0.15rem 0.6rem",
+                        borderRadius: "999px",
+                        fontSize: "0.78rem",
+                        fontWeight: 700,
+                        ...getTutorTypeBadgeStyle(record.tutorType),
+                      }}
+                    >
+                      {TUTOR_TYPE_LABELS[record.tutorType]}
+                    </span>
+                  ) : (
+                    "-"
+                  )}
                 </td>
 
                 <td>

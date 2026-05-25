@@ -86,6 +86,7 @@ export const CreateTutorBodySchema = z.object({
   phone: z.string().trim().min(3).max(30).optional(),
   subjects: TutorSubjectsSchema,
   districts: TutorDistrictsSchema,
+  tutorType: z.enum(["GIA_SU_TU_DO", "GIA_SU_DAO_TAO"]).optional(),
 });
 
 export const CreateCenterTeacherBodySchema = z.object({
@@ -104,6 +105,7 @@ export const UpdateTutorBodySchema = z
     phone: z.string().trim().min(3).max(30).optional(),
     subjects: TutorSubjectsSchema.optional(),
     districts: TutorDistrictsSchema.optional(),
+    tutorType: z.enum(["GIA_SU_TU_DO", "GIA_SU_DAO_TAO"]).optional(),
   })
   .refine((value) => Object.keys(value).length > 0, {
     message: "At least one field is required",

@@ -28,6 +28,7 @@ const authUserSchema = {
     role: { type: "string", enum: ["ADMIN", "SUPERADMIN", "TUTOR"] },
     email: { type: "string", format: "email" },
     fullName: { type: "string" },
+    mustChangePassword: { type: "boolean" },
   },
 };
 

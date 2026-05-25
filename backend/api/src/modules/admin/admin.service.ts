@@ -333,8 +333,10 @@ export const adminService = {
       email: string;
       phone: string | null;
       status: TutorApprovalStatus;
+      tutorType: "GIA_SU_TU_DO" | "GIA_SU_DAO_TAO" | "GIAO_VIEN_TRUNG_TAM" | "ANY";
       subjects: string[];
       districts: string[];
+      mustChangePassword: boolean;
       createdAt: Date;
       approvedAt: Date | null;
     }>;
@@ -402,8 +404,10 @@ export const adminService = {
           email: true,
           phone: true,
           status: true,
+          tutorType: true,
           subjects: true,
           districts: true,
+          mustChangePassword: true,
           createdAt: true,
           approvedAt: true,
         },
@@ -525,9 +529,10 @@ export const adminService = {
       phone?: string;
       subjects: string[];
       districts: string[];
+      tutorType?: "GIA_SU_TU_DO" | "GIA_SU_DAO_TAO";
     },
   ): Promise<{ id: string }> {
-    const tempPassword = generateTempPassword();
+    const tempPassword = "123456";
     const passwordHash = await hashPassword(tempPassword);
     const actorName = await resolveActorName(actor);
 
@@ -540,10 +545,12 @@ export const adminService = {
             phone: body.phone ?? null,
             subjects: body.subjects,
             districts: body.districts,
+            tutorType: body.tutorType,
             status: "APPROVED",
             approvedAt: new Date(),
             approvedById: actor.id,
             passwordHash,
+            mustChangePassword: true,
           },
           select: {
             id: true,
@@ -591,6 +598,7 @@ export const adminService = {
       phone?: string;
       subjects?: string[];
       districts?: string[];
+      tutorType?: "GIA_SU_TU_DO" | "GIA_SU_DAO_TAO";
     },
   ): Promise<{
     id: string;
@@ -617,6 +625,7 @@ export const adminService = {
         fullName: true,
         email: true,
         phone: true,
+        tutorType: true,
         subjects: true,
         districts: true,
       },
@@ -648,6 +657,10 @@ export const adminService = {
       data.districts = body.districts;
     }
 
+    if (body.tutorType !== undefined) {
+      data.tutorType = body.tutorType;
+    }
+
     const actorName = await resolveActorName(actor);
 
     try {
@@ -660,6 +673,7 @@ export const adminService = {
             fullName: true,
             email: true,
             phone: true,
+            tutorType: true,
             subjects: true,
             districts: true,
           },
@@ -678,6 +692,7 @@ export const adminService = {
                 fullName: result.fullName,
                 email: result.email,
                 phone: result.phone,
+                tutorType: result.tutorType,
                 subjects: result.subjects,
                 districts: result.districts,
               },
@@ -720,14 +735,57 @@ export const adminService = {
     }
   },
 
+  async resetTutorPassword(
+    actor: AdminActor,
+    tutorId: string,
+  ): Promise<{ tutorId: string }> {
+    const tutor = await prisma.tutor.findUnique({
+      where: { id: tutorId },
+      select: { id: true, email: true, fullName: true },
+    });
+
+    if (!tutor) {
+      throw new AppError("TUTOR_NOT_FOUND", 404, "Tutor not found");
+    }
+
+    const tempPassword = "123456";
+    const passwordHash = await hashPassword(tempPassword);
+    const actorName = await resolveActorName(actor);
+
+    await prisma.$transaction(async (tx: any) => {
+      await tx.tutor.update({
+        where: { id: tutorId },
+        data: {
+          passwordHash,
+          mustChangePassword: true,
+        },
+      });
+
+      await auditLogService.log(
+        {
+          actorId: actor.id,
+          actorName,
+          action: "RESET_TUTOR_PASSWORD",
+          targetType: "TUTOR",
+          targetId: tutorId,
+        },
+        tx,
+      );
+    });
+
+    return { tutorId };
+  },
+
   async getTutorById(tutorId: string): Promise<{
     id: string;
     fullName: string;
     email: string;
     phone: string | null;
     status: TutorApprovalStatus;
+    tutorType: "GIA_SU_TU_DO" | "GIA_SU_DAO_TAO" | "GIAO_VIEN_TRUNG_TAM" | "ANY";
     subjects: string[];
     districts: string[];
+    mustChangePassword: boolean;
     rejectReason: string | null;
     approvedAt: Date | null;
     approvedBy: { id: string; fullName: string } | null;
@@ -800,6 +858,7 @@ export const adminService = {
           approvedAt: new Date(),
           approvedById: actor.id,
           passwordHash,
+          mustChangePassword: true,
         },
       });
 

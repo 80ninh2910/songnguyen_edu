@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyRequest } from "fastify";
 
 import { AppError } from "../../common/errors/AppError.js";
 import { errorResponseSchema, successSchema } from "../../common/utils/docs.js";
+import { comparePassword, hashPassword } from "../../common/utils/password.js";
 import { success } from "../../common/utils/response.js";
 import { prisma } from "../../config/prisma.js";
 
@@ -104,6 +105,15 @@ const feedbackUpdateBodySchema = {
   },
 };
 
+const changePasswordBodySchema = {
+  type: "object",
+  required: ["currentPassword", "newPassword"],
+  properties: {
+    currentPassword: { type: "string", minLength: 6 },
+    newPassword: { type: "string", minLength: 6 },
+  },
+};
+
 const attendanceValues = ["PRESENT", "ABSENT", "LATE", "EXCUSED"] as const;
 
 function parseSessionDate(value: string): Date {
@@ -127,6 +137,29 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
 
     if (!request.user || request.user.role !== "TUTOR") {
       throw new AppError("FORBIDDEN", 403, "Insufficient permission");
+    }
+  };
+
+  const requireTutorWithPassword = async (
+    request: FastifyRequest,
+  ): Promise<void> => {
+    await requireTutor(request);
+
+    const tutor = await prisma.tutor.findUnique({
+      where: { id: request.user!.sub },
+      select: { mustChangePassword: true },
+    });
+
+    if (!tutor) {
+      throw new AppError("TUTOR_NOT_FOUND", 404, "Tutor not found");
+    }
+
+    if (tutor.mustChangePassword) {
+      throw new AppError(
+        "PASSWORD_RESET_REQUIRED",
+        403,
+        "Password change required",
+      );
     }
   };
 
@@ -178,6 +211,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
           fullName: true,
           email: true,
           phone: true,
+          tutorType: true,
           status: true,
           subjects: true,
           districts: true,
@@ -189,6 +223,60 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
       }
 
       void reply.send(success(tutor));
+    },
+  );
+
+  app.post(
+    "/password",
+    {
+      preHandler: requireTutor,
+      schema: {
+        tags: ["Tutor"],
+        summary: "Change tutor password",
+        body: changePasswordBodySchema,
+        response: {
+          200: successSchema({
+            type: "object",
+            required: ["updated"],
+            properties: { updated: { type: "boolean" } },
+          }),
+          400: errorResponseSchema,
+          401: errorResponseSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const body = request.body as {
+        currentPassword: string;
+        newPassword: string;
+      };
+
+      const tutor = await prisma.tutor.findUnique({
+        where: { id: request.user!.sub },
+        select: { id: true, passwordHash: true },
+      });
+
+      if (!tutor || !tutor.passwordHash) {
+        throw new AppError("TUTOR_NOT_FOUND", 404, "Tutor not found");
+      }
+
+      const isValidPassword = await comparePassword(
+        body.currentPassword,
+        tutor.passwordHash,
+      );
+
+      if (!isValidPassword) {
+        throw new AppError("INVALID_CREDENTIALS", 401, "Invalid password");
+      }
+
+      const newPasswordHash = await hashPassword(body.newPassword);
+
+      await prisma.tutor.update({
+        where: { id: tutor.id },
+        data: { passwordHash: newPasswordHash, mustChangePassword: false },
+      });
+
+      void reply.send(success({ updated: true }));
     },
   );
 
@@ -234,6 +322,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
           fullName: true,
           email: true,
           phone: true,
+          tutorType: true,
           status: true,
           subjects: true,
           districts: true,
@@ -247,7 +336,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
   app.get(
     "/classes",
     {
-      preHandler: requireTutor,
+      preHandler: requireTutorWithPassword,
       schema: {
         tags: ["Tutor"],
         summary: "List available classes for tutor",
@@ -260,8 +349,28 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
       },
     },
     async (request, reply) => {
+      const tutor = await prisma.tutor.findUnique({
+        where: { id: request.user!.sub },
+        select: { id: true, status: true, tutorType: true },
+      });
+
+      if (!tutor) {
+        throw new AppError("TUTOR_NOT_FOUND", 404, "Tutor not found");
+      }
+
+      if (tutor.status !== "APPROVED") {
+        throw new AppError(
+          "TUTOR_NOT_APPROVED",
+          403,
+          "Tutor account is not approved yet",
+        );
+      }
+
       const classes = await prisma.class.findMany({
-        where: { status: "OPEN" },
+        where: {
+          status: "OPEN",
+          OR: [{ tutorType: tutor.tutorType }, { tutorType: "ANY" }],
+        },
         orderBy: { createdAt: "desc" },
         select: {
           id: true,
@@ -272,6 +381,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
           feePerHour: true,
           schedule: true,
           status: true,
+          tutorType: true,
           applications: {
             where: { tutorId: request.user!.sub },
             select: { status: true },
@@ -288,6 +398,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
         feePerHour: item.feePerHour,
         schedule: item.schedule,
         status: item.status,
+        tutorType: item.tutorType,
         applicationStatus: item.applications[0]?.status ?? null,
       }));
 
@@ -299,7 +410,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
   app.get(
     "/classes/:classId/apply",
     {
-      preHandler: requireTutor,
+      preHandler: requireTutorWithPassword,
       schema: {
         tags: ["Tutor"],
         summary: "Get application status for a class",
@@ -331,7 +442,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
   app.post(
     "/classes/:classId/apply",
     {
-      preHandler: requireTutor,
+      preHandler: requireTutorWithPassword,
       schema: {
         tags: ["Tutor"],
         summary: "Apply to a class",
@@ -361,7 +472,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
       // Guard: ensure tutor record still exists (handles stale JWT tokens)
       const tutorExists = await prisma.tutor.findUnique({
         where: { id: tutorId },
-        select: { id: true, status: true },
+        select: { id: true, status: true, tutorType: true },
       });
 
       if (!tutorExists) {
@@ -374,7 +485,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
 
       const existingClass = await prisma.class.findUnique({
         where: { id: classId },
-        select: { id: true, status: true },
+        select: { id: true, status: true, tutorType: true },
       });
 
       if (!existingClass || existingClass.status !== "OPEN") {
@@ -382,6 +493,17 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
           "CLASS_NOT_AVAILABLE",
           400,
           "Class is not available",
+        );
+      }
+
+      if (
+        existingClass.tutorType !== "ANY" &&
+        existingClass.tutorType !== tutorExists.tutorType
+      ) {
+        throw new AppError(
+          "CLASS_NOT_AVAILABLE_FOR_TUTOR",
+          403,
+          "Class is not available for this tutor type",
         );
       }
 
@@ -407,7 +529,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
   app.delete(
     "/classes/:classId/apply",
     {
-      preHandler: requireTutor,
+      preHandler: requireTutorWithPassword,
       schema: {
         tags: ["Tutor"],
         summary: "Cancel class application",
@@ -457,7 +579,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
   app.get(
     "/applications",
     {
-      preHandler: requireTutor,
+      preHandler: requireTutorWithPassword,
       schema: {
         tags: ["Tutor"],
         summary: "List tutor applications",
@@ -502,7 +624,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
   app.get(
     "/classes/:classId/sessions",
     {
-      preHandler: requireTutor,
+      preHandler: requireTutorWithPassword,
       schema: {
         tags: ["Tutor"],
         summary: "List sessions for assigned class",
@@ -552,7 +674,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
   app.post(
     "/classes/:classId/sessions",
     {
-      preHandler: requireTutor,
+      preHandler: requireTutorWithPassword,
       schema: {
         tags: ["Tutor"],
         summary: "Create class session",
@@ -607,7 +729,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
   app.get(
     "/sessions/:sessionId",
     {
-      preHandler: requireTutor,
+      preHandler: requireTutorWithPassword,
       schema: {
         tags: ["Tutor"],
         summary: "Get session detail",
@@ -666,7 +788,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
   app.patch(
     "/sessions/:sessionId",
     {
-      preHandler: requireTutor,
+      preHandler: requireTutorWithPassword,
       schema: {
         tags: ["Tutor"],
         summary: "Update session detail",
@@ -730,7 +852,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
   app.patch(
     "/sessions/:sessionId/complete",
     {
-      preHandler: requireTutor,
+      preHandler: requireTutorWithPassword,
       schema: {
         tags: ["Tutor"],
         summary: "Complete session when all feedbacks are submitted",
@@ -793,7 +915,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
   app.get(
     "/sessions/:sessionId/feedbacks",
     {
-      preHandler: requireTutor,
+      preHandler: requireTutorWithPassword,
       schema: {
         tags: ["Tutor"],
         summary: "List feedbacks for a session",
@@ -850,7 +972,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
   app.post(
     "/sessions/:sessionId/feedbacks",
     {
-      preHandler: requireTutor,
+      preHandler: requireTutorWithPassword,
       schema: {
         tags: ["Tutor"],
         summary: "Submit feedbacks for a session",
@@ -981,7 +1103,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
   app.patch(
     "/feedbacks/:feedbackId",
     {
-      preHandler: requireTutor,
+      preHandler: requireTutorWithPassword,
       schema: {
         tags: ["Tutor"],
         summary: "Update feedback",
@@ -1058,7 +1180,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
   app.get(
     "/classes/:classId/members/:memberId/progress",
     {
-      preHandler: requireTutor,
+      preHandler: requireTutorWithPassword,
       schema: {
         tags: ["Tutor"],
         summary: "Get member progress for a class",
@@ -1156,7 +1278,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
   app.post(
     "/payments",
     {
-      preHandler: requireTutor,
+      preHandler: requireTutorWithPassword,
       schema: {
         tags: ["Tutor"],
         summary: "Submit payment proof",
@@ -1209,7 +1331,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
   app.get(
     "/payments",
     {
-      preHandler: requireTutor,
+      preHandler: requireTutorWithPassword,
       schema: {
         tags: ["Tutor"],
         summary: "List tutor payment submissions",

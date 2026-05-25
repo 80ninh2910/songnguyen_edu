@@ -73,8 +73,10 @@ export type AdminTutorSummary = {
   email: string;
   phone: string | null;
   status: AdminTutorStatus;
+  tutorType?: AdminTutorType;
   subjects: string[];
   districts: string[];
+  mustChangePassword?: boolean;
   createdAt: string;
   approvedAt: string | null;
 };
@@ -85,8 +87,10 @@ export type AdminTutorDetail = {
   email: string;
   phone: string | null;
   status: AdminTutorStatus;
+  tutorType?: AdminTutorType;
   subjects: string[];
   districts: string[];
+  mustChangePassword?: boolean;
   rejectReason: string | null;
   approvedAt: string | null;
   approvedBy: { id: string; fullName: string } | null;
@@ -266,6 +270,7 @@ export type AdminTutorCreatePayload = {
   phone?: string;
   subjects: string[];
   districts: string[];
+  tutorType?: AdminTutorType;
 };
 
 export type AdminTutorUpdatePayload = Partial<AdminTutorCreatePayload>;
@@ -800,6 +805,16 @@ export async function rejectAdminTutor(
 
   if (!response.ok) {
     throw new Error("Không thể từ chối gia sư.");
+  }
+}
+
+export async function resetAdminTutorPassword(id: string): Promise<void> {
+  const response = await adminFetch(`/admin/tutors/${id}/reset-password`, {
+    method: "POST",
+  });
+
+  if (!response.ok) {
+    throw new Error("Không thể đặt lại mật khẩu gia sư.");
   }
 }
 
