@@ -67,6 +67,7 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
       email: string;
       phone: string | null;
       status: string;
+      tutorType?: string;
       subjects: string[];
       districts: string[];
     }>("/tutor/profile")
