@@ -148,6 +148,7 @@ export const ConvertRequestBodySchema = z.object({
   feePerHour: z.number().int().positive().optional(),
   schedule: z.string().trim().min(3).max(200).optional(),
   centerTeacherId: z.string().uuid().optional(),
+  classId: z.string().uuid().optional(),
 });
 
 export const RejectRequestBodySchema = z.object({
@@ -183,6 +184,19 @@ export const CreateClassBodySchema = z.object({
     ])
     .optional(),
   centerTeacherId: z.string().uuid().optional(),
+  members: z
+    .array(
+      z.object({
+        studentName: z.string().trim().min(2).max(200),
+        studentGrade: z.string().trim().min(1).max(100).optional(),
+        parentName: z.string().trim().min(2).max(200),
+        parentPhone: z.string().trim().min(3).max(30),
+        parentEmail: z.string().trim().email().max(200).optional(),
+        address: z.string().trim().min(3).max(300).optional(),
+      }),
+    )
+    .min(1)
+    .optional(),
 });
 
 export const UpdateClassBodySchema = z

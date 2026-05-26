@@ -25,6 +25,7 @@ import {
   type AdminClassStatus,
   type AdminClassSummary,
   type AdminClassType,
+  type AdminClassMemberInput,
   type AdminCenterTeacherSummary,
   type AdminTutorType,
 } from "@/lib/adminApi";
@@ -64,6 +65,8 @@ type ClassFormState = {
   classType: "" | AdminClassType;
   tutorType: "" | AdminTutorType;
   centerTeacherId: string;
+  centerDistricts: string[];
+  members: AdminClassMemberInput[];
 };
 
 const emptyClassForm: ClassFormState = {
@@ -76,6 +79,8 @@ const emptyClassForm: ClassFormState = {
   classType: "",
   tutorType: "",
   centerTeacherId: "",
+  centerDistricts: [],
+  members: [],
 };
 
 const buildClassForm = (detail?: AdminClassDetail | null): ClassFormState => {
@@ -100,8 +105,48 @@ const buildClassForm = (detail?: AdminClassDetail | null): ClassFormState => {
     classType: detail.classType,
     tutorType: detail.tutorType,
     centerTeacherId: detail.centerTeacherId ?? "",
+    centerDistricts: [],
+    members: [],
   };
 };
+
+const DISTRICT_OPTIONS = [
+  "Quận 1",
+  "Quận 3",
+  "Quận 4",
+  "Quận 5",
+  "Quận 6",
+  "Quận 7",
+  "Quận 8",
+  "Quận 10",
+  "Quận 11",
+  "Quận 12",
+  "Quận Bình Tân",
+  "Quận Bình Thạnh",
+  "Quận Gò Vấp",
+  "Quận Phú Nhuận",
+  "Quận Tân Bình",
+  "Quận Tân Phú",
+  "TP Thủ Đức",
+];
+
+const CENTER_DISTRICT_OPTIONS = ["Quận 12", "Quận Gò Vấp"];
+
+const formatVndInput = (value: string): string => {
+  if (!value) return "";
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return value;
+  return new Intl.NumberFormat("vi-VN").format(numeric);
+};
+
+const createEmptyMember = (): AdminClassMemberInput => ({
+  studentName: "",
+  studentGrade: "",
+  parentName: "",
+  parentPhone: "",
+  parentEmail: "",
+  address: "",
+});
 
 function formatDate(value?: string | null): string {
   if (!value) return "-";
@@ -110,9 +155,10 @@ function formatDate(value?: string | null): string {
   return date.toLocaleDateString("vi-VN");
 }
 
-function formatCurrency(value?: number | null): string {
+function formatCurrency(value?: number | null, classType?: AdminClassType): string {
   if (!value) return "-";
-  return `${new Intl.NumberFormat("vi-VN").format(value)}đ/buổi`;
+  const suffix = classType === "LOP_TRUNG_TAM" ? "/tháng" : "/buổi";
+  return `${new Intl.NumberFormat("vi-VN").format(value)}đ${suffix}`;
 }
 
 function formatVnd(value: string): string {
@@ -520,6 +566,7 @@ export default function ClassesPage() {
     void loadCenterTeachers();
   }, [formState.classType, isFormOpen, loadCenterTeachers]);
 
+
   const handleSubmitForm = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -530,7 +577,10 @@ export default function ClassesPage() {
     const title = formState.title.trim();
     const subject = formState.subject.trim();
     const grade = formState.grade.trim();
-    const district = formState.district.trim();
+    const district =
+      formState.classType === "LOP_TRUNG_TAM"
+        ? formState.centerDistricts.join(", ")
+        : formState.district.trim();
     const feeValue = Number(formState.feePerHour);
     const classType = formState.classType;
     const centerTeacherId = formState.centerTeacherId;
@@ -566,6 +616,25 @@ export default function ClassesPage() {
       return;
     }
 
+    if (classType === "LOP_TRUNG_TAM" && formMode === "create") {
+      if (!formState.members.length) {
+        showToast("error", "Vui lòng tạo ít nhất 1 học viên.");
+        return;
+      }
+
+      const invalidMember = formState.members.some((member) => {
+        const studentName = member.studentName.trim();
+        const parentName = member.parentName.trim();
+        const parentPhone = member.parentPhone.trim();
+        return !studentName || !parentName || !parentPhone;
+      });
+
+      if (invalidMember) {
+        showToast("error", "Vui lòng nhập đầy đủ tên học viên, phụ huynh và SĐT.");
+        return;
+      }
+    }
+
     if (formMode === "create") {
       if (!subject || !grade || !district) {
         showToast("error", "Vui lòng nhập đầy đủ môn, lớp và khu vực.");
@@ -591,6 +660,18 @@ export default function ClassesPage() {
           classType,
           tutorType: derivedTutorType,
           centerTeacherId: classType === "LOP_TRUNG_TAM" ? centerTeacherId : null,
+          district,
+          members:
+            classType === "LOP_TRUNG_TAM"
+              ? formState.members.map((member) => ({
+                  studentName: member.studentName.trim(),
+                  studentGrade: member.studentGrade?.trim() || undefined,
+                  parentName: member.parentName.trim(),
+                  parentPhone: member.parentPhone.trim(),
+                  parentEmail: member.parentEmail?.trim() || undefined,
+                  address: member.address?.trim() || undefined,
+                }))
+              : undefined,
         });
         createdId = result.id;
         showToast("success", "Đã tạo lớp học mới.");
@@ -868,7 +949,7 @@ export default function ClassesPage() {
                         {record.subject} - {record.grade}
                       </td>
                       <td>{record.district}</td>
-                      <td>{formatCurrency(record.feePerHour)}</td>
+                      <td>{formatCurrency(record.feePerHour, record.classType)}</td>
                       <td>
                         <span
                           style={{
@@ -1094,21 +1175,62 @@ export default function ClassesPage() {
 
                 <label className="admin-dialog-field">
                   Khu vực
-                  <input
-                    disabled={formMode === "edit"}
-                    onChange={(event) =>
-                      setFormState((prev) => ({
-                        ...prev,
-                        district: event.target.value,
-                      }))
-                    }
-                    type="text"
-                    value={formState.district}
-                  />
+                  {formState.classType === "LOP_TRUNG_TAM" ? (
+                    <div
+                      style={{
+                        display: "grid",
+                        gap: "0.5rem",
+                        marginTop: "0.35rem",
+                      }}
+                    >
+                      {CENTER_DISTRICT_OPTIONS.map((item) => {
+                        const checked = formState.centerDistricts.includes(item);
+                        return (
+                          <label key={item} style={{ display: "flex", gap: "0.45rem" }}>
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={(event) =>
+                                setFormState((prev) => ({
+                                  ...prev,
+                                  centerDistricts: event.target.checked
+                                    ? [...prev.centerDistricts, item]
+                                    : prev.centerDistricts.filter(
+                                        (value) => value !== item,
+                                      ),
+                                }))
+                              }
+                            />
+                            {item}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <select
+                      disabled={formMode === "edit"}
+                      onChange={(event) =>
+                        setFormState((prev) => ({
+                          ...prev,
+                          district: event.target.value,
+                        }))
+                      }
+                      value={formState.district}
+                    >
+                      <option value="">Chọn quận</option>
+                      {DISTRICT_OPTIONS.map((item) => (
+                        <option key={item} value={item}>
+                          {item}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </label>
 
                 <label className="admin-dialog-field">
-                  Học phí/buổi
+                  {formState.classType === "LOP_TRUNG_TAM"
+                    ? "Học phí/tháng"
+                    : "Học phí/buổi"}
                   <input
                     onChange={(event) =>
                       setFormState((prev) => ({
@@ -1118,8 +1240,13 @@ export default function ClassesPage() {
                     }
                     inputMode="numeric"
                     type="text"
-                    value={formatVnd(formState.feePerHour)}
+                    value={formState.feePerHour}
                   />
+                  {formState.feePerHour ? (
+                    <span style={{ fontSize: "0.78rem", color: "#64748b" }}>
+                      {formatVndInput(formState.feePerHour)} VND
+                    </span>
+                  ) : null}
                 </label>
 
                 <label className="admin-dialog-field admin-dialog-field-full">
@@ -1219,6 +1346,192 @@ export default function ClassesPage() {
                     ) : null}
                   </label>
                 ) : null}
+
+                {formMode === "create" && formState.classType === "LOP_TRUNG_TAM" ? (
+                  <div className="admin-dialog-field admin-dialog-field-full">
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        marginBottom: "0.75rem",
+                      }}
+                    >
+                      <div>
+                        <p style={{ margin: 0, fontWeight: 700 }}>Danh sách học viên</p>
+                        <p style={{ margin: 0, color: "#64748b", fontSize: "0.85rem" }}>
+                          Thêm học viên trước khi tạo lớp trung tâm.
+                        </p>
+                      </div>
+                      <button
+                        className="admin-btn tonal"
+                        type="button"
+                        onClick={() =>
+                          setFormState((prev) => ({
+                            ...prev,
+                            members: [...prev.members, createEmptyMember()],
+                          }))
+                        }
+                      >
+                        + Thêm học viên
+                      </button>
+                    </div>
+
+                    {formState.members.length === 0 ? (
+                      <div className="admin-panel soft" style={{ padding: "0.9rem" }}>
+                        <p style={{ margin: 0, color: "#64748b" }}>
+                          Chưa có học viên. Vui lòng thêm ít nhất 1 học viên.
+                        </p>
+                      </div>
+                    ) : (
+                      <div style={{ display: "grid", gap: "0.75rem" }}>
+                        {formState.members.map((member, index) => (
+                          <div
+                            key={`member-${index}`}
+                            className="admin-panel soft"
+                            style={{ padding: "1rem" }}
+                          >
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                marginBottom: "0.75rem",
+                              }}
+                            >
+                              <p style={{ margin: 0, fontWeight: 700 }}>
+                                Hoc vien {index + 1}
+                              </p>
+                              <button
+                                className="admin-btn ghost"
+                                type="button"
+                                onClick={() =>
+                                  setFormState((prev) => ({
+                                    ...prev,
+                                    members: prev.members.filter((_, idx) => idx !== index),
+                                  }))
+                                }
+                              >
+                                Xoa
+                              </button>
+                            </div>
+
+                            <div
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                                gap: "0.75rem",
+                              }}
+                            >
+                              <label className="admin-dialog-field">
+                                Ten hoc vien
+                                <input
+                                  type="text"
+                                  value={member.studentName}
+                                  onChange={(event) =>
+                                    setFormState((prev) => ({
+                                      ...prev,
+                                      members: prev.members.map((item, idx) =>
+                                        idx === index
+                                          ? { ...item, studentName: event.target.value }
+                                          : item,
+                                      ),
+                                    }))
+                                  }
+                                />
+                              </label>
+                              <label className="admin-dialog-field">
+                                Lop hoc
+                                <input
+                                  type="text"
+                                  value={member.studentGrade ?? ""}
+                                  onChange={(event) =>
+                                    setFormState((prev) => ({
+                                      ...prev,
+                                      members: prev.members.map((item, idx) =>
+                                        idx === index
+                                          ? { ...item, studentGrade: event.target.value }
+                                          : item,
+                                      ),
+                                    }))
+                                  }
+                                />
+                              </label>
+                              <label className="admin-dialog-field">
+                                Ten phu huynh
+                                <input
+                                  type="text"
+                                  value={member.parentName}
+                                  onChange={(event) =>
+                                    setFormState((prev) => ({
+                                      ...prev,
+                                      members: prev.members.map((item, idx) =>
+                                        idx === index
+                                          ? { ...item, parentName: event.target.value }
+                                          : item,
+                                      ),
+                                    }))
+                                  }
+                                />
+                              </label>
+                              <label className="admin-dialog-field">
+                                So dien thoai
+                                <input
+                                  type="text"
+                                  value={member.parentPhone}
+                                  onChange={(event) =>
+                                    setFormState((prev) => ({
+                                      ...prev,
+                                      members: prev.members.map((item, idx) =>
+                                        idx === index
+                                          ? { ...item, parentPhone: event.target.value }
+                                          : item,
+                                      ),
+                                    }))
+                                  }
+                                />
+                              </label>
+                              <label className="admin-dialog-field">
+                                Email phu huynh (tuy chon)
+                                <input
+                                  type="email"
+                                  value={member.parentEmail ?? ""}
+                                  onChange={(event) =>
+                                    setFormState((prev) => ({
+                                      ...prev,
+                                      members: prev.members.map((item, idx) =>
+                                        idx === index
+                                          ? { ...item, parentEmail: event.target.value }
+                                          : item,
+                                      ),
+                                    }))
+                                  }
+                                />
+                              </label>
+                              <label className="admin-dialog-field">
+                                Dia chi (tuy chon)
+                                <input
+                                  type="text"
+                                  value={member.address ?? ""}
+                                  onChange={(event) =>
+                                    setFormState((prev) => ({
+                                      ...prev,
+                                      members: prev.members.map((item, idx) =>
+                                        idx === index
+                                          ? { ...item, address: event.target.value }
+                                          : item,
+                                      ),
+                                    }))
+                                  }
+                                />
+                              </label>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : null}
               </div>
 
               <div className="admin-dialog-actions">
@@ -1286,6 +1599,7 @@ export default function ClassesPage() {
         </div>
       ) : null}
 
+
       {isDetailOpen ? (
         <div className="admin-dialog-backdrop" role="dialog" aria-modal>
           <div className="admin-dialog" style={{ maxWidth: "72rem" }}>
@@ -1306,6 +1620,18 @@ export default function ClassesPage() {
             </div>
 
             <div className="admin-dialog-body" style={{ paddingTop: 0 }}>
+              {detail?.classType === "LOP_TRUNG_TAM" ? (
+                <div style={{ marginBottom: "1rem" }}>
+                  <button
+                    className="admin-btn tonal"
+                    type="button"
+                    onClick={() => router.push(`/classes/${detail.id}/sessions`)}
+                  >
+                    <AdminIcon name="calendar_month" />
+                    Xem danh sách buổi học
+                  </button>
+                </div>
+              ) : null}
               {selectedMeta ? (
                 <div style={{ marginBottom: "1rem" }}>
                   <AdminStatusBadge
@@ -1373,7 +1699,7 @@ export default function ClassesPage() {
                       <div>
                         <p className="payments-info-label">Học phí</p>
                         <p className="payments-info-value">
-                          {formatCurrency(detail.feePerHour)}
+                          {formatCurrency(detail.feePerHour, detail.classType)}
                         </p>
                       </div>
                       <div>

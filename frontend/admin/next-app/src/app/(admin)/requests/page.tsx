@@ -21,13 +21,11 @@ import {
   listAdminClassApplicants,
   assignAdminClass,
   rejectAdminClassApplicant,
-  listAdminCenterTeachers,
   type AdminClassRequestDetail,
   type AdminClassRequestStatus,
   type AdminClassRequestSummary,
   type AdminClassSummary,
   type AdminClassApplicant,
-  type AdminCenterTeacherSummary,
   type AdminRequestType,
   type AdminTutorType,
 } from "@/lib/adminApi";
@@ -54,14 +52,14 @@ type ConvertForm = {
   title: string;
   feePerHour: string;
   scheduleDays: string[];
-  centerTeacherId: string;
+  classId: string;
 };
 
 const emptyConvertForm: ConvertForm = {
   title: "",
   feePerHour: "",
   scheduleDays: [],
-  centerTeacherId: "",
+  classId: "",
 };
 
 function buildConvertForm(
@@ -75,7 +73,7 @@ function buildConvertForm(
     title: `${detail.subject} ${detail.grade}`.trim(),
     feePerHour: detail.budgetPerHour ? String(detail.budgetPerHour) : "",
     scheduleDays: [],
-    centerTeacherId: "",
+    classId: detail.assignedClass?.id ?? "",
   };
 }
 
@@ -119,7 +117,16 @@ function formatDate(value?: string | null): string {
 
 function formatCurrency(value?: number | null): string {
   if (!value) return "-";
-  return `${new Intl.NumberFormat("vi-VN").format(value)}đ/buổi`;
+  return `${new Intl.NumberFormat("vi-VN").format(value)}đ`;
+}
+
+function formatRequestBudget(
+  value: number | null | undefined,
+  requestType: AdminRequestType,
+): string {
+  if (!value) return "-";
+  const suffix = requestType === "TRUNG_TAM" ? "/tháng" : "/buổi";
+  return `${formatCurrency(value)}${suffix}`;
 }
 
 function formatRequestCode(id: string): string {
@@ -204,9 +211,9 @@ function ParentRequestsTab({
   const [rejectReason, setRejectReason] = useState("");
   const [convertLoading, setConvertLoading] = useState(false);
   const [rejectLoading, setRejectLoading] = useState(false);
-  const [centerTeachers, setCenterTeachers] = useState<AdminCenterTeacherSummary[]>([]);
-  const [centerTeachersLoading, setCenterTeachersLoading] = useState(false);
-  const [centerTeachersError, setCenterTeachersError] = useState<string | null>(null);
+  const [centerClasses, setCenterClasses] = useState<AdminClassSummary[]>([]);
+  const [centerClassesLoading, setCenterClassesLoading] = useState(false);
+  const [centerClassesError, setCenterClassesError] = useState<string | null>(null);
 
   const statusFilter = useMemo(() => {
     return status === "all" ? undefined : (status as AdminClassRequestStatus);
@@ -298,21 +305,26 @@ function ParentRequestsTab({
     }
   }, [requestTypeFilter]);
 
-  const loadCenterTeachers = useCallback(async () => {
-    setCenterTeachersLoading(true);
-    setCenterTeachersError(null);
+  const loadCenterClasses = useCallback(async () => {
+    setCenterClassesLoading(true);
+    setCenterClassesError(null);
     try {
-      const response = await listAdminCenterTeachers({ page: 1, limit: 100 });
-      setCenterTeachers(response.data);
+      const response = await listAdminClasses({
+        page: 1,
+        limit: 100,
+        status: "OPEN",
+        classType: "LOP_TRUNG_TAM",
+      });
+      setCenterClasses(response.data);
     } catch (err) {
-      setCenterTeachersError(
+      setCenterClassesError(
         err instanceof Error
           ? err.message
-          : "Không thể tải danh sách giáo viên trung tâm.",
+          : "Không thể tải danh sách lớp trung tâm.",
       );
-      setCenterTeachers([]);
+      setCenterClasses([]);
     } finally {
-      setCenterTeachersLoading(false);
+      setCenterClassesLoading(false);
     }
   }, []);
 
@@ -344,8 +356,8 @@ function ParentRequestsTab({
     if (!isConvertOpen || !detail || detail.requestType !== "TRUNG_TAM") {
       return;
     }
-    void loadCenterTeachers();
-  }, [detail, isConvertOpen, loadCenterTeachers]);
+    void loadCenterClasses();
+  }, [detail, isConvertOpen, loadCenterClasses]);
 
   useEffect(() => {
     if (!isConvertOpen) return;
@@ -399,15 +411,14 @@ function ParentRequestsTab({
 
   const rangeStart = meta.total === 0 ? 0 : (meta.page - 1) * meta.limit + 1;
   const rangeEnd = Math.min(meta.page * meta.limit, meta.total);
-
   const handleSubmitConvert = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!detail || convertLoading) return;
     setConvertLoading(true);
 
     try {
-      if (detail.requestType === "TRUNG_TAM" && !convertForm.centerTeacherId) {
-        showToast("error", "Vui lòng chọn giáo viên trung tâm.");
+      if (detail.requestType === "TRUNG_TAM" && !convertForm.classId) {
+        showToast("error", "Vui lòng chọn lớp trung tâm.");
         return;
       }
       const payload: {
@@ -415,19 +426,21 @@ function ParentRequestsTab({
         feePerHour?: number;
         schedule?: string;
         centerTeacherId?: string;
+        classId?: string;
       } = {};
-      const trimmedTitle = convertForm.title.trim();
-      const feeValue = Number(convertForm.feePerHour);
+      if (detail.requestType === "TRUNG_TAM") {
+        payload.classId = convertForm.classId;
+      } else {
+        const trimmedTitle = convertForm.title.trim();
+        const feeValue = Number(convertForm.feePerHour);
 
-      if (trimmedTitle) payload.title = trimmedTitle;
-      if (Number.isFinite(feeValue) && feeValue > 0) {
-        payload.feePerHour = Math.round(feeValue);
-      }
-      if (convertForm.scheduleDays.length > 0) {
-        payload.schedule = WEEK_DAYS.filter((day) => convertForm.scheduleDays.includes(day)).join(", ");
-      }
-      if (convertForm.centerTeacherId) {
-        payload.centerTeacherId = convertForm.centerTeacherId;
+        if (trimmedTitle) payload.title = trimmedTitle;
+        if (Number.isFinite(feeValue) && feeValue > 0) {
+          payload.feePerHour = Math.round(feeValue);
+        }
+        if (convertForm.scheduleDays.length > 0) {
+          payload.schedule = WEEK_DAYS.filter((day) => convertForm.scheduleDays.includes(day)).join(", ");
+        }
       }
 
       await convertAdminClassRequest(detail.id, payload);
@@ -627,7 +640,12 @@ function ParentRequestsTab({
                         {record.subject} - {record.grade}
                       </td>
                       <td>{record.district}</td>
-                      <td>{formatCurrency(record.budgetPerHour)}</td>
+                      <td>
+                        {formatRequestBudget(
+                          record.budgetPerHour,
+                          record.requestType,
+                        )}
+                      </td>
                       <td>
                         <span
                           style={{
@@ -768,104 +786,108 @@ function ParentRequestsTab({
             </div>
             <form className="admin-dialog-body" onSubmit={handleSubmitConvert}>
               <div className="admin-dialog-grid">
-                <label className="admin-dialog-field">
-                  Tiêu đề lớp
-                  <input
-                    type="text"
-                    value={convertForm.title}
-                    onChange={(e) =>
-                      setConvertForm({ ...convertForm, title: e.target.value })
-                    }
-                  />
-                </label>
-                <label className="admin-dialog-field">
-                  Học phí/buổi
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    value={formatVnd(convertForm.feePerHour)}
-                    onChange={(e) => {
-                      const digits = e.target.value.replace(/\D/g, "");
-                      setConvertForm({ ...convertForm, feePerHour: digits });
-                    }}
-                  />
-                </label>
-                <label className="admin-dialog-field admin-dialog-field-full">
-                  Lịch học (tuỳ chọn)
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
-                      gap: "0.5rem",
-                      marginTop: "0.5rem",
-                    }}
-                  >
-                    {WEEK_DAYS.map((day) => {
-                      const selectedDays = convertForm.scheduleDays ?? [];
-                      const checked = selectedDays.includes(day);
-                      return (
-                        <label
-                          key={day}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "0.35rem",
-                            fontWeight: 600,
-                            color: "#0f172a",
-                          }}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setConvertForm({
-                                  ...convertForm,
-                                  scheduleDays: [...selectedDays, day],
-                                });
-                              } else {
-                                setConvertForm({
-                                  ...convertForm,
-                                  scheduleDays: selectedDays.filter(
-                                    (item) => item !== day,
-                                  ),
-                                });
-                              }
-                            }}
-                          />
-                          {day}
-                        </label>
-                      );
-                    })}
-                  </div>
-                </label>
+                {detail.requestType !== "TRUNG_TAM" && (
+                  <>
+                    <label className="admin-dialog-field">
+                      Tiêu đề lớp
+                      <input
+                        type="text"
+                        value={convertForm.title}
+                        onChange={(e) =>
+                          setConvertForm({ ...convertForm, title: e.target.value })
+                        }
+                      />
+                    </label>
+                    <label className="admin-dialog-field">
+                      Học phí/buổi
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={formatVnd(convertForm.feePerHour)}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/\D/g, "");
+                          setConvertForm({ ...convertForm, feePerHour: digits });
+                        }}
+                      />
+                    </label>
+                    <label className="admin-dialog-field admin-dialog-field-full">
+                      Lịch học (tuỳ chọn)
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
+                          gap: "0.5rem",
+                          marginTop: "0.5rem",
+                        }}
+                      >
+                        {WEEK_DAYS.map((day) => {
+                          const selectedDays = convertForm.scheduleDays ?? [];
+                          const checked = selectedDays.includes(day);
+                          return (
+                            <label
+                              key={day}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "0.35rem",
+                                fontWeight: 600,
+                                color: "#0f172a",
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setConvertForm({
+                                      ...convertForm,
+                                      scheduleDays: [...selectedDays, day],
+                                    });
+                                  } else {
+                                    setConvertForm({
+                                      ...convertForm,
+                                      scheduleDays: selectedDays.filter(
+                                        (item) => item !== day,
+                                      ),
+                                    });
+                                  }
+                                }}
+                              />
+                              {day}
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </label>
+                  </>
+                )}
                 {detail.requestType === "TRUNG_TAM" && (
-                  <label className="admin-dialog-field">
-                    Giáo viên trung tâm
+                  <label className="admin-dialog-field admin-dialog-field-full">
+                    Lớp trung tâm
                     <select
-                      value={convertForm.centerTeacherId}
+                      value={convertForm.classId}
                       onChange={(e) =>
                         setConvertForm({
                           ...convertForm,
-                          centerTeacherId: e.target.value,
+                          classId: e.target.value,
                         })
                       }
                     >
-                      <option value="">Chọn giáo viên trung tâm</option>
-                      {centerTeachers.map((teacher) => (
-                        <option key={teacher.id} value={teacher.id}>
-                          {teacher.fullName} ({teacher.email})
+                      <option value="">Chọn lớp trung tâm</option>
+                      {centerClasses.map((centerClass) => (
+                        <option key={centerClass.id} value={centerClass.id}>
+                          {centerClass.title} - {centerClass.subject} {centerClass.grade}
                         </option>
                       ))}
                     </select>
-                    {centerTeachersLoading && (
+                    {centerClassesLoading && (
                       <span style={{ fontSize: "0.8rem", color: "#64748b" }}>
-                        Đang tải danh sách giáo viên...
+                        Đang tải danh sách lớp trung tâm...
                       </span>
                     )}
-                    {centerTeachersError && (
+                    {centerClassesError && (
                       <span style={{ fontSize: "0.8rem", color: "#ba1a1a" }}>
-                        {centerTeachersError}
+                        {centerClassesError}
                       </span>
                     )}
                   </label>
@@ -1063,7 +1085,10 @@ function ParentRequestsTab({
                       <div>
                         <p className="payments-info-label">Học phí/buổi</p>
                         <p className="payments-info-value">
-                          {formatCurrency(detail.budgetPerHour)}
+                          {formatRequestBudget(
+                            detail.budgetPerHour,
+                            detail.requestType,
+                          )}
                         </p>
                       </div>
                     </div>
@@ -1153,6 +1178,48 @@ function ParentRequestsTab({
                             />
                           </div>
                         ))}
+                      </div>
+                    </section>
+                  )}
+
+                  {detail.assignedClass && (
+                    <section>
+                      <p
+                        style={{
+                          margin: "0 0 0.45rem",
+                          fontSize: "0.72rem",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.08em",
+                          fontWeight: 800,
+                          color: "#64748b",
+                        }}
+                      >
+                        Lớp trung tâm đã chọn
+                      </p>
+                      <div className="pairing-user-list">
+                        <div className="pairing-user-item">
+                          <div className="pairing-user-left">
+                            <div className="pairing-user-avatar">
+                              {formatClassCode(detail.assignedClass.id)}
+                            </div>
+                            <div>
+                              <p className="pairing-user-name">
+                                {detail.assignedClass.title}
+                              </p>
+                              <p className="pairing-user-sub">
+                                {formatDate(detail.assignedClass.createdAt)}
+                              </p>
+                            </div>
+                          </div>
+                          <AdminStatusBadge
+                            label={detail.assignedClass.status}
+                            tone={
+                              detail.assignedClass.status === "OPEN"
+                                ? "open"
+                                : "processing"
+                            }
+                          />
+                        </div>
                       </div>
                     </section>
                   )}
@@ -1370,6 +1437,17 @@ function TutorRequestsTab({
   const rangeStart = meta.total === 0 ? 0 : (meta.page - 1) * meta.limit + 1;
   const rangeEnd = Math.min(meta.page * meta.limit, meta.total);
 
+  const sortedClasses = useMemo(() => {
+    return [...records].sort((a, b) => {
+      const aCount = a._count.applications ?? 0;
+      const bCount = b._count.applications ?? 0;
+
+      if (aCount === 0 && bCount > 0) return 1;
+      if (aCount > 0 && bCount === 0) return -1;
+      return bCount - aCount;
+    });
+  }, [records]);
+
   return (
     <>
       <div
@@ -1411,7 +1489,7 @@ function TutorRequestsTab({
             Không có lớp học nào đang mở.
           </div>
         ) : (
-          records.map((record) => {
+          sortedClasses.map((record) => {
             const isExpanded = expandedClassIds.includes(record.id);
             const applicants = applicantsByClass[record.id] ?? [];
             const isLoadingApplicants = applicantsLoading[record.id];
@@ -1445,7 +1523,27 @@ function TutorRequestsTab({
                         fontSize: "0.85rem",
                       }}
                     >
-                      {formatCurrency(record.feePerHour)} • {record._count.applications} ứng viên
+                      {formatCurrency(record.feePerHour)} •{" "}
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "0.35rem",
+                          padding: "0.1rem 0.5rem",
+                          borderRadius: "999px",
+                          fontWeight: 700,
+                          background:
+                            record._count.applications > 0
+                              ? "rgba(37, 99, 235, 0.16)"
+                              : "rgba(148, 163, 184, 0.2)",
+                          color:
+                            record._count.applications > 0
+                              ? "#1d4ed8"
+                              : "#475569",
+                        }}
+                      >
+                        {record._count.applications} ứng viên
+                      </span>
                     </p>
                   </div>
                   <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>

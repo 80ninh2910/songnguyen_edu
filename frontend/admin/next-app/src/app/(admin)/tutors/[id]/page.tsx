@@ -155,6 +155,10 @@ export default function TutorDetailPage() {
     districts: string[];
   }) => {
     if (!tutorId) return;
+    if (detail?.tutorType === "GIAO_VIEN_TRUNG_TAM") {
+      setActionError("Giáo viên trung tâm không chỉnh sửa trên admin.");
+      return;
+    }
     setProcessing(true);
     setActionError(null);
     setActionMessage(null);
@@ -215,6 +219,9 @@ export default function TutorDetailPage() {
   }
 
   const statusMeta = STATUS_META[detail.status];
+  const isCenterTeacher = detail.tutorType === "GIAO_VIEN_TRUNG_TAM";
+  const canEdit = !isCenterTeacher;
+  const isEditMode = isEdit && canEdit;
 
   return (
     <div className="admin-page">
@@ -268,9 +275,9 @@ export default function TutorDetailPage() {
         <article className="settings-form-card">
           <div className="settings-card-head">
             <h2 className="settings-card-title">
-              {isEdit ? "Chỉnh sửa hồ sơ" : "Thông tin gia sư"}
+              {isEditMode ? "Chỉnh sửa hồ sơ" : "Thông tin gia sư"}
             </h2>
-            {!isEdit ? (
+            {!isEditMode && canEdit ? (
               <button
                 className="admin-btn tonal"
                 onClick={() => router.replace(`/tutors/${detail.id}?mode=edit`)}
@@ -280,10 +287,15 @@ export default function TutorDetailPage() {
                 Chỉnh sửa
               </button>
             ) : null}
+            {!canEdit ? (
+              <span style={{ color: "#64748b", fontSize: "0.85rem" }}>
+                Giáo viên trung tâm không chỉnh sửa trên admin.
+              </span>
+            ) : null}
           </div>
 
           <div className="settings-card-body">
-            {isEdit ? (
+            {isEditMode ? (
               <TutorForm
                 initialValues={formValues}
                 onCancel={() => router.replace(`/tutors/${detail.id}`)}
@@ -320,9 +332,11 @@ export default function TutorDetailPage() {
                     <div className="settings-field">
                       <label>Loại gia sư</label>
                       <p style={{ margin: 0, fontWeight: 700 }}>
-                        {detail.tutorType === "GIA_SU_DAO_TAO"
-                          ? "Gia sư đào tạo"
-                          : "Gia sư tự do"}
+                        {detail.tutorType === "GIAO_VIEN_TRUNG_TAM"
+                          ? "Giáo viên trung tâm"
+                          : detail.tutorType === "GIA_SU_DAO_TAO"
+                            ? "Gia sư đào tạo"
+                            : "Gia sư tự do"}
                       </p>
                     </div>
                   </div>

@@ -445,6 +445,7 @@ function ParentRegistrationForm({
   });
   const [activeWeekdays, setActiveWeekdays] = useState<string[]>([]);
   const [activeTimeSlots, setActiveTimeSlots] = useState<string[]>([]);
+  const [centerLocations, setCenterLocations] = useState<string[]>([]);
   const [submitMessage, setSubmitMessage] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -474,34 +475,26 @@ function ParentRegistrationForm({
 
   const timeSlots = ["Sáng", "Chiều", "Tối"];
 
-  const locationOptions =
-    mode === "center"
-      ? ["Quận Gò Vấp", "Quận 12"]
-      : [
-          "Quận 1",
-          "Quận 3",
-          "Quận 4",
-          "Quận 5",
-          "Quận 6",
-          "Quận 7",
-          "Quận 8",
-          "Quận 10",
-          "Quận 11",
-          "Quận 12",
-          "Quận Bình Tân",
-          "Quận Bình Thạnh",
-          "Quận Gò Vấp",
-          "Quận Phú Nhuận",
-          "Quận Tân Bình",
-          "Quận Tân Phú",
-          "TP Thủ Đức",
-          "Huyện Bình Chánh",
-          "Huyện Cần Giờ",
-          "Huyện Củ Chi",
-          "Huyện Hóc Môn",
-          "Huyện Nhà Bè",
-          "Online",
-        ];
+  const centerLocationOptions = ["Quận 12", "Quận Gò Vấp"];
+  const locationOptions = [
+    "Quận 1",
+    "Quận 3",
+    "Quận 4",
+    "Quận 5",
+    "Quận 6",
+    "Quận 7",
+    "Quận 8",
+    "Quận 10",
+    "Quận 11",
+    "Quận 12",
+    "Quận Bình Tân",
+    "Quận Bình Thạnh",
+    "Quận Gò Vấp",
+    "Quận Phú Nhuận",
+    "Quận Tân Bình",
+    "Quận Tân Phú",
+    "TP Thủ Đức",
+  ];
 
   const subjectBasePrice: Record<string, number> = {
     "Tiếng Anh": 280000,
@@ -527,12 +520,13 @@ function ParentRegistrationForm({
   const parentSubmitClass =
     "rounded-xl bg-[linear-gradient(180deg,#f00b0b_0%,#d80404_100%)] px-4 py-4 text-center text-[22px] font-black leading-tight text-white shadow-[0_16px_34px_rgba(216,4,4,0.4)] transition-all duration-300 hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0 md:text-[26px] lg:text-[30px]";
 
+  const locationValue = mode === "center" ? centerLocations.join(", ") : studentForm.location;
   const requiredFields = [
     studentForm.studentName,
     studentForm.parentName,
     studentForm.phone,
     studentForm.subject,
-    studentForm.location,
+    locationValue,
     studentForm.level,
     studentForm.studentCount,
     studentForm.sessionsPerWeek,
@@ -639,7 +633,7 @@ function ParentRegistrationForm({
       nextErrors.phone = "Số điện thoại không hợp lệ.";
     }
     if (!studentForm.subject) nextErrors.subject = "Vui lòng chọn môn học.";
-    if (!studentForm.location.trim()) nextErrors.location = "Vui lòng nhập địa điểm dạy.";
+    if (!locationValue.trim()) nextErrors.location = "Vui lòng chọn khu vực dạy.";
     if (!studentForm.level) nextErrors.level = "Vui lòng chọn cấp độ.";
     if (!studentForm.sessionsPerWeek) nextErrors.sessionsPerWeek = "Vui lòng chọn số buổi.";
     if (!studentForm.studentCount) nextErrors.studentCount = "Vui lòng chọn số học viên.";
@@ -666,11 +660,12 @@ function ParentRegistrationForm({
     const budgetPerHour = baseSessionFee > 0 ? Math.round(baseSessionFee) : undefined;
     const tutorType =
       tutorForm.level === "Gia sư đào tạo" ? "GIA_SU_DAO_TAO" : "GIA_SU_TU_DO";
+    const feeLabel = mode === "center" ? "Hoc phi mong muon/thang" : "Hoc phi mong muon/buoi";
     const noteParts = [
       studentForm.gender ? `Gioi tinh hoc vien: ${studentForm.gender}` : null,
       `So hoc vien: ${studentForm.studentCount}`,
       `So buoi/tuan: ${studentForm.sessionsPerWeek}`,
-      sessionFeeValue > 0 ? `Hoc phi mong muon/buoi: ${formatVnd(sessionFeeValue)}` : null,
+      sessionFeeValue > 0 ? `${feeLabel}: ${formatVnd(sessionFeeValue)}` : null,
       `Lich hoc: ${activeWeekdays.join(", ") || "Chua chon"} | ${activeTimeSlots.join(", ") || "Chua chon"}`,
       mode === "parent" ? `Loai gia su: ${tutorForm.level || "Chua chon"}` : null,
       tutorForm.gender ? `Gioi tinh gia su: ${tutorForm.gender}` : null,
@@ -687,7 +682,7 @@ function ParentRegistrationForm({
           parentPhone: studentForm.phone,
           subject: studentForm.subject,
           grade: studentForm.level,
-          district: studentForm.location,
+          district: locationValue,
           budgetPerHour,
           formType: mode === "center" ? "TRUNG_TAM" : "GIA_SU",
           tutorType: mode === "center" ? undefined : tutorType,
@@ -777,19 +772,55 @@ function ParentRegistrationForm({
                   <option value="Nữ">Nữ</option>
                   <option value="Khác">Khác</option>
                 </select>
-                <select
-                  ref={locationRef}
-                  value={studentForm.location}
-                  onChange={(e) => setStudentForm((prev) => ({ ...prev, location: e.target.value }))}
-                  className={errorInputClass(!!errors.location)}
-                >
-                  <option value="">Địa điểm dạy</option>
-                  {locationOptions.map((item) => (
-                    <option key={item} value={item}>
-                      {item}
-                    </option>
-                  ))}
-                </select>
+                {mode === "center" ? (
+                  <div
+                    ref={locationRef}
+                    tabIndex={-1}
+                    className={`rounded-xl border border-[#d5dff1] bg-white/95 p-3 text-sm font-semibold text-[#243b72] focus:outline-none focus:ring-4 focus:ring-[#8ab4ff]/25 ${
+                      errors.location ? "border-[#e44b4b]" : ""
+                    }`}
+                  >
+                    <p className="mb-2 text-xs font-bold uppercase text-[#4b5f88]">Khu vực dạy</p>
+                    <div className="flex flex-wrap gap-3">
+                      {centerLocationOptions.map((item) => {
+                        const checked = centerLocations.includes(item);
+                        return (
+                          <label key={item} className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={(event) => {
+                                setCenterLocations((prev) =>
+                                  event.target.checked
+                                    ? [...prev, item]
+                                    : prev.filter((value) => value !== item),
+                                );
+                              }}
+                            />
+                            <span>{item}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                    <div className="mt-2 text-xs text-[#6b7aa0]">
+                      Da chon: {centerLocations.length ? centerLocations.join(", ") : "Chua chon"}
+                    </div>
+                  </div>
+                ) : (
+                  <select
+                    ref={locationRef}
+                    value={studentForm.location}
+                    onChange={(e) => setStudentForm((prev) => ({ ...prev, location: e.target.value }))}
+                    className={errorInputClass(!!errors.location)}
+                  >
+                    <option value="">Khu vực dạy</option>
+                    {locationOptions.map((item) => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 <select
                   ref={levelRef}
                   value={studentForm.level}
@@ -951,7 +982,9 @@ function ParentRegistrationForm({
               </div>
 
               <div className="mt-5 rounded-2xl border-2 border-[#6ea0ff] bg-[#eef4ff] p-4 shadow-[0_12px_28px_rgba(82,139,255,0.2)]">
-                <p className="text-sm font-bold uppercase tracking-[0.12em] text-[#21408c]">Học phí mong muốn</p>
+                <p className="text-sm font-bold uppercase tracking-[0.12em] text-[#21408c]">
+                  {mode === "center" ? "Học phí mong muốn/tháng" : "Học phí mong muốn/buổi"}
+                </p>
                 <div className="mt-2 relative">
                   <input
                     ref={monthlyBudgetRef}
@@ -960,7 +993,7 @@ function ParentRegistrationForm({
                       const rawValue = e.target.value.replace(/\D/g, "");
                       setStudentForm((prev) => ({ ...prev, monthlyBudget: rawValue }));
                     }}
-                    placeholder="Nhập học phí / buổi"
+                    placeholder={mode === "center" ? "Nhap hoc phi / thang" : "Nhap hoc phi / buoi"}
                     inputMode="numeric"
                     className={`${errorInputClass(!!errors.monthlyBudget)} h-14 text-lg font-bold pr-14`}
                   />
@@ -978,7 +1011,9 @@ function ParentRegistrationForm({
                 )}
               </div>
 
-              <h4 className="mt-5 text-2xl font-extrabold text-[#17367b] md:text-3xl">Học phí tham khảo/buổi</h4>
+              <h4 className="mt-5 text-2xl font-extrabold text-[#17367b] md:text-3xl">
+                {mode === "center" ? "Học phí tham khảo/tháng" : "Học phí tham khảo/buổi"}
+              </h4>
 
               <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-[1fr_1fr]">
                 <div className="relative overflow-hidden rounded-xl bg-[#528bff] px-4 py-4 text-center text-[24px] font-black leading-tight text-white shadow-[0_14px_34px_rgba(82,139,255,0.35)] md:text-[28px] lg:text-[30px]">

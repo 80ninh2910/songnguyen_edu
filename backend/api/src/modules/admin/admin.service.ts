@@ -521,6 +521,236 @@ export const adminService = {
     };
   },
 
+  async createCenterTeacher(
+    actor: AdminActor,
+    body: {
+      fullName: string;
+      email: string;
+      phone?: string;
+      subjects: string[];
+      districts: string[];
+      status?: "ACTIVE" | "INACTIVE";
+    },
+  ): Promise<{ id: string }> {
+    const tempPassword = "123456";
+    const passwordHash = await hashPassword(tempPassword);
+    const actorName = await resolveActorName(actor);
+
+    const existingCenterTeacher = await prisma.centerTeacher.findUnique({
+      where: { email: body.email },
+      select: { id: true },
+    });
+
+    if (existingCenterTeacher) {
+      conflict("Center teacher email already exists");
+    }
+
+    const existingTutor = await prisma.tutor.findUnique({
+      where: { email: body.email },
+      select: { id: true },
+    });
+
+    if (existingTutor) {
+      conflict("Tutor email already exists");
+    }
+
+    const status = body.status ?? "ACTIVE";
+    const tutorStatus = status === "ACTIVE" ? "APPROVED" : "REJECTED";
+
+    const created = await prisma.$transaction(async (tx: any) => {
+      const centerTeacher = await tx.centerTeacher.create({
+        data: {
+          fullName: body.fullName,
+          email: body.email,
+          phone: body.phone ?? null,
+          subjects: body.subjects,
+          districts: body.districts,
+          status,
+          createdById: actor.id,
+        },
+        select: { id: true, email: true },
+      });
+
+      await tx.tutor.create({
+        data: {
+          fullName: body.fullName,
+          email: body.email,
+          phone: body.phone ?? null,
+          subjects: body.subjects,
+          districts: body.districts,
+          tutorType: "GIAO_VIEN_TRUNG_TAM",
+          status: tutorStatus,
+          rejectReason: tutorStatus === "REJECTED" ? "Center teacher inactive" : null,
+          approvedAt: tutorStatus === "APPROVED" ? new Date() : null,
+          approvedById: tutorStatus === "APPROVED" ? actor.id : null,
+          passwordHash,
+          mustChangePassword: true,
+        },
+        select: { id: true },
+      });
+
+      await auditLogService.log(
+        {
+          actorId: actor.id,
+          actorName,
+          action: "CREATE_CENTER_TEACHER",
+          targetType: "CENTER_TEACHER",
+          targetId: centerTeacher.id,
+          payload: {
+            email: centerTeacher.email,
+            status,
+            tutorStatus,
+          },
+        },
+        tx,
+      );
+
+      return centerTeacher;
+    });
+
+    return { id: created.id };
+  },
+
+  async updateCenterTeacher(
+    actor: AdminActor,
+    centerTeacherId: string,
+    body: {
+      fullName?: string;
+      email?: string;
+      phone?: string;
+      subjects?: string[];
+      districts?: string[];
+      status?: "ACTIVE" | "INACTIVE";
+    },
+  ): Promise<{
+    id: string;
+    fullName: string;
+    email: string;
+    phone: string | null;
+    status: "ACTIVE" | "INACTIVE";
+    subjects: string[];
+    districts: string[];
+    createdAt: Date;
+    updatedAt: Date;
+  }> {
+    const existing = await prisma.centerTeacher.findUnique({
+      where: { id: centerTeacherId },
+      select: {
+        fullName: true,
+        email: true,
+        phone: true,
+        status: true,
+        subjects: true,
+        districts: true,
+      },
+    });
+
+    if (!existing) {
+      throw new AppError("CENTER_TEACHER_NOT_FOUND", 404, "Center teacher not found");
+    }
+
+    if (body.email && body.email !== existing.email) {
+      const emailExists = await prisma.centerTeacher.findUnique({
+        where: { email: body.email },
+        select: { id: true },
+      });
+
+      if (emailExists) {
+        conflict("Center teacher email already exists");
+      }
+    }
+
+    const data: Prisma.CenterTeacherUpdateInput = {};
+
+    if (body.fullName !== undefined) data.fullName = body.fullName;
+    if (body.email !== undefined) data.email = body.email;
+    if (body.phone !== undefined) data.phone = body.phone ?? null;
+    if (body.subjects !== undefined) data.subjects = body.subjects;
+    if (body.districts !== undefined) data.districts = body.districts;
+    if (body.status !== undefined) data.status = body.status;
+
+    const actorName = await resolveActorName(actor);
+
+    const tempPassword = "123456";
+    const passwordHash = await hashPassword(tempPassword);
+
+    const updated = await prisma.$transaction(async (tx: any) => {
+      const centerTeacher = await tx.centerTeacher.update({
+        where: { id: centerTeacherId },
+        data,
+      });
+
+      if (body.email || body.fullName || body.phone || body.subjects || body.districts || body.status) {
+        const tutorStatus = (body.status ?? existing.status) === "ACTIVE" ? "APPROVED" : "REJECTED";
+        const existingTutor = await tx.tutor.findUnique({
+          where: { email: existing.email },
+          select: { id: true },
+        });
+
+        if (existingTutor) {
+          await tx.tutor.update({
+            where: { email: existing.email },
+            data: {
+              fullName: body.fullName ?? existing.fullName,
+              email: body.email ?? existing.email,
+              phone: body.phone ?? existing.phone,
+              subjects: body.subjects ?? existing.subjects,
+              districts: body.districts ?? existing.districts,
+              tutorType: "GIAO_VIEN_TRUNG_TAM",
+              status: tutorStatus,
+              rejectReason: tutorStatus === "REJECTED" ? "Center teacher inactive" : null,
+              approvedAt: tutorStatus === "APPROVED" ? new Date() : null,
+              approvedById: tutorStatus === "APPROVED" ? actor.id : null,
+            },
+          });
+        } else {
+          await tx.tutor.create({
+            data: {
+              fullName: body.fullName ?? existing.fullName,
+              email: body.email ?? existing.email,
+              phone: body.phone ?? existing.phone,
+              subjects: body.subjects ?? existing.subjects,
+              districts: body.districts ?? existing.districts,
+              tutorType: "GIAO_VIEN_TRUNG_TAM",
+              status: tutorStatus,
+              rejectReason: tutorStatus === "REJECTED" ? "Center teacher inactive" : null,
+              approvedAt: tutorStatus === "APPROVED" ? new Date() : null,
+              approvedById: tutorStatus === "APPROVED" ? actor.id : null,
+              passwordHash,
+              mustChangePassword: true,
+            },
+          });
+        }
+      }
+
+      await auditLogService.log(
+        {
+          actorId: actor.id,
+          actorName,
+          action: "UPDATE_CENTER_TEACHER",
+          targetType: "CENTER_TEACHER",
+          targetId: centerTeacherId,
+          payload: {
+            before: existing,
+            after: {
+              fullName: centerTeacher.fullName,
+              email: centerTeacher.email,
+              phone: centerTeacher.phone,
+              status: centerTeacher.status,
+              subjects: centerTeacher.subjects,
+              districts: centerTeacher.districts,
+            },
+          },
+        },
+        tx,
+      );
+
+      return centerTeacher;
+    });
+
+    return updated;
+  },
+
   async createTutor(
     actor: AdminActor,
     body: {
@@ -1049,6 +1279,14 @@ export const adminService = {
             createdAt: true,
           },
         },
+        assignedClass: {
+          select: {
+            id: true,
+            title: true,
+            status: true,
+            createdAt: true,
+          },
+        },
       },
     });
 
@@ -1071,6 +1309,7 @@ export const adminService = {
       feePerHour?: number;
       schedule?: string;
       centerTeacherId?: string;
+      classId?: string;
     },
   ): Promise<{ classId: string; converted: true }> {
     const request = await prisma.classRequest.findUnique({
@@ -1089,7 +1328,104 @@ export const adminService = {
       invalidState("Only pending request can be converted");
     }
 
+    if (request.requestType !== "TRUNG_TAM" && input.classId) {
+      throw new AppError(
+        "CLASS_SELECTION_NOT_ALLOWED",
+        400,
+        "Class selection is only allowed for center requests",
+      );
+    }
+
     const actorName = await resolveActorName(actor);
+
+    if (request.requestType === "TRUNG_TAM") {
+      if (!input.classId) {
+        throw new AppError(
+          "CLASS_REQUIRED",
+          400,
+          "Class is required for center requests",
+        );
+      }
+
+      const classItem = await prisma.class.findUnique({
+        where: { id: input.classId },
+        select: {
+          id: true,
+          classType: true,
+          status: true,
+        },
+      });
+
+      if (!classItem) {
+        throw new AppError("CLASS_NOT_FOUND", 404, "Class not found");
+      }
+
+      if (classItem.classType !== "LOP_TRUNG_TAM") {
+        throw new AppError(
+          "INVALID_CLASS_TYPE",
+          400,
+          "Only center classes can be selected",
+        );
+      }
+
+      if (classItem.status !== "OPEN") {
+        invalidState("Only OPEN classes can accept center requests");
+      }
+
+      const assignedClass = await prisma.$transaction(async (tx: any) => {
+        const updatedMembers = await tx.classMember.updateMany({
+          where: { requestId: request.id },
+          data: { classId: classItem.id },
+        });
+
+        if (updatedMembers.count === 0) {
+          await tx.classMember.create({
+            data: {
+              requestId: request.id,
+              classId: classItem.id,
+              studentName: (request as any).studentName?.trim() || request.parentName,
+              studentGrade: request.grade,
+              parentName: request.parentName,
+              parentPhone: request.parentPhone,
+              parentEmail: request.parentEmail,
+            },
+          });
+        }
+
+        await tx.classRequest.update({
+          where: { id: request.id },
+          data: {
+            status: "CONVERTED",
+            processedAt: new Date(),
+            processedById: actor.id,
+            assignedClassId: classItem.id,
+          },
+        });
+
+        await auditLogService.log(
+          {
+            actorId: actor.id,
+            actorName,
+            action: "ASSIGN_REQUEST_TO_CLASS",
+            targetType: "CLASS_REQUEST",
+            targetId: request.id,
+            payload: {
+              classId: classItem.id,
+              migratedMembers: updatedMembers.count,
+              requestType: request.requestType,
+            },
+          },
+          tx,
+        );
+
+        return classItem;
+      });
+
+      return {
+        classId: assignedClass.id,
+        converted: true,
+      };
+    }
 
     const classType =
       request.requestType === "TRUNG_TAM"
@@ -1158,6 +1494,7 @@ export const adminService = {
           status: "CONVERTED",
           processedAt: new Date(),
           processedById: actor.id,
+          assignedClassId: newClass.id,
         },
       });
 
@@ -1343,6 +1680,14 @@ export const adminService = {
       classType?: "LOP_GIA_SU_TU_DO" | "LOP_GIA_SU_DAO_TAO" | "LOP_TRUNG_TAM";
       tutorType?: "GIA_SU_TU_DO" | "GIA_SU_DAO_TAO" | "GIAO_VIEN_TRUNG_TAM" | "ANY";
       centerTeacherId?: string;
+      members?: Array<{
+        studentName: string;
+        studentGrade?: string;
+        parentName: string;
+        parentPhone: string;
+        parentEmail?: string;
+        address?: string;
+      }>;
     },
   ) {
     const actorName = await resolveActorName(actor);
@@ -1352,6 +1697,14 @@ export const adminService = {
         "CENTER_TEACHER_REQUIRED",
         400,
         "Center teacher is required for center classes",
+      );
+    }
+
+    if (input.classType === "LOP_TRUNG_TAM" && (!input.members || input.members.length === 0)) {
+      throw new AppError(
+        "MEMBERS_REQUIRED",
+        400,
+        "Center classes require at least one member",
       );
     }
 
@@ -1380,6 +1733,20 @@ export const adminService = {
         });
       }
 
+      if (input.members && input.members.length > 0) {
+        await tx.classMember.createMany({
+          data: input.members.map((member) => ({
+            classId: newClass.id,
+            studentName: member.studentName,
+            studentGrade: member.studentGrade,
+            parentName: member.parentName,
+            parentPhone: member.parentPhone,
+            parentEmail: member.parentEmail,
+            address: member.address,
+          })),
+        });
+      }
+
       await auditLogService.log(
         {
           actorId: actor.id,
@@ -1390,6 +1757,7 @@ export const adminService = {
           payload: {
             subject: newClass.subject,
             district: newClass.district,
+            members: input.members?.length ?? 0,
           },
         },
         tx,
@@ -1577,11 +1945,25 @@ export const adminService = {
   async listClassApplicants(classId: string) {
     const classItem = await prisma.class.findUnique({
       where: { id: classId },
-      select: { id: true },
+      select: { id: true, classType: true },
     });
 
     if (!classItem) {
       throw new AppError("CLASS_NOT_FOUND", 404, "Class not found");
+    }
+
+    if (classItem.classType !== "LOP_TRUNG_TAM") {
+      throw new AppError(
+        "CLASS_NOT_CENTER",
+        403,
+        "Only center classes allow session feedback",
+      );
+    }
+
+    const memberCount = await prisma.classMember.count({ where: { classId } });
+
+    if (memberCount === 0) {
+      throw new AppError("NO_MEMBERS", 400, "Class has no members");
     }
 
     return prisma.classApplication.findMany({

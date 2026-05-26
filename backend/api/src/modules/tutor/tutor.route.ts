@@ -163,7 +163,28 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
     }
   };
 
+  const ensureCenterTutor = async (tutorId: string): Promise<void> => {
+    const tutor = await prisma.tutor.findUnique({
+      where: { id: tutorId },
+      select: { tutorType: true },
+    });
+
+    if (!tutor) {
+      throw new AppError("TUTOR_NOT_FOUND", 404, "Tutor not found");
+    }
+
+    if (tutor.tutorType !== "GIAO_VIEN_TRUNG_TAM") {
+      throw new AppError(
+        "CENTER_TUTOR_REQUIRED",
+        403,
+        "Center teacher account is required",
+      );
+    }
+  };
+
   const getAssignedClassOrThrow = async (tutorId: string, classId: string) => {
+    await ensureCenterTutor(tutorId);
+
     const assignment = await prisma.classAssignment.findUnique({
       where: { classId },
       select: {
@@ -175,6 +196,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
             subject: true,
             grade: true,
             district: true,
+            classType: true,
           },
         },
       },
@@ -186,6 +208,14 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
 
     if (assignment.tutorId !== tutorId) {
       throw new AppError("FORBIDDEN", 403, "Insufficient permission");
+    }
+
+    if (assignment.class.classType !== "LOP_TRUNG_TAM") {
+      throw new AppError(
+        "CLASS_NOT_CENTER",
+        403,
+        "Only center classes allow session feedback",
+      );
     }
 
     return assignment.class;
@@ -691,6 +721,12 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
       const tutorId = request.user!.sub;
       await getAssignedClassOrThrow(tutorId, classId);
 
+      const memberCount = await prisma.classMember.count({ where: { classId } });
+
+      if (memberCount === 0) {
+        throw new AppError("NO_MEMBERS", 400, "Class has no members");
+      }
+
       const body = request.body as {
         sessionDate: string;
         startTime?: string;
@@ -742,6 +778,8 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
     },
     async (request, reply) => {
       const { sessionId } = request.params as { sessionId: string };
+      await ensureCenterTutor(request.user!.sub);
+
       const session = await prisma.classSession.findUnique({
         where: { id: sessionId },
         select: {
@@ -762,6 +800,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
               subject: true,
               grade: true,
               district: true,
+              classType: true,
               members: {
                 select: {
                   id: true,
@@ -779,6 +818,14 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
 
       if (session.tutorId !== request.user!.sub) {
         throw new AppError("FORBIDDEN", 403, "Insufficient permission");
+      }
+
+      if (session.class.classType !== "LOP_TRUNG_TAM") {
+        throw new AppError(
+          "CLASS_NOT_CENTER",
+          403,
+          "Only center classes allow session feedback",
+        );
       }
 
       void reply.send(success(session));
@@ -802,6 +849,8 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
     },
     async (request, reply) => {
       const { sessionId } = request.params as { sessionId: string };
+      await ensureCenterTutor(request.user!.sub);
+
       const body = request.body as {
         sessionDate?: string;
         startTime?: string;
@@ -812,7 +861,10 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
 
       const session = await prisma.classSession.findUnique({
         where: { id: sessionId },
-        select: { tutorId: true },
+        select: {
+          tutorId: true,
+          class: { select: { classType: true } },
+        },
       });
 
       if (!session) {
@@ -821,6 +873,14 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
 
       if (session.tutorId !== request.user!.sub) {
         throw new AppError("FORBIDDEN", 403, "Insufficient permission");
+      }
+
+      if (session.class.classType !== "LOP_TRUNG_TAM") {
+        throw new AppError(
+          "CLASS_NOT_CENTER",
+          403,
+          "Only center classes allow session feedback",
+        );
       }
 
       const data: {
@@ -866,9 +926,17 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
     },
     async (request, reply) => {
       const { sessionId } = request.params as { sessionId: string };
+      await ensureCenterTutor(request.user!.sub);
+
       const session = await prisma.classSession.findUnique({
         where: { id: sessionId },
-        select: { id: true, tutorId: true, classId: true, status: true },
+        select: {
+          id: true,
+          tutorId: true,
+          classId: true,
+          status: true,
+          class: { select: { classType: true } },
+        },
       });
 
       if (!session) {
@@ -877,6 +945,14 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
 
       if (session.tutorId !== request.user!.sub) {
         throw new AppError("FORBIDDEN", 403, "Insufficient permission");
+      }
+
+      if (session.class.classType !== "LOP_TRUNG_TAM") {
+        throw new AppError(
+          "CLASS_NOT_CENTER",
+          403,
+          "Only center classes allow session feedback",
+        );
       }
 
       const totalMembers = await prisma.classMember.count({
@@ -928,9 +1004,14 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
     },
     async (request, reply) => {
       const { sessionId } = request.params as { sessionId: string };
+      await ensureCenterTutor(request.user!.sub);
+
       const session = await prisma.classSession.findUnique({
         where: { id: sessionId },
-        select: { tutorId: true },
+        select: {
+          tutorId: true,
+          class: { select: { classType: true } },
+        },
       });
 
       if (!session) {
@@ -939,6 +1020,14 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
 
       if (session.tutorId !== request.user!.sub) {
         throw new AppError("FORBIDDEN", 403, "Insufficient permission");
+      }
+
+      if (session.class.classType !== "LOP_TRUNG_TAM") {
+        throw new AppError(
+          "CLASS_NOT_CENTER",
+          403,
+          "Only center classes allow session feedback",
+        );
       }
 
       const feedbacks = await prisma.sessionFeedback.findMany({
@@ -988,6 +1077,8 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
     async (request, reply) => {
       const { sessionId } = request.params as { sessionId: string };
       const tutorId = request.user!.sub;
+      await ensureCenterTutor(tutorId);
+
       const body = request.body as {
         feedbacks: Array<{
           memberId: string;
@@ -1004,7 +1095,13 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
 
       const session = await prisma.classSession.findUnique({
         where: { id: sessionId },
-        select: { id: true, tutorId: true, classId: true, status: true },
+        select: {
+          id: true,
+          tutorId: true,
+          classId: true,
+          status: true,
+          class: { select: { classType: true } },
+        },
       });
 
       if (!session) {
@@ -1013,6 +1110,14 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
 
       if (session.tutorId !== tutorId) {
         throw new AppError("FORBIDDEN", 403, "Insufficient permission");
+      }
+
+      if (session.class.classType !== "LOP_TRUNG_TAM") {
+        throw new AppError(
+          "CLASS_NOT_CENTER",
+          403,
+          "Only center classes allow session feedback",
+        );
       }
 
       if (session.status === "CANCELLED") {
@@ -1123,6 +1228,8 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
     },
     async (request, reply) => {
       const { feedbackId } = request.params as { feedbackId: string };
+      await ensureCenterTutor(request.user!.sub);
+
       const body = request.body as {
         attendance?: string;
         attitudeScore?: number;
@@ -1144,7 +1251,12 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
 
       const feedback = await prisma.sessionFeedback.findUnique({
         where: { id: feedbackId },
-        select: { tutorId: true, session: { select: { status: true } } },
+        select: {
+          tutorId: true,
+          session: {
+            select: { status: true, class: { select: { classType: true } } },
+          },
+        },
       });
 
       if (!feedback) {
@@ -1153,6 +1265,14 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
 
       if (feedback.tutorId !== request.user!.sub) {
         throw new AppError("FORBIDDEN", 403, "Insufficient permission");
+      }
+
+      if (feedback.session.class.classType !== "LOP_TRUNG_TAM") {
+        throw new AppError(
+          "CLASS_NOT_CENTER",
+          403,
+          "Only center classes allow session feedback",
+        );
       }
 
       if (feedback.session.status === "CANCELLED") {

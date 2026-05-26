@@ -1342,10 +1342,12 @@ textarea {
   position: fixed;
   inset: 0;
   background: rgba(15, 23, 42, 0.48);
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
   z-index: 90;
   padding: 1.5rem;
+  overflow-y: auto;
 }
 
 .admin-dialog {
@@ -1356,6 +1358,8 @@ textarea {
   padding: 1.2rem;
   display: grid;
   gap: 1rem;
+  max-height: calc(100vh - 3rem);
+  overflow-y: auto;
 }
 
 .admin-dialog-header {
@@ -1394,6 +1398,7 @@ textarea {
 .admin-dialog-body {
   display: grid;
   gap: 1rem;
+  padding-right: 0.4rem;
 }
 
 .admin-dialog-grid {

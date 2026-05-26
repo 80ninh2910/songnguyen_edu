@@ -164,6 +164,12 @@ export type AdminClassRequestDetail = {
     status: string;
     createdAt: string;
   }>;
+  assignedClass: {
+    id: string;
+    title: string;
+    status: string;
+    createdAt: string;
+  } | null;
 };
 
 export type AdminClassStatus = "OPEN" | "ASSIGNED" | "CLOSED";
@@ -194,6 +200,15 @@ export type AdminClassMember = {
   parentPhone: string;
   parentEmail: string | null;
   address: string | null;
+};
+
+export type AdminClassMemberInput = {
+  studentName: string;
+  studentGrade?: string;
+  parentName: string;
+  parentPhone: string;
+  parentEmail?: string;
+  address?: string;
 };
 
 export type AdminClassDetail = {
@@ -246,6 +261,63 @@ export type AdminClassDetail = {
   _count: {
     applications: number;
   };
+};
+
+export type AdminClassSession = {
+  id: string;
+  sessionNumber: number;
+  sessionDate: string;
+  startTime: string | null;
+  endTime: string | null;
+  topic: string | null;
+  notes: string | null;
+  status: "SCHEDULED" | "COMPLETED" | "CANCELLED";
+  tutor?: { id: string; fullName: string } | null;
+  feedbackCount: number;
+  totalMembers: number;
+};
+
+export type AdminClassSessionsResponse = {
+  class: {
+    id: string;
+    title: string;
+    subject: string;
+    grade: string;
+    district: string;
+  };
+  memberCount: number;
+  sessions: AdminClassSession[];
+};
+
+export type AdminSessionFeedback = {
+  id: string;
+  memberId: string;
+  attendance: "PRESENT" | "ABSENT" | "LATE" | "EXCUSED";
+  attitudeScore: number | null;
+  comprehensionScore: number | null;
+  homeworkScore: number | null;
+  strengths: string | null;
+  weaknesses: string | null;
+  recommendation: string | null;
+  overallComment: string | null;
+  createdAt: string;
+  updatedAt: string;
+  member: {
+    studentName: string;
+    parentName: string | null;
+    parentPhone: string | null;
+  };
+  tutor: { id: string; fullName: string };
+};
+
+export type AdminSessionFeedbacksResponse = {
+  session: {
+    id: string;
+    sessionNumber: number;
+    sessionDate: string;
+    classId: string;
+  };
+  feedbacks: AdminSessionFeedback[];
 };
 
 export type AdminClassApplicant = {
@@ -566,6 +638,7 @@ export async function convertAdminClassRequest(
     feePerHour?: number;
     schedule?: string;
     centerTeacherId?: string;
+    classId?: string;
   },
 ): Promise<{ classId: string; converted: true }> {
   const response = await adminFetch(`/admin/class-requests/${id}/convert`, {
@@ -653,6 +726,36 @@ export async function listAdminClassApplicants(
   return payload.data;
 }
 
+export async function listAdminClassSessions(
+  classId: string,
+): Promise<AdminClassSessionsResponse> {
+  const response = await adminFetch(`/admin/classes/${classId}/sessions`);
+
+  if (!response.ok) {
+    throw new Error("Không thể tải danh sách buổi học.");
+  }
+
+  const payload = await parseJson<ApiSuccess<AdminClassSessionsResponse>>(
+    response,
+  );
+  return payload.data;
+}
+
+export async function listAdminSessionFeedbacks(
+  sessionId: string,
+): Promise<AdminSessionFeedbacksResponse> {
+  const response = await adminFetch(`/admin/sessions/${sessionId}/feedbacks`);
+
+  if (!response.ok) {
+    throw new Error("Không thể tải nhận xét buổi học.");
+  }
+
+  const payload = await parseJson<ApiSuccess<AdminSessionFeedbacksResponse>>(
+    response,
+  );
+  return payload.data;
+}
+
 export async function createAdminClass(payload: {
   title: string;
   subject: string;
@@ -664,6 +767,7 @@ export async function createAdminClass(payload: {
   classType?: AdminClassType;
   tutorType?: AdminTutorType;
   centerTeacherId?: string | null;
+  members?: AdminClassMemberInput[];
 }): Promise<{ id: string }> {
   const response = await adminFetch("/admin/classes", {
     method: "POST",

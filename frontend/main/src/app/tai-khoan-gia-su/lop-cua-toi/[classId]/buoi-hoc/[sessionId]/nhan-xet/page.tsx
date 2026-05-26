@@ -214,7 +214,7 @@ export default function SessionFeedbackPage() {
                     </div>
                   </div>
                   <div>
-                    <p>Tiep thu</p>
+                    <p>Nang luc</p>
                     <div className="feedback-score-row">
                       {scoreOptions.map((score) => (
                         <button
@@ -256,7 +256,7 @@ export default function SessionFeedbackPage() {
                     />
                   </div>
                   <div>
-                    <label>Can cai thien</label>
+                    <label>Han che</label>
                     <textarea
                       rows={2}
                       value={draft.weaknesses}
@@ -274,7 +274,7 @@ export default function SessionFeedbackPage() {
                     />
                   </div>
                   <div>
-                    <label>Nhan xet tong</label>
+                    <label>Nhan xet chu</label>
                     <textarea
                       rows={2}
                       value={draft.overallComment}

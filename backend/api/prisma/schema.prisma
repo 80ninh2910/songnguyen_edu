@@ -192,18 +192,21 @@ model ClassRequest {
   tutorType     TutorType    @default(GIA_SU_TU_DO) @map("tutor_type")
   note          String?
   status        RequestStatus @default(PENDING)
+  assignedClassId String?     @map("assigned_class_id")
   processedAt   DateTime?     @map("processed_at")
   processedById String?       @map("processed_by_id")
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
 
   processedBy   Admin?        @relation("RequestProcessedBy", fields: [processedById], references: [id])
-  classes       Class[]
+  classes       Class[]       @relation("RequestSource")
+  assignedClass Class?        @relation("AssignedClassRequest", fields: [assignedClassId], references: [id])
   members       ClassMember[]
 
   @@index([status])
   @@index([requestType])
   @@index([tutorType])
+  @@index([assignedClassId])
   @@map("class_requests")
 }
 
@@ -225,7 +228,8 @@ model Class {
   createdAt       DateTime         @default(now()) @map("created_at")
   updatedAt       DateTime         @updatedAt @map("updated_at")
 
-  sourceRequest   ClassRequest?    @relation(fields: [sourceRequestId], references: [id])
+  sourceRequest   ClassRequest?    @relation("RequestSource", fields: [sourceRequestId], references: [id])
+  assignedRequests ClassRequest[]  @relation("AssignedClassRequest")
   centerTeacher   CenterTeacher?   @relation(fields: [centerTeacherId], references: [id])
   createdBy       Admin            @relation("ClassCreatedBy", fields: [createdById], references: [id])
   applications    ClassApplication[]

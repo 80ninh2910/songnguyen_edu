@@ -1,12 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { AdminStatusBadge } from "@/components/admin/AdminStatusBadge";
 import { AdminIcon, type AdminIconName } from "@/components/admin/AdminIcon";
 import {
+  createAdminCenterTeacher,
+  listAdminCenterTeachers,
   listAdminTutors,
+  type AdminCenterTeacherSummary,
+  type AdminCenterTeacherStatus,
   type AdminTutorStatus,
   type AdminTutorType,
   type AdminTutorSummary,
@@ -37,11 +41,39 @@ const STATUS_META: Record<
   REJECTED: { label: "TỪ CHỐI", tone: "rejected", dotColor: "#ba1a1a" },
 };
 
+const CENTER_TEACHER_STATUS_META: Record<
+  AdminCenterTeacherStatus,
+  { label: string; tone: "approved" | "rejected"; dotColor: string }
+> = {
+  ACTIVE: { label: "ĐANG HOẠT ĐỘNG", tone: "approved", dotColor: "#059669" },
+  INACTIVE: { label: "TẠM DỪNG", tone: "rejected", dotColor: "#ba1a1a" },
+};
+
 const TUTOR_TYPE_LABELS: Record<AdminTutorType, string> = {
   GIA_SU_TU_DO: "Gia sư tự do",
   GIA_SU_DAO_TAO: "Gia sư đào tạo",
   GIAO_VIEN_TRUNG_TAM: "Giáo viên trung tâm",
   ANY: "Không giới hạn",
+};
+
+const CENTER_TEACHER_DISTRICTS = ["Quận 12", "Quận Gò Vấp"];
+
+type CenterTeacherFormState = {
+  fullName: string;
+  email: string;
+  phone: string;
+  subjects: string;
+  districts: string[];
+  status: AdminCenterTeacherStatus;
+};
+
+const emptyCenterTeacherForm: CenterTeacherFormState = {
+  fullName: "",
+  email: "",
+  phone: "",
+  subjects: "",
+  districts: [],
+  status: "ACTIVE",
 };
 
 function getTutorTypeBadgeStyle(type: AdminTutorType): React.CSSProperties {
@@ -126,18 +158,27 @@ function buildTutorCsv(rows: AdminTutorSummary[]): string {
   return [header.join(","), ...lines].join("\n");
 }
 
+function parseCsv(value: string): string[] {
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 export default function TutorsPage() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   const status = searchParams.get("status") ?? "all";
-  const subject = searchParams.get("subject") ?? "all";
-  const district = searchParams.get("district") ?? "all";
-  const sort = searchParams.get("sort") ?? "newest";
   const page = Number(searchParams.get("page") ?? "1");
 
+  const [tutorTypeFilter, setTutorTypeFilter] = useState("all");
+
   const [records, setRecords] = useState<AdminTutorSummary[]>([]);
+  const [centerTeachers, setCenterTeachers] = useState<AdminCenterTeacherSummary[]>([]);
+  const [centerTeachersLoading, setCenterTeachersLoading] = useState(false);
+  const [centerTeachersError, setCenterTeachersError] = useState<string | null>(null);
   const [meta, setMeta] = useState({
     page: 1,
     limit: PAGE_SIZE,
@@ -148,15 +189,19 @@ export default function TutorsPage() {
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState({ approved: 0, pending: 0 });
+  const [isCreateTeacherOpen, setIsCreateTeacherOpen] = useState(false);
+  const [createTeacherLoading, setCreateTeacherLoading] = useState(false);
+  const [createTeacherError, setCreateTeacherError] = useState<string | null>(null);
+  const [createTeacherForm, setCreateTeacherForm] = useState<CenterTeacherFormState>(
+    emptyCenterTeacherForm,
+  );
 
   const queryFilters = useMemo(
     () => ({
       status: status === "all" ? undefined : (status as AdminTutorStatus),
-      subject: subject === "all" ? undefined : subject,
-      district: district === "all" ? undefined : district,
-      sort: sort === "newest" ? undefined : (sort as "active-most" | "rating"),
+      sort: undefined,
     }),
-    [status, subject, district, sort],
+    [status],
   );
 
   useEffect(() => {
@@ -229,6 +274,41 @@ export default function TutorsPage() {
     };
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadCenterTeachers = async () => {
+      setCenterTeachersLoading(true);
+      setCenterTeachersError(null);
+
+      try {
+        const response = await listAdminCenterTeachers({ page: 1, limit: 50 });
+        if (isMounted) {
+          setCenterTeachers(response.data);
+        }
+      } catch (err) {
+        if (isMounted) {
+          setCenterTeachersError(
+            err instanceof Error
+              ? err.message
+              : "Không thể tải danh sách giáo viên trung tâm.",
+          );
+          setCenterTeachers([]);
+        }
+      } finally {
+        if (isMounted) {
+          setCenterTeachersLoading(false);
+        }
+      }
+    };
+
+    void loadCenterTeachers();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const pagination = useMemo(() => {
     const totalPages = Math.max(meta.totalPages, 1);
     const currentPage = Math.min(Math.max(meta.page, 1), totalPages);
@@ -260,42 +340,26 @@ export default function TutorsPage() {
   const rangeStart = meta.total === 0 ? 0 : (meta.page - 1) * meta.limit + 1;
   const rangeEnd = Math.min(meta.page * meta.limit, meta.total);
 
+  const sortedRecords = useMemo(() => {
+    const rows = records.filter((record) => {
+      if (tutorTypeFilter === "all") return true;
+      return record.tutorType === tutorTypeFilter;
+    });
+    return rows;
+  }, [records, tutorTypeFilter]);
+
   const updateQuery = (next: {
     status?: string;
-    subject?: string;
-    district?: string;
-    sort?: string;
     page?: number;
   }) => {
     const params = new URLSearchParams(searchParams.toString());
     const nextStatus = next.status ?? status;
-    const nextSubject = next.subject ?? subject;
-    const nextDistrict = next.district ?? district;
-    const nextSort = next.sort ?? sort;
     const nextPage = next.page ?? page;
 
     if (nextStatus === "all") {
       params.delete("status");
     } else {
       params.set("status", nextStatus);
-    }
-
-    if (nextSubject === "all") {
-      params.delete("subject");
-    } else {
-      params.set("subject", nextSubject);
-    }
-
-    if (nextDistrict === "all") {
-      params.delete("district");
-    } else {
-      params.set("district", nextDistrict);
-    }
-
-    if (nextSort === "newest") {
-      params.delete("sort");
-    } else {
-      params.set("sort", nextSort);
     }
 
     if (nextPage <= 1) {
@@ -351,6 +415,60 @@ export default function TutorsPage() {
     }
   };
 
+  const handleOpenCreateTeacher = () => {
+    setCreateTeacherError(null);
+    setCreateTeacherForm({ ...emptyCenterTeacherForm });
+    setIsCreateTeacherOpen(true);
+  };
+
+  const handleCloseCreateTeacher = () => {
+    if (createTeacherLoading) return;
+    setIsCreateTeacherOpen(false);
+  };
+
+  const handleSubmitCreateTeacher = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (createTeacherLoading) return;
+
+    const fullName = createTeacherForm.fullName.trim();
+    const email = createTeacherForm.email.trim();
+    const phone = createTeacherForm.phone.trim();
+    const subjects = parseCsv(createTeacherForm.subjects);
+    const districts = createTeacherForm.districts;
+
+    if (!fullName || !email) {
+      setCreateTeacherError("Vui lòng nhập họ tên và email.");
+      return;
+    }
+
+    if (subjects.length === 0 || districts.length === 0) {
+      setCreateTeacherError("Vui lòng nhập môn dạy và khu vực.");
+      return;
+    }
+
+    setCreateTeacherLoading(true);
+    setCreateTeacherError(null);
+
+    try {
+      await createAdminCenterTeacher({
+        fullName,
+        email,
+        phone: phone || undefined,
+        subjects,
+        districts,
+        status: createTeacherForm.status,
+      });
+      setIsCreateTeacherOpen(false);
+    } catch (err) {
+      setCreateTeacherError(
+        err instanceof Error ? err.message : "Không thể tạo giáo viên trung tâm.",
+      );
+    } finally {
+      setCreateTeacherLoading(false);
+    }
+  };
+
   return (
     <div className="admin-page">
       <header className="admin-page-header">
@@ -371,6 +489,14 @@ export default function TutorsPage() {
           >
             <AdminIcon name="download" />
             {exporting ? "Đang xuất..." : "Xuất báo cáo"}
+          </button>
+          <button
+            className="admin-btn tonal"
+            onClick={handleOpenCreateTeacher}
+            type="button"
+          >
+            <AdminIcon name="add" />
+            Tạo giáo viên trung tâm
           </button>
           <button
             className="admin-btn primary"
@@ -433,50 +559,18 @@ export default function TutorsPage() {
               </select>
             </label>
 
-            <label>
-              <span className="tutors-select-label">Môn dạy</span>
-              <select
-                className="tutors-select"
-                onChange={(event) =>
-                  updateQuery({ subject: event.target.value, page: 1 })
-                }
-                value={subject}
-              >
-                <option value="all">Tất cả các môn</option>
-                <option value="Toán học">Toán học</option>
-                <option value="Vật lý">Vật lý</option>
-                <option value="Ngoại ngữ">Ngoại ngữ</option>
-              </select>
-            </label>
 
             <label>
-              <span className="tutors-select-label">Khu vực</span>
+              <span className="tutors-select-label">Loại gia sư</span>
               <select
                 className="tutors-select"
-                onChange={(event) =>
-                  updateQuery({ district: event.target.value, page: 1 })
-                }
-                value={district}
+                onChange={(event) => setTutorTypeFilter(event.target.value)}
+                value={tutorTypeFilter}
               >
-                <option value="all">Tất cả khu vực</option>
-                <option value="Hà Nội">Hà Nội</option>
-                <option value="TP. Hồ Chí Minh">TP. Hồ Chí Minh</option>
-                <option value="Đà Nẵng">Đà Nẵng</option>
-              </select>
-            </label>
-
-            <label>
-              <span className="tutors-select-label">Sắp xếp</span>
-              <select
-                className="tutors-select"
-                onChange={(event) =>
-                  updateQuery({ sort: event.target.value, page: 1 })
-                }
-                value={sort}
-              >
-                <option value="newest">Mới nhất</option>
-                <option value="active-most">Hoạt động nhiều nhất</option>
-                <option value="rating">Đánh giá cao nhất</option>
+                <option value="all">Tất cả loại</option>
+                <option value="GIA_SU_TU_DO">Gia sư tự do</option>
+                <option value="GIA_SU_DAO_TAO">Gia sư đào tạo</option>
+                <option value="GIAO_VIEN_TRUNG_TAM">Giáo viên trung tâm</option>
               </select>
             </label>
           </div>
@@ -519,7 +613,7 @@ export default function TutorsPage() {
               </tr>
             ) : null}
 
-            {records.map((record) => (
+            {sortedRecords.map((record) => (
               <tr key={record.id}>
                 <td>
                   <div className="table-user">
@@ -670,6 +764,245 @@ export default function TutorsPage() {
           </button>
         </div>
       </div>
+
+      <section className="admin-panel" style={{ marginTop: "2rem" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "1rem",
+          }}
+        >
+          <div>
+            <p className="admin-page-subtitle" style={{ margin: 0 }}>
+              Danh sách giáo viên trung tâm
+            </p>
+          </div>
+          <button
+            className="admin-btn tonal"
+            onClick={() => {
+              setCenterTeachersLoading(true);
+              setCenterTeachersError(null);
+              void listAdminCenterTeachers({ page: 1, limit: 50 })
+                .then((response) => setCenterTeachers(response.data))
+                .catch((err) =>
+                  setCenterTeachersError(
+                    err instanceof Error
+                      ? err.message
+                      : "Không thể tải danh sách giáo viên trung tâm.",
+                  ),
+                )
+                .finally(() => setCenterTeachersLoading(false));
+            }}
+            type="button"
+          >
+            <AdminIcon name="autorenew" />
+            Làm mới
+          </button>
+        </div>
+
+        {centerTeachersError ? (
+          <p style={{ marginBottom: "1rem", color: "#ba1a1a" }}>
+            {centerTeachersError}
+          </p>
+        ) : null}
+
+        <div className="admin-table-wrap">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>Họ tên</th>
+                <th>Email</th>
+                <th>Số điện thoại</th>
+                <th>Môn dạy</th>
+                <th>Khu vực</th>
+                <th>Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody>
+              {centerTeachersLoading ? (
+                <tr>
+                  <td colSpan={6} style={{ textAlign: "center", padding: "1.5rem" }}>
+                    Đang tải dữ liệu...
+                  </td>
+                </tr>
+              ) : centerTeachers.length === 0 ? (
+                <tr>
+                  <td colSpan={6} style={{ textAlign: "center", padding: "1.5rem" }}>
+                    Chưa có giáo viên trung tâm.
+                  </td>
+                </tr>
+              ) : (
+                centerTeachers.map((teacher) => (
+                  <tr key={teacher.id}>
+                    <td style={{ fontWeight: 600 }}>{teacher.fullName}</td>
+                    <td>{teacher.email}</td>
+                    <td>{teacher.phone ?? "-"}</td>
+                    <td>
+                      <div className="subject-chip-list">
+                        {teacher.subjects.map((subjectName) => (
+                          <span className="subject-chip" key={subjectName}>
+                            {subjectName}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td>{teacher.districts.join(", ")}</td>
+                    <td>
+                      <AdminStatusBadge
+                        label={CENTER_TEACHER_STATUS_META[teacher.status].label}
+                        tone={CENTER_TEACHER_STATUS_META[teacher.status].tone}
+                        dotColor={CENTER_TEACHER_STATUS_META[teacher.status].dotColor}
+                      />
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {isCreateTeacherOpen ? (
+        <div className="admin-dialog-backdrop" role="dialog" aria-modal>
+          <div className="admin-dialog">
+            <div className="admin-dialog-header">
+              <div>
+                <p className="admin-dialog-eyebrow">Tạo giáo viên trung tâm</p>
+                <h3 className="admin-dialog-title">Thông tin giáo viên</h3>
+              </div>
+              <button
+                className="admin-dialog-close"
+                onClick={handleCloseCreateTeacher}
+                type="button"
+              >
+                <AdminIcon name="cancel" />
+              </button>
+            </div>
+            <form className="admin-dialog-body" onSubmit={handleSubmitCreateTeacher}>
+              <div className="admin-dialog-grid">
+                <label className="admin-dialog-field">
+                  Họ tên
+                  <input
+                    type="text"
+                    value={createTeacherForm.fullName}
+                    onChange={(event) =>
+                      setCreateTeacherForm((prev) => ({
+                        ...prev,
+                        fullName: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <label className="admin-dialog-field">
+                  Email
+                  <input
+                    type="email"
+                    value={createTeacherForm.email}
+                    onChange={(event) =>
+                      setCreateTeacherForm((prev) => ({
+                        ...prev,
+                        email: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <label className="admin-dialog-field">
+                  Số điện thoại
+                  <input
+                    type="text"
+                    value={createTeacherForm.phone}
+                    onChange={(event) =>
+                      setCreateTeacherForm((prev) => ({
+                        ...prev,
+                        phone: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <label className="admin-dialog-field">
+                  Trạng thái
+                  <select
+                    value={createTeacherForm.status}
+                    onChange={(event) =>
+                      setCreateTeacherForm((prev) => ({
+                        ...prev,
+                        status: event.target.value as AdminCenterTeacherStatus,
+                      }))
+                    }
+                  >
+                    <option value="ACTIVE">Hoạt động</option>
+                    <option value="INACTIVE">Tạm dừng</option>
+                  </select>
+                </label>
+                <label className="admin-dialog-field admin-dialog-field-full">
+                  Môn dạy (phân cách bằng dấu phẩy)
+                  <input
+                    type="text"
+                    value={createTeacherForm.subjects}
+                    onChange={(event) =>
+                      setCreateTeacherForm((prev) => ({
+                        ...prev,
+                        subjects: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
+                <label className="admin-dialog-field admin-dialog-field-full">
+                  Khu vực
+                  <div
+                    style={{
+                      display: "grid",
+                      gap: "0.5rem",
+                      marginTop: "0.35rem",
+                    }}
+                  >
+                    {CENTER_TEACHER_DISTRICTS.map((item) => {
+                      const checked = createTeacherForm.districts.includes(item);
+                      return (
+                        <label key={item} style={{ display: "flex", gap: "0.45rem" }}>
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={(event) =>
+                              setCreateTeacherForm((prev) => ({
+                                ...prev,
+                                districts: event.target.checked
+                                  ? [...prev.districts, item]
+                                  : prev.districts.filter((value) => value !== item),
+                              }))
+                            }
+                          />
+                          {item}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </label>
+                {createTeacherError ? (
+                  <p style={{ margin: 0, color: "#ba1a1a" }}>{createTeacherError}</p>
+                ) : null}
+                <p style={{ margin: 0, color: "#64748b", fontSize: "0.85rem" }}>
+                  Mat khau mac dinh: 123456. Tai khoan bat buoc doi mat khau o lan dang nhap dau.
+                </p>
+              </div>
+              <div className="admin-dialog-actions">
+                <button
+                  className="admin-btn ghost"
+                  onClick={handleCloseCreateTeacher}
+                  type="button"
+                >
+                  Hủy
+                </button>
+                <button className="admin-btn primary" type="submit">
+                  {createTeacherLoading ? "Đang tạo..." : "Tạo giáo viên"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

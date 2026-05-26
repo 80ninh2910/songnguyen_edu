@@ -24,6 +24,7 @@ type SessionListResponse = {
     subject: string;
     grade: string;
     district: string;
+    classType?: 'LOP_GIA_SU_TU_DO' | 'LOP_GIA_SU_DAO_TAO' | 'LOP_TRUNG_TAM';
     members?: Array<{ id: string; studentName: string }>;
   };
   memberCount: number;
@@ -73,6 +74,8 @@ export default function ClassSessionListPage() {
     return { label: 'Đã lên lịch', css: 'pending' };
   };
 
+  const isCenterClass = data?.class?.classType === 'LOP_TRUNG_TAM';
+
   return (
     <div className="page-content">
       <div className="session-header">
@@ -85,13 +88,15 @@ export default function ClassSessionListPage() {
           <h1 className="page-title">Danh sách buổi học</h1>
           <p className="page-subtitle">Theo dõi tiến độ buổi học và nhận xét cho lớp được phân công.</p>
         </div>
-        <Link
-          href={`/tai-khoan-gia-su/lop-cua-toi/${params?.classId ?? ''}/buoi-hoc/tao-moi`}
-          className="btn-primary"
-          style={{ textDecoration: 'none' }}
-        >
-          + Tạo buổi học mới
-        </Link>
+        {isCenterClass && (
+          <Link
+            href={`/tai-khoan-gia-su/lop-cua-toi/${params?.classId ?? ''}/buoi-hoc/tao-moi`}
+            className="btn-primary"
+            style={{ textDecoration: 'none' }}
+          >
+            + Tạo buổi học mới
+          </Link>
+        )}
         {data?.class?.members?.length ? (
           <div className="session-member-links">
             {data.class.members.map((member) => (
@@ -165,13 +170,15 @@ export default function ClassSessionListPage() {
                     >
                       Xem chi tiet
                     </Link>
-                    <Link
-                      href={`/tai-khoan-gia-su/lop-cua-toi/${data.class.id}/buoi-hoc/${session.id}/nhan-xet`}
-                      className="btn-primary"
-                      style={{ textDecoration: 'none' }}
-                    >
-                      Viet nhan xet
-                    </Link>
+                    {isCenterClass && (
+                      <Link
+                        href={`/tai-khoan-gia-su/lop-cua-toi/${data.class.id}/buoi-hoc/${session.id}/nhan-xet`}
+                        className="btn-primary"
+                        style={{ textDecoration: 'none' }}
+                      >
+                        Viet nhan xet
+                      </Link>
+                    )}
                   </div>
                 </div>
               </div>
