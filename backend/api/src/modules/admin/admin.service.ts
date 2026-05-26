@@ -542,7 +542,7 @@ export const adminService = {
     });
 
     if (existingCenterTeacher) {
-      conflict("Center teacher email already exists");
+      conflict("Email của giáo viên trung tâm đã tồn tại");
     }
 
     const existingTutor = await prisma.tutor.findUnique({
@@ -551,7 +551,7 @@ export const adminService = {
     });
 
     if (existingTutor) {
-      conflict("Tutor email already exists");
+      conflict("Email của gia sư đã tồn tại");
     }
 
     const status = body.status ?? "ACTIVE";
@@ -646,7 +646,7 @@ export const adminService = {
     });
 
     if (!existing) {
-      throw new AppError("CENTER_TEACHER_NOT_FOUND", 404, "Center teacher not found");
+      throw new AppError("CENTER_TEACHER_NOT_FOUND", 404, "Không tìm thấy giáo viên trung tâm");
     }
 
     if (body.email && body.email !== existing.email) {
@@ -656,7 +656,7 @@ export const adminService = {
       });
 
       if (emailExists) {
-        conflict("Center teacher email already exists");
+        conflict("Email của giáo viên trung tâm đã tồn tại");
       }
     }
 
@@ -812,7 +812,7 @@ export const adminService = {
       return { id: tutor.id };
     } catch (error) {
       if (isPrismaConstraintError(error, "P2002")) {
-        conflict("Tutor email already exists");
+        conflict("Email của gia sư đã tồn tại");
       }
 
       throw error;
@@ -862,7 +862,7 @@ export const adminService = {
     });
 
     if (!existing) {
-      throw new AppError("TUTOR_NOT_FOUND", 404, "Tutor not found");
+      throw new AppError("TUTOR_NOT_FOUND", 404, "Không tìm thấy gia sư");
     }
 
     const data: Prisma.TutorUpdateInput = {};
@@ -952,13 +952,13 @@ export const adminService = {
       });
 
       if (!detail) {
-        throw new AppError("TUTOR_NOT_FOUND", 404, "Tutor not found");
+        throw new AppError("TUTOR_NOT_FOUND", 404, "Không tìm thấy gia sư");
       }
 
       return detail;
     } catch (error) {
       if (isPrismaConstraintError(error, "P2002")) {
-        conflict("Tutor email already exists");
+        conflict("Email của gia sư đã tồn tại");
       }
 
       throw error;
@@ -975,7 +975,7 @@ export const adminService = {
     });
 
     if (!tutor) {
-      throw new AppError("TUTOR_NOT_FOUND", 404, "Tutor not found");
+      throw new AppError("TUTOR_NOT_FOUND", 404, "Không tìm thấy gia sư");
     }
 
     const tempPassword = "123456";
@@ -1047,7 +1047,7 @@ export const adminService = {
     });
 
     if (!tutor) {
-      throw new AppError("TUTOR_NOT_FOUND", 404, "Tutor not found");
+      throw new AppError("TUTOR_NOT_FOUND", 404, "Không tìm thấy gia sư");
     }
 
     return tutor;
@@ -1068,14 +1068,14 @@ export const adminService = {
     });
 
     if (!tutor) {
-      throw new AppError("TUTOR_NOT_FOUND", 404, "Tutor not found");
+      throw new AppError("TUTOR_NOT_FOUND", 404, "Không tìm thấy gia sư");
     }
 
     if (tutor.status !== "PENDING") {
-      invalidState("Only pending tutor can be approved");
+      invalidState("Chỉ có thể phê duyệt gia sư ở trạng thái chờ");
     }
 
-    const tempPassword = generateTempPassword();
+    const tempPassword = "123456";
     const passwordHash = await hashPassword(tempPassword);
     const actorName = await resolveActorName(actor);
 
@@ -1133,11 +1133,11 @@ export const adminService = {
     });
 
     if (!tutor) {
-      throw new AppError("TUTOR_NOT_FOUND", 404, "Tutor not found");
+      throw new AppError("TUTOR_NOT_FOUND", 404, "Không tìm thấy gia sư");
     }
 
     if (tutor.status !== "PENDING") {
-      invalidState("Only pending tutor can be rejected");
+      invalidState("Chỉ có thể từ chối gia sư ở trạng thái chờ");
     }
 
     const actorName = await resolveActorName(actor);
@@ -1294,7 +1294,7 @@ export const adminService = {
       throw new AppError(
         "CLASS_REQUEST_NOT_FOUND",
         404,
-        "Class request not found",
+        "Không tìm thấy yêu cầu tạo lớp",
       );
     }
 
@@ -1320,19 +1320,19 @@ export const adminService = {
       throw new AppError(
         "CLASS_REQUEST_NOT_FOUND",
         404,
-        "Class request not found",
+        "Không tìm thấy yêu cầu tạo lớp",
       );
     }
 
     if (request.status !== "PENDING") {
-      invalidState("Only pending request can be converted");
+      invalidState("Chỉ có thể chuyển đổi yêu cầu ở trạng thái chờ");
     }
 
     if (request.requestType !== "TRUNG_TAM" && input.classId) {
       throw new AppError(
         "CLASS_SELECTION_NOT_ALLOWED",
         400,
-        "Class selection is only allowed for center requests",
+        "Chỉ được chọn lớp cho yêu cầu từ trung tâm",
       );
     }
 
@@ -1343,7 +1343,7 @@ export const adminService = {
         throw new AppError(
           "CLASS_REQUIRED",
           400,
-          "Class is required for center requests",
+          "Yêu cầu từ trung tâm phải chọn lớp học",
         );
       }
 
@@ -1357,19 +1357,19 @@ export const adminService = {
       });
 
       if (!classItem) {
-        throw new AppError("CLASS_NOT_FOUND", 404, "Class not found");
+        throw new AppError("CLASS_NOT_FOUND", 404, "Không tìm thấy lớp học");
       }
 
       if (classItem.classType !== "LOP_TRUNG_TAM") {
         throw new AppError(
           "INVALID_CLASS_TYPE",
           400,
-          "Only center classes can be selected",
+          "Chỉ có thể chọn lớp trung tâm",
         );
       }
 
       if (classItem.status !== "OPEN") {
-        invalidState("Only OPEN classes can accept center requests");
+        invalidState("Chỉ các lớp đang MỞ mới có thể nhận yêu cầu từ trung tâm");
       }
 
       const assignedClass = await prisma.$transaction(async (tx: any) => {
@@ -1444,7 +1444,7 @@ export const adminService = {
       throw new AppError(
         "CENTER_TEACHER_REQUIRED",
         400,
-        "Center teacher is required for center classes",
+        "Lớp trung tâm yêu cầu phải chọn giáo viên trung tâm",
       );
     }
 
@@ -1542,12 +1542,12 @@ export const adminService = {
       throw new AppError(
         "CLASS_REQUEST_NOT_FOUND",
         404,
-        "Class request not found",
+        "Không tìm thấy yêu cầu tạo lớp",
       );
     }
 
     if (request.status !== "PENDING") {
-      invalidState("Only pending request can be rejected");
+      invalidState("Chỉ có thể từ chối yêu cầu ở trạng thái chờ");
     }
 
     const actorName = await resolveActorName(actor);
@@ -1696,7 +1696,7 @@ export const adminService = {
       throw new AppError(
         "CENTER_TEACHER_REQUIRED",
         400,
-        "Center teacher is required for center classes",
+        "Lớp trung tâm yêu cầu phải chọn giáo viên trung tâm",
       );
     }
 
@@ -1704,7 +1704,7 @@ export const adminService = {
       throw new AppError(
         "MEMBERS_REQUIRED",
         400,
-        "Center classes require at least one member",
+        "Lớp trung tâm yêu cầu phải có ít nhất một học viên",
       );
     }
 
@@ -1747,6 +1747,32 @@ export const adminService = {
         });
       }
 
+      // Lớp trung tâm: tạo ClassAssignment tự động để giáo viên thấy lớp qua GET /tutor/my-assigned-classes
+      if (input.classType === "LOP_TRUNG_TAM" && input.centerTeacherId) {
+        // CenterTeacher và Tutor có cùng email — lookup Tutor.id qua email
+        const centerTeacherRecord = await tx.centerTeacher.findUnique({
+          where: { id: input.centerTeacherId },
+          select: { email: true },
+        });
+
+        if (centerTeacherRecord) {
+          const tutorAccount = await tx.tutor.findUnique({
+            where: { email: centerTeacherRecord.email },
+            select: { id: true },
+          });
+
+          if (tutorAccount) {
+            await tx.classAssignment.create({
+              data: {
+                classId: newClass.id,
+                tutorId: tutorAccount.id,
+                assignedById: actor.id,
+              },
+            });
+          }
+        }
+      }
+
       await auditLogService.log(
         {
           actorId: actor.id,
@@ -1758,6 +1784,7 @@ export const adminService = {
             subject: newClass.subject,
             district: newClass.district,
             members: input.members?.length ?? 0,
+            centerTeacherId: input.centerTeacherId,
           },
         },
         tx,
@@ -1822,7 +1849,7 @@ export const adminService = {
     });
 
     if (!classItem) {
-      throw new AppError("CLASS_NOT_FOUND", 404, "Class not found");
+      throw new AppError("CLASS_NOT_FOUND", 404, "Không tìm thấy lớp học");
     }
 
     return classItem;
@@ -1849,18 +1876,18 @@ export const adminService = {
     });
 
     if (!classItem) {
-      throw new AppError("CLASS_NOT_FOUND", 404, "Class not found");
+      throw new AppError("CLASS_NOT_FOUND", 404, "Không tìm thấy lớp học");
     }
 
     if (classItem.status === "CLOSED") {
-      invalidState("Closed class cannot be updated");
+      invalidState("Không thể cập nhật lớp học đã đóng");
     }
 
     if (input.classType === "LOP_TRUNG_TAM" && !input.centerTeacherId) {
       throw new AppError(
         "CENTER_TEACHER_REQUIRED",
         400,
-        "Center teacher is required for center classes",
+        "Lớp trung tâm yêu cầu phải chọn giáo viên trung tâm",
       );
     }
 
@@ -1905,11 +1932,11 @@ export const adminService = {
     });
 
     if (!classItem) {
-      throw new AppError("CLASS_NOT_FOUND", 404, "Class not found");
+      throw new AppError("CLASS_NOT_FOUND", 404, "Không tìm thấy lớp học");
     }
 
     if (classItem.status === "CLOSED") {
-      invalidState("Class is already closed");
+      invalidState("Lớp học đã bị đóng");
     }
 
     const actorName = await resolveActorName(actor);
@@ -1949,21 +1976,7 @@ export const adminService = {
     });
 
     if (!classItem) {
-      throw new AppError("CLASS_NOT_FOUND", 404, "Class not found");
-    }
-
-    if (classItem.classType !== "LOP_TRUNG_TAM") {
-      throw new AppError(
-        "CLASS_NOT_CENTER",
-        403,
-        "Only center classes allow session feedback",
-      );
-    }
-
-    const memberCount = await prisma.classMember.count({ where: { classId } });
-
-    if (memberCount === 0) {
-      throw new AppError("NO_MEMBERS", 400, "Class has no members");
+      throw new AppError("CLASS_NOT_FOUND", 404, "Không tìm thấy lớp học");
     }
 
     return prisma.classApplication.findMany({
@@ -2000,7 +2013,7 @@ export const adminService = {
     });
 
     if (!classItem) {
-      throw new AppError("CLASS_NOT_FOUND", 404, "Class not found");
+      throw new AppError("CLASS_NOT_FOUND", 404, "Không tìm thấy lớp học");
     }
 
     const selectedApplication = await prisma.classApplication.findUnique({
@@ -2025,12 +2038,12 @@ export const adminService = {
       throw new AppError(
         "APPLICATION_NOT_FOUND",
         404,
-        "Selected tutor has not applied for this class",
+        "Gia sư được chọn chưa ứng tuyển vào lớp này",
       );
     }
 
     if (selectedApplication.status === "REJECTED") {
-      invalidState("Rejected application cannot be assigned");
+      invalidState("Không thể phân công cho đơn ứng tuyển đã bị từ chối");
     }
 
     const actorName = await resolveActorName(actor);
@@ -2048,7 +2061,7 @@ export const adminService = {
         });
 
         if (openGuard.count === 0) {
-          conflict("Class is no longer OPEN");
+          conflict("Lớp học không còn ở trạng thái MỞ");
         }
 
         const createdAssignment = await tx.classAssignment.create({
@@ -2126,7 +2139,7 @@ export const adminService = {
         isPrismaConstraintError(error, "P2002") ||
         isPrismaConstraintError(error, "P2034")
       ) {
-        conflict("Class has already been assigned by another admin");
+        conflict("Lớp học đã được phân công bởi admin khác");
       }
 
       throw error;
@@ -2145,11 +2158,11 @@ export const adminService = {
     });
 
     if (!classItem) {
-      throw new AppError("CLASS_NOT_FOUND", 404, "Class not found");
+      throw new AppError("CLASS_NOT_FOUND", 404, "Không tìm thấy lớp học");
     }
 
     if (classItem.status !== "OPEN") {
-      invalidState("Only OPEN classes can reject applicants");
+      invalidState("Chỉ các lớp đang MỞ mới có thể từ chối ứng viên");
     }
 
     const application = await prisma.classApplication.findUnique({
@@ -2158,11 +2171,11 @@ export const adminService = {
     });
 
     if (!application) {
-      throw new AppError("APPLICATION_NOT_FOUND", 404, "Application not found");
+      throw new AppError("APPLICATION_NOT_FOUND", 404, "Không tìm thấy đơn ứng tuyển");
     }
 
     if (application.status !== "PENDING") {
-      invalidState("Only pending applications can be rejected");
+      invalidState("Chỉ có thể từ chối đơn ứng tuyển ở trạng thái chờ");
     }
 
     const actorName = await resolveActorName(actor);
@@ -2418,7 +2431,7 @@ export const adminService = {
     });
 
     if (!payment) {
-      throw new AppError("PAYMENT_NOT_FOUND", 404, "Payment not found");
+      throw new AppError("PAYMENT_NOT_FOUND", 404, "Không tìm thấy thông tin thanh toán");
     }
 
     return payment;
@@ -2446,19 +2459,19 @@ export const adminService = {
     });
 
     if (!payment) {
-      throw new AppError("PAYMENT_NOT_FOUND", 404, "Payment not found");
+      throw new AppError("PAYMENT_NOT_FOUND", 404, "Không tìm thấy thông tin thanh toán");
     }
 
     if (payment.status !== "PENDING") {
-      invalidState("Only pending payment can be confirmed");
+      invalidState("Chỉ có thể xác nhận thanh toán ở trạng thái chờ");
     }
 
     if (!payment.classId || !payment.class) {
-      invalidState("Payment is not linked to a class");
+      invalidState("Thanh toán không liên kết với lớp học nào");
     }
 
     if (payment.class.status !== "ASSIGNED") {
-      invalidState("Class must be ASSIGNED before confirming payment");
+      invalidState("Lớp học phải ở trạng thái PHÂN CÔNG trước khi xác nhận thanh toán");
     }
 
     const actorName = await resolveActorName(actor);
@@ -2530,11 +2543,11 @@ export const adminService = {
     });
 
     if (!payment) {
-      throw new AppError("PAYMENT_NOT_FOUND", 404, "Payment not found");
+      throw new AppError("PAYMENT_NOT_FOUND", 404, "Không tìm thấy thông tin thanh toán");
     }
 
     if (payment.status !== "PENDING") {
-      invalidState("Only pending payment can be rejected");
+      invalidState("Chỉ có thể từ chối thanh toán ở trạng thái chờ");
     }
 
     const actorName = await resolveActorName(actor);
@@ -2583,7 +2596,7 @@ export const adminService = {
     });
 
     if (!classItem) {
-      throw new AppError("CLASS_NOT_FOUND", 404, "Class not found");
+      throw new AppError("CLASS_NOT_FOUND", 404, "Không tìm thấy lớp học");
     }
 
     const memberCount = await prisma.classMember.count({ where: { classId } });
@@ -2633,7 +2646,7 @@ export const adminService = {
     });
 
     if (!classItem) {
-      throw new AppError("CLASS_NOT_FOUND", 404, "Class not found");
+      throw new AppError("CLASS_NOT_FOUND", 404, "Không tìm thấy lớp học");
     }
 
     const assignment = await prisma.classAssignment.findUnique({
@@ -2642,17 +2655,17 @@ export const adminService = {
     });
 
     if (!assignment && !input.tutorId) {
-      throw new AppError("TUTOR_REQUIRED", 400, "Tutor is required for this class");
+      throw new AppError("TUTOR_REQUIRED", 400, "Lớp học này yêu cầu phải có gia sư");
     }
 
     if (assignment && input.tutorId && input.tutorId !== assignment.tutorId) {
-      throw new AppError("INVALID_TUTOR", 400, "Tutor does not match class assignment");
+      throw new AppError("INVALID_TUTOR", 400, "Gia sư không khớp với phân công của lớp");
     }
 
     const tutorId = input.tutorId ?? assignment?.tutorId;
 
     if (!tutorId) {
-      throw new AppError("TUTOR_REQUIRED", 400, "Tutor is required for this class");
+      throw new AppError("TUTOR_REQUIRED", 400, "Lớp học này yêu cầu phải có gia sư");
     }
 
     const actorName = await resolveActorName(actor);
@@ -2709,7 +2722,7 @@ export const adminService = {
     });
 
     if (!session) {
-      throw new AppError("SESSION_NOT_FOUND", 404, "Session not found");
+      throw new AppError("SESSION_NOT_FOUND", 404, "Không tìm thấy buổi học");
     }
 
     const feedbacks = await prisma.sessionFeedback.findMany({
@@ -2751,7 +2764,7 @@ export const adminService = {
     });
 
     if (!classItem) {
-      throw new AppError("CLASS_NOT_FOUND", 404, "Class not found");
+      throw new AppError("CLASS_NOT_FOUND", 404, "Không tìm thấy lớp học");
     }
 
     const [members, sessionsCount, feedbacks] = await Promise.all([
@@ -2882,7 +2895,7 @@ export const adminService = {
     });
 
     if (!member) {
-      throw new AppError("MEMBER_NOT_FOUND", 404, "Member not found");
+      throw new AppError("MEMBER_NOT_FOUND", 404, "Không tìm thấy học viên");
     }
 
     const feedbacks = await prisma.sessionFeedback.findMany({

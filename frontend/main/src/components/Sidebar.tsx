@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useProfile } from '@/context/ProfileContext';
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -9,6 +10,8 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
+  const { profile } = useProfile();
+  const isCenterTeacher = profile.tutorType === 'GIAO_VIEN_TRUNG_TAM';
 
   const handleLogout = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -47,7 +50,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       </div>
       <nav className="sidebar-nav">
         <Link href="/tai-khoan-gia-su" className={pathname === '/tai-khoan-gia-su' ? 'active' : ''} onClick={onClose}><i className="fas fa-th-large"></i> Bảng Điều Khiển</Link>
-        <Link href="/tai-khoan-gia-su/danh-sach-lop" className={pathname === '/tai-khoan-gia-su/danh-sach-lop' ? 'active' : ''} onClick={onClose}><i className="fas fa-chalkboard"></i> Danh Sách Lớp</Link>
+        {/* Giáo viên trung tâm không được phép xem danh sách lớp công khai */}
+        {!isCenterTeacher && (
+          <Link href="/tai-khoan-gia-su/danh-sach-lop" className={pathname === '/tai-khoan-gia-su/danh-sach-lop' ? 'active' : ''} onClick={onClose}><i className="fas fa-chalkboard"></i> Danh Sách Lớp</Link>
+        )}
         <Link href="/tai-khoan-gia-su/lop-cua-toi" className={pathname === '/tai-khoan-gia-su/lop-cua-toi' ? 'active' : ''} onClick={onClose}><i className="fas fa-graduation-cap"></i> Lớp Của Tôi</Link>
         <Link href="/tai-khoan-gia-su/ho-so" className={pathname === '/tai-khoan-gia-su/ho-so' ? 'active' : ''} onClick={onClose}><i className="fas fa-user"></i> Hồ Sơ</Link>
         <Link href="/tai-khoan-gia-su/doi-mat-khau" className={pathname === '/tai-khoan-gia-su/doi-mat-khau' ? 'active' : ''} onClick={onClose}><i className="fas fa-key"></i> Đổi Mật Khẩu</Link>

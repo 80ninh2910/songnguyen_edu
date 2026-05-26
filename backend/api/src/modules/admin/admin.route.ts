@@ -39,7 +39,6 @@ import {
   rejectPaymentHandler,
   rejectTutorHandler,
   resetTutorPasswordHandler,
-  resetTutorPasswordHandler,
   updateCenterTeacherHandler,
   updateClassHandler,
   updateTutorHandler,
@@ -83,7 +82,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
       !request.user ||
       (request.user.role !== "ADMIN" && request.user.role !== "SUPERADMIN")
     ) {
-      throw new AppError("FORBIDDEN", 403, "Insufficient permission");
+      throw new AppError("FORBIDDEN", 403, "Không có quyền truy cập");
     }
   };
 

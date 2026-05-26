@@ -77,26 +77,24 @@ export function registerErrorHandler(app: FastifyInstance): void {
       return;
     }
 
-    // 2. JWT authentication errors → 401
     if (isJwtError(error)) {
       void reply.status(401).send({
         success: false,
         error: {
           code: ErrorCodes.AUTH_REQUIRED,
-          message: "Authentication required",
+          message: "Yêu cầu xác thực tài khoản",
           details: null,
         },
       });
       return;
     }
 
-    // 3. Zod validation errors → 400
     if (error instanceof ZodError) {
       void reply.status(400).send({
         success: false,
         error: {
           code: ErrorCodes.VALIDATION_ERROR,
-          message: "Validation failed",
+          message: "Dữ liệu đầu vào không hợp lệ",
           details: error.issues.map((i) => ({
             path: i.path.join("."),
             code: i.code,
@@ -107,17 +105,16 @@ export function registerErrorHandler(app: FastifyInstance): void {
       return;
     }
 
-    // 4. Fastify JSON schema validation errors → 400
     if (isFastifyValidationError(error)) {
       void reply.status(400).send({
         success: false,
         error: {
           code: ErrorCodes.VALIDATION_ERROR,
-          message: "Validation failed",
+          message: "Dữ liệu đầu vào không hợp lệ",
           details: error.validation.map((i) => ({
             path: i.instancePath ?? "",
             code: i.keyword ?? "validation",
-            message: i.message ?? "Invalid request",
+            message: i.message ?? "Yêu cầu không hợp lệ",
             params: i.params ?? null,
           })),
         },
@@ -131,7 +128,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
         success: false,
         error: {
           code: ErrorCodes.RATE_LIMITED,
-          message: error instanceof Error ? error.message : "Too many requests",
+          message: error instanceof Error ? error.message : "Thao tác quá nhanh, vui lòng thử lại sau",
           details: null,
         },
       });
@@ -147,37 +144,34 @@ export function registerErrorHandler(app: FastifyInstance): void {
       };
 
       switch (pe.code) {
-        // Unique constraint violation → 409
         case "P2002":
           void reply.status(409).send({
             success: false,
             error: {
               code: "DUPLICATE_ENTRY",
-              message: "Record already exists",
+              message: "Bản ghi đã tồn tại",
               details: pe.meta ?? null,
             },
           });
           return;
 
-        // Foreign key constraint fail (e.g. invalid tutorId) → 400
         case "P2003":
           void reply.status(400).send({
             success: false,
             error: {
               code: "INVALID_REFERENCE",
-              message: "Referenced record not found",
+              message: "Không tìm thấy dữ liệu liên kết",
               details: pe.meta ?? null,
             },
           });
           return;
 
-        // Record not found for update/delete → 404
         case "P2025":
           void reply.status(404).send({
             success: false,
             error: {
               code: "NOT_FOUND",
-              message: "Record not found",
+              message: "Không tìm thấy bản ghi",
               details: pe.meta ?? null,
             },
           });
@@ -196,13 +190,12 @@ export function registerErrorHandler(app: FastifyInstance): void {
       }
     }
 
-    // 6. Unhandled errors → 500
     void reply.status(500).send({
       success: false,
       error: {
         code: ErrorCodes.INTERNAL_ERROR,
         message:
-          error instanceof Error ? error.message : "Internal server error",
+          error instanceof Error ? error.message : "Lỗi máy chủ nội bộ",
         details: error instanceof Error ? error.stack : null,
       },
     });

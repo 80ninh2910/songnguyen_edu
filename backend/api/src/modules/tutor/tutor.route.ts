@@ -119,7 +119,7 @@ const attendanceValues = ["PRESENT", "ABSENT", "LATE", "EXCUSED"] as const;
 function parseSessionDate(value: string): Date {
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) {
-    throw new AppError("INVALID_DATE", 400, "Invalid session date");
+    throw new AppError("INVALID_DATE", 400, "Ngày của buổi học không hợp lệ");
   }
   return parsed;
 }
@@ -127,7 +127,7 @@ function parseSessionDate(value: string): Date {
 function validateScore(value: number | undefined, field: string): void {
   if (value === undefined || value === null) return;
   if (!Number.isFinite(value) || value < 1 || value > 5) {
-    throw new AppError("INVALID_SCORE", 400, `${field} must be between 1 and 5`);
+    throw new AppError("INVALID_SCORE", 400, `${field} phải nằm trong khoảng từ 1 đến 5`);
   }
 }
 
@@ -136,7 +136,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
     await request.jwtVerify();
 
     if (!request.user || request.user.role !== "TUTOR") {
-      throw new AppError("FORBIDDEN", 403, "Insufficient permission");
+      throw new AppError("FORBIDDEN", 403, "Không có quyền truy cập");
     }
   };
 
@@ -151,14 +151,14 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
     });
 
     if (!tutor) {
-      throw new AppError("TUTOR_NOT_FOUND", 404, "Tutor not found");
+      throw new AppError("TUTOR_NOT_FOUND", 404, "Không tìm thấy gia sư");
     }
 
     if (tutor.mustChangePassword) {
       throw new AppError(
         "PASSWORD_RESET_REQUIRED",
         403,
-        "Password change required",
+        "Yêu cầu thay đổi mật khẩu",
       );
     }
   };
@@ -170,14 +170,14 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
     });
 
     if (!tutor) {
-      throw new AppError("TUTOR_NOT_FOUND", 404, "Tutor not found");
+      throw new AppError("TUTOR_NOT_FOUND", 404, "Không tìm thấy gia sư");
     }
 
     if (tutor.tutorType !== "GIAO_VIEN_TRUNG_TAM") {
       throw new AppError(
         "CENTER_TUTOR_REQUIRED",
         403,
-        "Center teacher account is required",
+        "Yêu cầu phải có tài khoản giáo viên trung tâm",
       );
     }
   };
@@ -203,18 +203,18 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
     });
 
     if (!assignment) {
-      throw new AppError("CLASS_NOT_ASSIGNED", 404, "Class is not assigned yet");
+      throw new AppError("CLASS_NOT_ASSIGNED", 404, "Lớp học chưa được phân công");
     }
 
     if (assignment.tutorId !== tutorId) {
-      throw new AppError("FORBIDDEN", 403, "Insufficient permission");
+      throw new AppError("FORBIDDEN", 403, "Không có quyền truy cập");
     }
 
     if (assignment.class.classType !== "LOP_TRUNG_TAM") {
       throw new AppError(
         "CLASS_NOT_CENTER",
         403,
-        "Only center classes allow session feedback",
+        "Chỉ các lớp trung tâm mới cho phép gửi nhận xét buổi học",
       );
     }
 
@@ -249,7 +249,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
       });
 
       if (!tutor) {
-        throw new AppError("TUTOR_NOT_FOUND", 404, "Tutor not found");
+        throw new AppError("TUTOR_NOT_FOUND", 404, "Không tìm thấy gia sư");
       }
 
       void reply.send(success(tutor));
@@ -287,7 +287,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
       });
 
       if (!tutor || !tutor.passwordHash) {
-        throw new AppError("TUTOR_NOT_FOUND", 404, "Tutor not found");
+        throw new AppError("TUTOR_NOT_FOUND", 404, "Không tìm thấy gia sư");
       }
 
       const isValidPassword = await comparePassword(
@@ -296,7 +296,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
       );
 
       if (!isValidPassword) {
-        throw new AppError("INVALID_CREDENTIALS", 401, "Invalid password");
+        throw new AppError("INVALID_CREDENTIALS", 401, "Mật khẩu không chính xác");
       }
 
       const newPasswordHash = await hashPassword(body.newPassword);
@@ -369,7 +369,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
       preHandler: requireTutorWithPassword,
       schema: {
         tags: ["Tutor"],
-        summary: "List available classes for tutor",
+        summary: "Danh sách lớp học khả dụng cho gia sư",
         response: {
           200: successSchema({
             type: "array",
@@ -385,14 +385,24 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
       });
 
       if (!tutor) {
-        throw new AppError("TUTOR_NOT_FOUND", 404, "Tutor not found");
+        throw new AppError("TUTOR_NOT_FOUND", 404, "Không tìm thấy gia sư");
       }
 
       if (tutor.status !== "APPROVED") {
         throw new AppError(
           "TUTOR_NOT_APPROVED",
           403,
-          "Tutor account is not approved yet",
+          "Tài khoản gia sư chưa được phê duyệt",
+        );
+      }
+
+      // Giáo viên trung tâm không được phép duyệt danh sách lớp OPEN.
+      // Họ chỉ xem được lớp được admin phân công qua GET /tutor/my-assigned-classes.
+      if (tutor.tutorType === "GIAO_VIEN_TRUNG_TAM") {
+        throw new AppError(
+          "FORBIDDEN",
+          403,
+          "Giáo viên trung tâm không thể xem danh mục lớp. Hãy dùng Lớp Của Tôi.",
         );
       }
 
@@ -506,11 +516,21 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
       });
 
       if (!tutorExists) {
-        throw new AppError("UNAUTHORIZED", 401, "Tutor account not found. Please login again.");
+        throw new AppError("UNAUTHORIZED", 401, "Không tìm thấy tài khoản gia sư. Vui lòng đăng nhập lại.");
       }
 
       if (tutorExists.status !== "APPROVED") {
-        throw new AppError("TUTOR_NOT_APPROVED", 403, "Tutor account is not approved yet.");
+        throw new AppError("TUTOR_NOT_APPROVED", 403, "Tài khoản gia sư chưa được phê duyệt.");
+      }
+
+      // Giáo viên trung tâm không được phép tự ứng tuyển lớp.
+      // Lớp được admin phân công trực tiếp qua ClassAssignment.
+      if (tutorExists.tutorType === "GIAO_VIEN_TRUNG_TAM") {
+        throw new AppError(
+          "FORBIDDEN",
+          403,
+          "Giáo viên trung tâm không thể ứng tuyển. Lớp do admin chỉ định.",
+        );
       }
 
       const existingClass = await prisma.class.findUnique({
@@ -522,7 +542,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
         throw new AppError(
           "CLASS_NOT_AVAILABLE",
           400,
-          "Class is not available",
+          "Lớp học không khả dụng",
         );
       }
 
@@ -533,7 +553,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
         throw new AppError(
           "CLASS_NOT_AVAILABLE_FOR_TUTOR",
           403,
-          "Class is not available for this tutor type",
+          "Lớp học không khả dụng cho loại gia sư này",
         );
       }
 
@@ -587,14 +607,14 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
       });
 
       if (!application) {
-        throw new AppError("APPLICATION_NOT_FOUND", 404, "Application not found");
+        throw new AppError("APPLICATION_NOT_FOUND", 404, "Không tìm thấy đơn ứng tuyển");
       }
 
       if (application.status !== "PENDING") {
         throw new AppError(
           "INVALID_STATE",
           409,
-          `Cannot cancel an application with status ${application.status}`,
+          `Không thể hủy đơn ứng tuyển đang ở trạng thái ${application.status}`,
         );
       }
 
@@ -645,6 +665,62 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
         status: item.status,
         createdAt: item.createdAt,
         class: item.class,
+      }));
+
+      void reply.send(success(mapped));
+    },
+  );
+
+  // GET /my-assigned-classes — Dành riêng cho GIAO_VIEN_TRUNG_TAM.
+  // Trả về danh sách lớp mà admin đã phân công (ClassAssignment) cho giáo viên.
+  app.get(
+    "/my-assigned-classes",
+    {
+      preHandler: requireTutorWithPassword,
+      schema: {
+        tags: ["Tutor"],
+        summary: "List classes assigned to center teacher",
+        response: {
+          200: successSchema({
+            type: "array",
+            items: { type: "object", additionalProperties: true },
+          }),
+          403: errorResponseSchema,
+        },
+      },
+    },
+    async (request, reply) => {
+      const tutorId = request.user!.sub;
+
+      // Chỉ giáo viên trung tâm mới được dùng endpoint này
+      await ensureCenterTutor(tutorId);
+
+      const assignments = await prisma.classAssignment.findMany({
+        where: { tutorId },
+        orderBy: { createdAt: "desc" },
+        select: {
+          createdAt: true,
+          note: true,
+          class: {
+            select: {
+              id: true,
+              title: true,
+              subject: true,
+              grade: true,
+              district: true,
+              feePerHour: true,
+              schedule: true,
+              status: true,
+              classType: true,
+            },
+          },
+        },
+      });
+
+      const mapped = assignments.map((a) => ({
+        assignedAt: a.createdAt,
+        note: a.note,
+        ...a.class,
       }));
 
       void reply.send(success(mapped));
@@ -724,7 +800,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
       const memberCount = await prisma.classMember.count({ where: { classId } });
 
       if (memberCount === 0) {
-        throw new AppError("NO_MEMBERS", 400, "Class has no members");
+        throw new AppError("NO_MEMBERS", 400, "Lớp học chưa có học viên");
       }
 
       const body = request.body as {
@@ -813,18 +889,18 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
       });
 
       if (!session) {
-        throw new AppError("SESSION_NOT_FOUND", 404, "Session not found");
+        throw new AppError("SESSION_NOT_FOUND", 404, "Không tìm thấy buổi học");
       }
 
       if (session.tutorId !== request.user!.sub) {
-        throw new AppError("FORBIDDEN", 403, "Insufficient permission");
+        throw new AppError("FORBIDDEN", 403, "Không có quyền truy cập");
       }
 
       if (session.class.classType !== "LOP_TRUNG_TAM") {
         throw new AppError(
           "CLASS_NOT_CENTER",
           403,
-          "Only center classes allow session feedback",
+          "Chỉ các lớp trung tâm mới cho phép gửi nhận xét buổi học",
         );
       }
 
@@ -868,18 +944,18 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
       });
 
       if (!session) {
-        throw new AppError("SESSION_NOT_FOUND", 404, "Session not found");
+        throw new AppError("SESSION_NOT_FOUND", 404, "Không tìm thấy buổi học");
       }
 
       if (session.tutorId !== request.user!.sub) {
-        throw new AppError("FORBIDDEN", 403, "Insufficient permission");
+        throw new AppError("FORBIDDEN", 403, "Không có quyền truy cập");
       }
 
       if (session.class.classType !== "LOP_TRUNG_TAM") {
         throw new AppError(
           "CLASS_NOT_CENTER",
           403,
-          "Only center classes allow session feedback",
+          "Chỉ các lớp trung tâm mới cho phép gửi nhận xét buổi học",
         );
       }
 
@@ -940,18 +1016,18 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
       });
 
       if (!session) {
-        throw new AppError("SESSION_NOT_FOUND", 404, "Session not found");
+        throw new AppError("SESSION_NOT_FOUND", 404, "Không tìm thấy buổi học");
       }
 
       if (session.tutorId !== request.user!.sub) {
-        throw new AppError("FORBIDDEN", 403, "Insufficient permission");
+        throw new AppError("FORBIDDEN", 403, "Không có quyền truy cập");
       }
 
       if (session.class.classType !== "LOP_TRUNG_TAM") {
         throw new AppError(
           "CLASS_NOT_CENTER",
           403,
-          "Only center classes allow session feedback",
+          "Chỉ các lớp trung tâm mới cho phép gửi nhận xét buổi học",
         );
       }
 
@@ -963,14 +1039,14 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
       });
 
       if (totalMembers === 0) {
-        throw new AppError("NO_MEMBERS", 400, "Class has no members");
+        throw new AppError("NO_MEMBERS", 400, "Lớp học chưa có học viên");
       }
 
       if (feedbackCount < totalMembers) {
         throw new AppError(
           "INCOMPLETE_FEEDBACK",
           400,
-          "All students must be reviewed before completing the session",
+          "Tất cả học viên phải được nhận xét trước khi hoàn thành buổi học",
         );
       }
 
@@ -1015,18 +1091,18 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
       });
 
       if (!session) {
-        throw new AppError("SESSION_NOT_FOUND", 404, "Session not found");
+        throw new AppError("SESSION_NOT_FOUND", 404, "Không tìm thấy buổi học");
       }
 
       if (session.tutorId !== request.user!.sub) {
-        throw new AppError("FORBIDDEN", 403, "Insufficient permission");
+        throw new AppError("FORBIDDEN", 403, "Không có quyền truy cập");
       }
 
       if (session.class.classType !== "LOP_TRUNG_TAM") {
         throw new AppError(
           "CLASS_NOT_CENTER",
           403,
-          "Only center classes allow session feedback",
+          "Chỉ các lớp trung tâm mới cho phép gửi nhận xét buổi học",
         );
       }
 
@@ -1105,23 +1181,23 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
       });
 
       if (!session) {
-        throw new AppError("SESSION_NOT_FOUND", 404, "Session not found");
+        throw new AppError("SESSION_NOT_FOUND", 404, "Không tìm thấy buổi học");
       }
 
       if (session.tutorId !== tutorId) {
-        throw new AppError("FORBIDDEN", 403, "Insufficient permission");
+        throw new AppError("FORBIDDEN", 403, "Không có quyền truy cập");
       }
 
       if (session.class.classType !== "LOP_TRUNG_TAM") {
         throw new AppError(
           "CLASS_NOT_CENTER",
           403,
-          "Only center classes allow session feedback",
+          "Chỉ các lớp trung tâm mới cho phép gửi nhận xét buổi học",
         );
       }
 
       if (session.status === "CANCELLED") {
-        throw new AppError("SESSION_CANCELLED", 400, "Cannot submit feedback for cancelled session");
+        throw new AppError("SESSION_CANCELLED", 400, "Không thể gửi nhận xét cho buổi học đã hủy");
       }
 
       const members = await prisma.classMember.findMany({
@@ -1130,7 +1206,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
       });
 
       if (members.length === 0) {
-        throw new AppError("NO_MEMBERS", 400, "Class has no members");
+        throw new AppError("NO_MEMBERS", 400, "Lớp học chưa có học viên");
       }
 
       const memberSet = new Set(members.map((member) => member.id));
@@ -1138,15 +1214,15 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
 
       for (const feedback of body.feedbacks) {
         if (!memberSet.has(feedback.memberId)) {
-          throw new AppError("INVALID_MEMBER", 400, "Member does not belong to class");
+          throw new AppError("INVALID_MEMBER", 400, "Học viên không thuộc lớp này");
         }
 
         if (submittedSet.has(feedback.memberId)) {
-          throw new AppError("DUPLICATE_MEMBER", 400, "Duplicate member feedback");
+          throw new AppError("DUPLICATE_MEMBER", 400, "Nhận xét của học viên đã bị trùng lặp");
         }
 
         if (feedback.attendance && !attendanceValues.includes(feedback.attendance as any)) {
-          throw new AppError("INVALID_ATTENDANCE", 400, "Invalid attendance status");
+          throw new AppError("INVALID_ATTENDANCE", 400, "Trạng thái điểm danh không hợp lệ");
         }
 
         validateScore(feedback.attitudeScore, "attitudeScore");
@@ -1160,7 +1236,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
         throw new AppError(
           "INCOMPLETE_FEEDBACK",
           400,
-          "Feedback must include all students in the class",
+          "Nhận xét phải bao gồm tất cả học viên trong lớp",
         );
       }
 
@@ -1242,7 +1318,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
       };
 
       if (body.attendance && !attendanceValues.includes(body.attendance as any)) {
-        throw new AppError("INVALID_ATTENDANCE", 400, "Invalid attendance status");
+        throw new AppError("INVALID_ATTENDANCE", 400, "Trạng thái điểm danh không hợp lệ");
       }
 
       validateScore(body.attitudeScore, "attitudeScore");
@@ -1260,23 +1336,23 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
       });
 
       if (!feedback) {
-        throw new AppError("FEEDBACK_NOT_FOUND", 404, "Feedback not found");
+        throw new AppError("FEEDBACK_NOT_FOUND", 404, "Không tìm thấy nhận xét");
       }
 
       if (feedback.tutorId !== request.user!.sub) {
-        throw new AppError("FORBIDDEN", 403, "Insufficient permission");
+        throw new AppError("FORBIDDEN", 403, "Không có quyền truy cập");
       }
 
       if (feedback.session.class.classType !== "LOP_TRUNG_TAM") {
         throw new AppError(
           "CLASS_NOT_CENTER",
           403,
-          "Only center classes allow session feedback",
+          "Chỉ các lớp trung tâm mới cho phép gửi nhận xét buổi học",
         );
       }
 
       if (feedback.session.status === "CANCELLED") {
-        throw new AppError("SESSION_CANCELLED", 400, "Cannot update feedback for cancelled session");
+        throw new AppError("SESSION_CANCELLED", 400, "Không thể cập nhật nhận xét cho buổi học đã hủy");
       }
 
       const updated = await prisma.sessionFeedback.update({
@@ -1325,7 +1401,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
       });
 
       if (!member || member.classId !== classId) {
-        throw new AppError("MEMBER_NOT_FOUND", 404, "Member not found");
+        throw new AppError("MEMBER_NOT_FOUND", 404, "Không tìm thấy học viên");
       }
 
       const feedbacks = await prisma.sessionFeedback.findMany({
@@ -1430,7 +1506,7 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
         });
 
         if (!exists) {
-          throw new AppError("CLASS_NOT_FOUND", 404, "Class not found");
+          throw new AppError("CLASS_NOT_FOUND", 404, "Không tìm thấy lớp học");
         }
       }
 

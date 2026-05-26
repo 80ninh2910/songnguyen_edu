@@ -108,7 +108,7 @@ export const settingsService = {
     });
 
     if (!setting) {
-      throw new AppError("SETTING_NOT_FOUND", 404, "Setting not found");
+      throw new AppError("SETTING_NOT_FOUND", 404, "Không tìm thấy cấu hình");
     }
 
     await cacheService.set(

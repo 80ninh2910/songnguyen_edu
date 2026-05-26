@@ -312,7 +312,6 @@ function ParentRequestsTab({
       const response = await listAdminClasses({
         page: 1,
         limit: 100,
-        status: "OPEN",
         classType: "LOP_TRUNG_TAM",
       });
       setCenterClasses(response.data);

@@ -8,6 +8,8 @@ import { registerSwaggerDocs } from "./plugins/swagger.plugin.js";
 import { registerScalarDocs } from "./plugins/scalar.plugin.js";
 import { registerErrorHandler } from "./common/errors/errorHandler.js";
 import { successSchema } from "./common/utils/docs.js";
+import { z } from "zod";
+import { customErrorMap } from "./common/errors/zodErrorMap.js";
 
 import { registerAuthRoutes } from "./modules/auth/auth.route.js";
 import { registerPublicRoutes } from "./modules/public/public.route.js";
@@ -16,6 +18,7 @@ import { registerAdminRoutes } from "./modules/admin/admin.route.js";
 import { registerSettingsRoutes } from "./modules/settings/settings.route.js";
 
 export function buildApp(): FastifyInstance {
+  z.setErrorMap(customErrorMap);
   const app = Fastify({ logger: true });
 
   registerErrorHandler(app);

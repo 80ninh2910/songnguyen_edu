@@ -48,16 +48,19 @@ const defaultProfile: ProfileData = {
 type ProfileContextType = {
   profile: ProfileData;
   setProfile: React.Dispatch<React.SetStateAction<ProfileData>>;
+  isLoading: boolean;
 };
 
 const ProfileContext = createContext<ProfileContextType | undefined>(undefined);
 
 export function ProfileProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<ProfileData>(defaultProfile);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const token = getStoredAccessToken();
     if (!token) {
+      setIsLoading(false);
       return;
     }
 
@@ -88,11 +91,12 @@ export function ProfileProvider({ children }: { children: React.ReactNode }) {
             : prev.locations,
         }));
       })
-      .catch(() => undefined);
+      .catch(() => undefined)
+      .finally(() => setIsLoading(false));
   }, []);
 
   return (
-    <ProfileContext.Provider value={{ profile, setProfile }}>
+    <ProfileContext.Provider value={{ profile, setProfile, isLoading }}>
       {children}
     </ProfileContext.Provider>
   );

@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { apiRequestWithAuth, clearStoredSession, getStoredAccessToken } from '@/lib/api';
 import { useProfile } from '@/context/ProfileContext';
+import { useRouter } from 'next/navigation';
 
 function redirectToLogin() {
   clearStoredSession();
@@ -34,7 +35,8 @@ type ClassItem = {
 };
 
 export default function ClassList() {
-  const { profile } = useProfile();
+  const { profile, isLoading: isProfileLoading } = useProfile();
+  const router = useRouter();
   const [maxTuition, setMaxTuition] = useState(500);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
@@ -88,7 +90,18 @@ export default function ClassList() {
     }
   };
 
+  // Guard: chặn GIAO_VIEN_TRUNG_TAM truy cập trang này
   useEffect(() => {
+    if (!isProfileLoading && profile.tutorType === 'GIAO_VIEN_TRUNG_TAM') {
+      router.replace('/tai-khoan-gia-su/lop-cua-toi');
+    }
+  }, [isProfileLoading, profile.tutorType, router]);
+
+  useEffect(() => {
+    // Đợi profile load xong, và không fetch nếu là giáo viên trung tâm
+    if (isProfileLoading) return;
+    if (profile.tutorType === 'GIAO_VIEN_TRUNG_TAM') return;
+
     if (!getStoredAccessToken()) {
       setIsLoading(false);
       redirectToLogin();
@@ -112,7 +125,7 @@ export default function ClassList() {
       .finally(() => {
         setIsLoading(false);
       });
-  }, []);
+  }, [isProfileLoading, profile.tutorType]);
 
   const filteredClasses = classes.filter((cls) => {
     const priceNum = Math.round(cls.feePerHour / 1000);
@@ -127,6 +140,15 @@ export default function ClassList() {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage,
   );
+
+  // Hiển thị loading trong khi đợi profile, hoặc đang redirect
+  if (isProfileLoading || profile.tutorType === 'GIAO_VIEN_TRUNG_TAM') {
+    return (
+      <div style={{ padding: '40px', textAlign: 'center', color: '#64748B' }}>
+        Đang tải...
+      </div>
+    );
+  }
 
   return (
     <>

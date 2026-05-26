@@ -20,7 +20,7 @@ function getActor(request: FastifyRequest): {
   }
 
   if (request.user.role !== "ADMIN" && request.user.role !== "SUPERADMIN") {
-    throw new AppError("FORBIDDEN", 403, "Insufficient permission");
+    throw new AppError("FORBIDDEN", 403, "Không có quyền truy cập");
   }
 
   return {
@@ -82,7 +82,7 @@ export async function upsertSettingHandler(
     throw new AppError(
       "FORBIDDEN",
       403,
-      "Superadmin role is required for this setting",
+      "Yêu cầu quyền Superadmin để thực hiện thiết lập này",
     );
   }
 

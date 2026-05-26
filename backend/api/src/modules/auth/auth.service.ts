@@ -86,7 +86,7 @@ export const authService = {
       throw new AppError(
         "INVALID_CREDENTIALS",
         401,
-        "Invalid email or password",
+        "Email hoặc mật khẩu không chính xác",
       );
     }
 
@@ -96,7 +96,7 @@ export const authService = {
       throw new AppError(
         "INVALID_CREDENTIALS",
         401,
-        "Invalid email or password",
+        "Email hoặc mật khẩu không chính xác",
       );
     }
 
@@ -121,7 +121,7 @@ export const authService = {
       throw new AppError(
         "INVALID_CREDENTIALS",
         401,
-        "Invalid email or password",
+        "Email hoặc mật khẩu không chính xác",
       );
     }
 
@@ -129,7 +129,7 @@ export const authService = {
       throw new AppError(
         "TUTOR_NOT_APPROVED",
         403,
-        "Tutor account is not approved yet",
+        "Tài khoản gia sư chưa được phê duyệt",
       );
     }
 
@@ -139,7 +139,7 @@ export const authService = {
       throw new AppError(
         "INVALID_CREDENTIALS",
         401,
-        "Invalid email or password",
+        "Email hoặc mật khẩu không chính xác",
       );
     }
 
@@ -161,11 +161,11 @@ export const authService = {
     try {
       payload = app.jwt.verify<TokenPayload>(refreshToken);
     } catch {
-      throw new AppError("INVALID_REFRESH_TOKEN", 401, "Invalid refresh token");
+      throw new AppError("INVALID_REFRESH_TOKEN", 401, "Phiên đăng nhập không hợp lệ hoặc đã hết hạn");
     }
 
     if (payload.typ !== "refresh") {
-      throw new AppError("INVALID_REFRESH_TOKEN", 401, "Invalid refresh token");
+      throw new AppError("INVALID_REFRESH_TOKEN", 401, "Phiên đăng nhập không hợp lệ hoặc đã hết hạn");
     }
 
     if (cacheService.isEnabled()) {
@@ -175,7 +175,7 @@ export const authService = {
         throw new AppError(
           "INVALID_REFRESH_TOKEN",
           401,
-          "Refresh token was revoked or expired",
+          "Phiên đăng nhập không hợp lệ hoặc đã hết hạn",
         );
       }
     }

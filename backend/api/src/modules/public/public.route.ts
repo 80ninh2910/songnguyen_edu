@@ -187,7 +187,7 @@ export async function registerPublicRoutes(
       });
 
       if (!classItem) {
-        throw new AppError("CLASS_NOT_FOUND", 404, "Class not found");
+        throw new AppError("CLASS_NOT_FOUND", 404, "Không tìm thấy lớp học");
       }
 
       void reply.send(success(classItem));
@@ -328,7 +328,7 @@ export async function registerPublicRoutes(
       });
 
       if (existing) {
-        throw new AppError("TUTOR_EXISTS", 409, "Tutor already registered");
+        throw new AppError("TUTOR_EXISTS", 409, "Gia sư đã được đăng ký");
       }
 
       const tutor = await prisma.tutor.create({
@@ -383,11 +383,11 @@ export async function registerPublicRoutes(
       });
 
       if (!tutor) {
-        throw new AppError("TUTOR_NOT_FOUND", 404, "Tutor not found");
+        throw new AppError("TUTOR_NOT_FOUND", 404, "Không tìm thấy gia sư");
       }
 
       if (body.documents.length === 0) {
-        throw new AppError("VALIDATION_ERROR", 400, "At least one document is required");
+        throw new AppError("VALIDATION_ERROR", 400, "Yêu cầu ít nhất một tài liệu");
       }
 
       // Insert documents via raw query (avoids stale Prisma client type cache)
