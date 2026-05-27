@@ -39,25 +39,11 @@ export const dashboardKpis: DashboardKpi[] = [
     accent: "#495e8a",
     meta: "↑ 3 yêu cầu mới hôm nay",
   },
-  {
-    label: "Thanh toán chờ",
-    value: "6",
-    tone: "pending",
-    badge: "CHỜ DUYỆT",
-    accent: "#059669",
-    meta: "Tổng giá trị: 18.5M đ",
-  },
 ];
 
 export const dashboardTasks = [
   {
     title: "Duyệt 8 hồ sơ",
-    priority: "Cao",
-    status: "Chờ duyệt",
-    tone: "#ba1a1a",
-  },
-  {
-    title: "Xác nhận 6 thanh toán",
     priority: "Cao",
     status: "Chờ duyệt",
     tone: "#ba1a1a",
@@ -86,11 +72,6 @@ export const dashboardActivities = [
     time: "45 phút trước",
     detail: "Yêu cầu lớp Toán 12 mới",
     color: "#0058be",
-  },
-  {
-    time: "2 giờ trước",
-    detail: "Thanh toán chờ xác nhận (#TT-982)",
-    color: "#924700",
   },
   {
     time: "3 giờ trước",
@@ -425,31 +406,6 @@ export const classCards: PairingCard[] = [
   },
 ];
 
-export const paymentTabs = [
-  { label: "Chờ xác nhận", count: 6, active: true },
-  { label: "Đã xác nhận", count: 47, active: false },
-  { label: "Đã từ chối", count: 12, active: false },
-];
-
-export const paymentInfo = [
-  { label: "Gia sư nộp", value: "Nguyễn Văn An" },
-  { label: "Mã lớp", value: "#LH-2041" },
-  { label: "Môn học", value: "Toán 11 (Nhóm 3 hs)" },
-  { label: "Số tiền cần nộp", value: "300,000đ" },
-];
-
-export const paymentTimeline = [
-  {
-    title: "Đã từ chối",
-    meta: "14:30 - 20/10/2023 | Lý do: Số tiền thiếu 50,000đ",
-    color: "#ba1a1a",
-  },
-  {
-    title: "Nộp lại biên nhận (Chờ xác nhận)",
-    meta: "09:15 - 21/10/2023 | Gia sư tải lên ảnh biên nhận mới",
-    color: "#924700",
-  },
-];
 
 export const auditRecords = [
   {

@@ -5,7 +5,6 @@ export type AdminIconName =
   | "group"
   | "school"
   | "list_alt"
-  | "payments"
   | "history"
   | "settings"
   | "add"
@@ -41,7 +40,11 @@ export type AdminIconName =
   | "save"
   | "location_on"
   | "call"
-  | "mail";
+  | "mail"
+  | "manage_accounts"
+  | "delete"
+  | "close"
+  | "lock";
 
 type AdminIconProps = SVGProps<SVGSVGElement> & {
   name: AdminIconName;
@@ -85,15 +88,6 @@ function IconPaths({ name }: { name: AdminIconName }) {
           <path d="M8 8h8" />
           <path d="M8 12h8" />
           <path d="M8 16h6" />
-        </>
-      );
-
-    case "payments":
-      return (
-        <>
-          <rect x="3" y="5" width="18" height="14" rx="2" />
-          <path d="M3 10h18" />
-          <path d="M7 15h4" />
         </>
       );
 
@@ -406,8 +400,43 @@ function IconPaths({ name }: { name: AdminIconName }) {
         </>
       );
 
+    case "manage_accounts":
+      return (
+        <>
+          <circle cx="10" cy="8" r="3.5" />
+          <path d="M2.5 20c0-3 3.4-5.5 7.5-5.5" />
+          <path d="M18 14.5v1.8l1.2.7-.8 1.4-1.4-.8a3 3 0 0 1-2 0l-1.4.8-.8-1.4 1.2-.7V14.5l-1.2-.7.8-1.4 1.4.8a3 3 0 0 1 2 0l1.4-.8.8 1.4z" />
+          <circle cx="18" cy="17" r="1" fill="currentColor" />
+        </>
+      );
+
+    case "delete":
+      return (
+        <>
+          <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
+          <path d="M10 11v6M14 11v6" />
+        </>
+      );
+
+    case "close":
+      return (
+        <>
+          <path d="M18 6 6 18M6 6l12 12" />
+        </>
+      );
+
+    case "lock":
+      return (
+        <>
+          <rect x="5" y="11" width="14" height="10" rx="2" />
+          <path d="M8 11V7a4 4 0 1 1 8 0v4" />
+          <circle cx="12" cy="16" r="1" fill="currentColor" />
+        </>
+      );
+
     default:
       return <circle cx="12" cy="12" r="4" />;
+
   }
 }
 

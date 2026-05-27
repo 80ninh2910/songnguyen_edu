@@ -584,19 +584,18 @@ function ParentRequestsTab({
                 <th>Loại gia sư</th>
                 <th>Ngày gửi</th>
                 <th>Trạng thái</th>
-                <th>Action</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={9} style={{ textAlign: "center" }}>
+                  <td colSpan={8} style={{ textAlign: "center" }}>
                     Đang tải dữ liệu...
                   </td>
                 </tr>
               ) : records.length === 0 ? (
                 <tr>
-                  <td colSpan={9} style={{ textAlign: "center" }}>
+                  <td colSpan={8} style={{ textAlign: "center" }}>
                     Chưa có yêu cầu mở lớp.
                   </td>
                 </tr>
@@ -611,11 +610,26 @@ function ParentRequestsTab({
                         setSelectedRequestId(record.id);
                         setIsDetailOpen(true);
                       }}
-                      style={
-                        isSelected
-                          ? { background: "rgba(219, 234, 254, 0.35)" }
-                          : undefined
-                      }
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          setSelectedRequestId(record.id);
+                          setIsDetailOpen(true);
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      style={{
+                        cursor: "pointer",
+                        transition: "background 0.15s",
+                        ...(isSelected ? { background: "rgba(219, 234, 254, 0.35)" } : {}),
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isSelected) e.currentTarget.style.background = "rgba(59,130,246,0.04)";
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isSelected) e.currentTarget.style.background = "";
+                      }}
                     >
                       <td style={{ fontWeight: 700 }}>
                         {formatRequestCode(record.id)}
@@ -667,21 +681,6 @@ function ParentRequestsTab({
                           tone={metaInfo.tone}
                           dotColor={metaInfo.dotColor}
                         />
-                      </td>
-                      <td>
-                        <div className="table-action-group">
-                          <button
-                            className="table-action-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedRequestId(record.id);
-                              setIsDetailOpen(true);
-                            }}
-                            type="button"
-                          >
-                            <AdminIcon name="visibility" />
-                          </button>
-                        </div>
                       </td>
                     </tr>
                   );

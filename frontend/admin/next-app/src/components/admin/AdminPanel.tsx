@@ -10,6 +10,7 @@ export function AdminPanel({
   actions,
   soft = false,
   className,
+  id,
   children,
 }: {
   title?: string;
@@ -17,10 +18,11 @@ export function AdminPanel({
   actions?: ReactNode;
   soft?: boolean;
   className?: string;
+  id?: string;
   children: ReactNode;
 }) {
   return (
-    <section className={getPanelClassName(soft, className)}>
+    <section id={id} className={getPanelClassName(soft, className)}>
       {title ? (
         <div className="admin-page-header">
           <div>

@@ -660,7 +660,6 @@ export default function ClassesPage() {
           classType,
           tutorType: derivedTutorType,
           centerTeacherId: classType === "LOP_TRUNG_TAM" ? centerTeacherId : null,
-          district,
           members:
             classType === "LOP_TRUNG_TAM"
               ? formState.members.map((member) => ({
@@ -919,19 +918,18 @@ export default function ClassesPage() {
                 <th>Ứng viên</th>
                 <th>Ngày tạo</th>
                 <th>Trạng thái</th>
-                <th>Action</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={10} style={{ textAlign: "center" }}>
+                  <td colSpan={9} style={{ textAlign: "center" }}>
                     Đang tải dữ liệu...
                   </td>
                 </tr>
               ) : records.length === 0 ? (
                 <tr>
-                  <td colSpan={10} style={{ textAlign: "center" }}>
+                  <td colSpan={9} style={{ textAlign: "center" }}>
                     Chưa có lớp nào.
                   </td>
                 </tr>
@@ -940,7 +938,29 @@ export default function ClassesPage() {
                   const metaInfo = STATUS_META[record.status];
 
                   return (
-                    <tr key={record.id}>
+                    <tr
+                      key={record.id}
+                      onClick={() => {
+                        setSelectedClassId(record.id);
+                        setIsDetailOpen(true);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          setSelectedClassId(record.id);
+                          setIsDetailOpen(true);
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      style={{ cursor: "pointer", transition: "background 0.15s" }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = "rgba(59,130,246,0.04)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = "";
+                      }}
+                    >
                       <td style={{ fontWeight: 700 }}>
                         {formatClassCode(record.id)}
                       </td>
@@ -973,22 +993,6 @@ export default function ClassesPage() {
                           tone={metaInfo.tone}
                           dotColor={metaInfo.dotColor}
                         />
-                      </td>
-                      <td>
-                        <div className="table-action-group">
-                          <button
-                            aria-label={`Xem lớp ${record.title}`}
-                            className="table-action-btn"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              setSelectedClassId(record.id);
-                              setIsDetailOpen(true);
-                            }}
-                            type="button"
-                          >
-                            <AdminIcon name="visibility" />
-                          </button>
-                        </div>
                       </td>
                     </tr>
                   );

@@ -254,3 +254,27 @@ export const AdminListAuditLogsQuerySchema = PaginationQuerySchema.extend({
   targetType: z.string().trim().min(1).optional(),
   actorId: z.string().uuid().optional(),
 });
+
+export const AdminListAccountsQuerySchema = PaginationQuerySchema.extend({
+  search: z.string().trim().min(1).optional(),
+  role: z.enum(["ADMIN", "SUPERADMIN"]).optional(),
+});
+
+export const CreateAdminAccountBodySchema = z.object({
+  email: z.string().trim().email().max(200),
+  fullName: z.string().trim().min(2).max(200),
+  role: z.enum(["ADMIN", "SUPERADMIN"]).default("ADMIN"),
+  password: z.string().min(6).max(100),
+});
+
+export const UpdateAdminAccountBodySchema = z
+  .object({
+    fullName: z.string().trim().min(2).max(200).optional(),
+    email: z.string().trim().email().max(200).optional(),
+    role: z.enum(["ADMIN", "SUPERADMIN"]).optional(),
+    password: z.string().min(6).max(100).optional(),
+  })
+  .refine((value) => Object.keys(value).length > 0, {
+    message: "At least one field is required",
+  });
+

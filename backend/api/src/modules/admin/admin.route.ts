@@ -33,6 +33,11 @@ import {
   listCenterTeachersHandler,
   listSessionFeedbacksHandler,
   listPaymentsHandler,
+  listAdminAccountsHandler,
+  getAdminAccountByIdHandler,
+  createAdminAccountHandler,
+  updateAdminAccountHandler,
+  deleteAdminAccountHandler,
   listTutorsHandler,
   rejectClassApplicantHandler,
   rejectClassRequestHandler,
@@ -45,6 +50,7 @@ import {
 } from "./admin.handler.js";
 import {
   AdminListAuditLogsQuerySchema,
+  AdminListAccountsQuerySchema,
   AdminListClassesQuerySchema,
   AdminListClassRequestsQuerySchema,
   AdminListCenterTeachersQuerySchema,
@@ -55,6 +61,7 @@ import {
   ClassIdParamSchema,
   ConfirmPaymentBodySchema,
   ConvertRequestBodySchema,
+  CreateAdminAccountBodySchema,
   CreateSessionBodySchema,
   CreateClassBodySchema,
   CreateCenterTeacherBodySchema,
@@ -66,6 +73,7 @@ import {
   RejectRequestBodySchema,
   RejectTutorBodySchema,
   SessionIdParamSchema,
+  UpdateAdminAccountBodySchema,
   UpdateCenterTeacherBodySchema,
   UpdateTutorBodySchema,
   UpdateClassBodySchema,
@@ -799,4 +807,118 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
     },
     listAuditLogsHandler,
   );
+
+  // ─── Admin Accounts (SUPERADMIN only) ─────────────────────────────────────
+
+  const requireSuperAdmin = async (request: FastifyRequest): Promise<void> => {
+    await request.jwtVerify();
+    if (!request.user || request.user.role !== "SUPERADMIN") {
+      throw new AppError("FORBIDDEN", 403, "Chỉ Quản trị tối cao mới có quyền truy cập.");
+    }
+  };
+
+  app.get(
+    "/admin-accounts",
+    {
+      preHandler: requireSuperAdmin,
+      schema: {
+        tags: ["Admin"],
+        summary: "List admin accounts (SUPERADMIN only)",
+        security: [{ bearerAuth: [] }],
+        querystring: fromZodSchema(AdminListAccountsQuerySchema),
+        response: {
+          200: successListSchema(listItemSchema),
+          401: errorResponseSchema,
+          403: errorResponseSchema,
+        },
+      },
+    },
+    listAdminAccountsHandler,
+  );
+
+  app.get(
+    "/admin-accounts/:id",
+    {
+      preHandler: requireSuperAdmin,
+      schema: {
+        tags: ["Admin"],
+        summary: "Get admin account by id (SUPERADMIN only)",
+        security: [{ bearerAuth: [] }],
+        params: fromZodSchema(IdParamSchema),
+        response: {
+          200: successSchema(anyDataSchema),
+          401: errorResponseSchema,
+          403: errorResponseSchema,
+          404: errorResponseSchema,
+        },
+      },
+    },
+    getAdminAccountByIdHandler,
+  );
+
+  app.post(
+    "/admin-accounts",
+    {
+      preHandler: requireSuperAdmin,
+      schema: {
+        tags: ["Admin"],
+        summary: "Create admin account (SUPERADMIN only)",
+        security: [{ bearerAuth: [] }],
+        body: fromZodSchema(CreateAdminAccountBodySchema),
+        response: {
+          200: successSchema(anyDataSchema),
+          400: errorResponseSchema,
+          401: errorResponseSchema,
+          403: errorResponseSchema,
+          409: errorResponseSchema,
+        },
+      },
+    },
+    createAdminAccountHandler,
+  );
+
+  app.patch(
+    "/admin-accounts/:id",
+    {
+      preHandler: requireSuperAdmin,
+      schema: {
+        tags: ["Admin"],
+        summary: "Update admin account (SUPERADMIN only)",
+        security: [{ bearerAuth: [] }],
+        params: fromZodSchema(IdParamSchema),
+        body: fromZodSchema(UpdateAdminAccountBodySchema),
+        response: {
+          200: successSchema(anyDataSchema),
+          400: errorResponseSchema,
+          401: errorResponseSchema,
+          403: errorResponseSchema,
+          404: errorResponseSchema,
+          409: errorResponseSchema,
+        },
+      },
+    },
+    updateAdminAccountHandler,
+  );
+
+  app.delete(
+    "/admin-accounts/:id",
+    {
+      preHandler: requireSuperAdmin,
+      schema: {
+        tags: ["Admin"],
+        summary: "Delete admin account (SUPERADMIN only)",
+        security: [{ bearerAuth: [] }],
+        params: fromZodSchema(IdParamSchema),
+        response: {
+          200: successSchema(anyDataSchema),
+          401: errorResponseSchema,
+          403: errorResponseSchema,
+          404: errorResponseSchema,
+          409: errorResponseSchema,
+        },
+      },
+    },
+    deleteAdminAccountHandler,
+  );
 }
+

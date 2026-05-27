@@ -1427,18 +1427,18 @@ export const adminService = {
       };
     }
 
-    const classType =
-      request.requestType === "TRUNG_TAM"
-        ? "LOP_TRUNG_TAM"
-        : request.requestType === "GIA_SU_DAO_TAO"
-          ? "LOP_GIA_SU_DAO_TAO"
-          : "LOP_GIA_SU_TU_DO";
-    const tutorType =
-      request.requestType === "TRUNG_TAM"
-        ? "GIAO_VIEN_TRUNG_TAM"
-        : request.requestType === "GIA_SU_DAO_TAO"
-          ? "GIA_SU_DAO_TAO"
-          : "GIA_SU_TU_DO";
+    const classTypeMap: Record<string, "LOP_TRUNG_TAM" | "LOP_GIA_SU_DAO_TAO" | "LOP_GIA_SU_TU_DO"> = {
+      TRUNG_TAM: "LOP_TRUNG_TAM",
+      GIA_SU_DAO_TAO: "LOP_GIA_SU_DAO_TAO",
+      GIA_SU_TU_DO: "LOP_GIA_SU_TU_DO",
+    };
+    const tutorTypeMap: Record<string, "GIAO_VIEN_TRUNG_TAM" | "GIA_SU_DAO_TAO" | "GIA_SU_TU_DO"> = {
+      TRUNG_TAM: "GIAO_VIEN_TRUNG_TAM",
+      GIA_SU_DAO_TAO: "GIA_SU_DAO_TAO",
+      GIA_SU_TU_DO: "GIA_SU_TU_DO",
+    };
+    const classType = classTypeMap[request.requestType] ?? "LOP_GIA_SU_TU_DO";
+    const tutorType = tutorTypeMap[request.requestType] ?? "GIA_SU_TU_DO";
 
     if (classType === "LOP_TRUNG_TAM" && !input.centerTeacherId) {
       throw new AppError(
@@ -3007,5 +3007,239 @@ export const adminService = {
       data,
       meta: buildMeta(page, limit, total),
     };
+  },
+
+  // ─── Admin Account CRUD (SUPERADMIN only) ─────────────────────────────────
+
+  async listAdminAccounts(query: {
+    page?: string | number;
+    limit?: string | number;
+    search?: string;
+    role?: "ADMIN" | "SUPERADMIN";
+  }): Promise<{
+    data: Array<{
+      id: string;
+      email: string;
+      fullName: string;
+      role: "ADMIN" | "SUPERADMIN";
+      createdAt: Date;
+      updatedAt: Date;
+    }>;
+    meta: { page: number; limit: number; total: number; totalPages: number };
+  }> {
+    const { page, limit, skip } = parsePagination(query);
+
+    const where: any = {};
+
+    if (query.role) {
+      where.role = query.role;
+    }
+
+    if (query.search) {
+      where.OR = [
+        { email: { contains: query.search, mode: "insensitive" } },
+        { fullName: { contains: query.search, mode: "insensitive" } },
+      ];
+    }
+
+    const [data, total] = await Promise.all([
+      prisma.admin.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          email: true,
+          fullName: true,
+          role: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      }),
+      prisma.admin.count({ where }),
+    ]);
+
+    return { data, meta: buildMeta(page, limit, total) };
+  },
+
+  async getAdminAccountById(id: string): Promise<{
+    id: string;
+    email: string;
+    fullName: string;
+    role: "ADMIN" | "SUPERADMIN";
+    createdAt: Date;
+    updatedAt: Date;
+  }> {
+    const admin = await prisma.admin.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!admin) {
+      throw new AppError("ADMIN_NOT_FOUND", 404, "Không tìm thấy tài khoản quản trị.");
+    }
+
+    return admin;
+  },
+
+  async createAdminAccount(
+    actor: AdminActor,
+    body: {
+      email: string;
+      fullName: string;
+      role: "ADMIN" | "SUPERADMIN";
+      password: string;
+    },
+  ): Promise<{ id: string }> {
+    const existing = await prisma.admin.findUnique({
+      where: { email: body.email },
+      select: { id: true },
+    });
+
+    if (existing) {
+      conflict("Email này đã được sử dụng bởi tài khoản khác.");
+    }
+
+    const actorName = await resolveActorName(actor);
+    const passwordHash = await hashPassword(body.password);
+
+    const created = await prisma.$transaction(async (tx: any) => {
+      const newAdmin = await tx.admin.create({
+        data: {
+          email: body.email,
+          fullName: body.fullName,
+          role: body.role,
+          passwordHash,
+        },
+        select: { id: true, email: true, fullName: true, role: true },
+      });
+
+      await auditLogService.log(
+        {
+          actorId: actor.id,
+          actorName,
+          action: "CREATE_ADMIN",
+          targetType: "ADMIN",
+          targetId: newAdmin.id,
+          payload: { email: newAdmin.email, role: newAdmin.role },
+        },
+        tx,
+      );
+
+      return newAdmin;
+    });
+
+    return { id: created.id };
+  },
+
+  async updateAdminAccount(
+    actor: AdminActor,
+    targetId: string,
+    body: {
+      fullName?: string;
+      email?: string;
+      role?: "ADMIN" | "SUPERADMIN";
+      password?: string;
+    },
+  ): Promise<{ id: string; email: string; fullName: string; role: "ADMIN" | "SUPERADMIN" }> {
+    // Prevent self-demotion
+    if (targetId === actor.id && body.role && body.role !== "SUPERADMIN") {
+      invalidState("Không thể hạ cấp quyền của chính mình.");
+    }
+
+    const existing = await prisma.admin.findUnique({
+      where: { id: targetId },
+      select: { id: true, email: true, fullName: true, role: true },
+    });
+
+    if (!existing) {
+      throw new AppError("ADMIN_NOT_FOUND", 404, "Không tìm thấy tài khoản quản trị.");
+    }
+
+    if (body.email && body.email !== existing.email) {
+      const emailTaken = await prisma.admin.findUnique({
+        where: { email: body.email },
+        select: { id: true },
+      });
+      if (emailTaken) {
+        conflict("Email này đã được sử dụng bởi tài khoản khác.");
+      }
+    }
+
+    const data: any = {};
+    if (body.fullName !== undefined) data.fullName = body.fullName;
+    if (body.email !== undefined) data.email = body.email;
+    if (body.role !== undefined) data.role = body.role;
+    if (body.password) data.passwordHash = await hashPassword(body.password);
+
+    const actorName = await resolveActorName(actor);
+
+    const updated = await prisma.$transaction(async (tx: any) => {
+      const result = await tx.admin.update({
+        where: { id: targetId },
+        data,
+        select: { id: true, email: true, fullName: true, role: true },
+      });
+
+      await auditLogService.log(
+        {
+          actorId: actor.id,
+          actorName,
+          action: "UPDATE_ADMIN",
+          targetType: "ADMIN",
+          targetId,
+          payload: {
+            before: { email: existing.email, fullName: existing.fullName, role: existing.role },
+            after: { email: result.email, fullName: result.fullName, role: result.role },
+          },
+        },
+        tx,
+      );
+
+      return result;
+    });
+
+    return updated;
+  },
+
+  async deleteAdminAccount(actor: AdminActor, targetId: string): Promise<void> {
+    if (targetId === actor.id) {
+      invalidState("Không thể xoá tài khoản của chính mình.");
+    }
+
+    const existing = await prisma.admin.findUnique({
+      where: { id: targetId },
+      select: { id: true, email: true, fullName: true, role: true },
+    });
+
+    if (!existing) {
+      throw new AppError("ADMIN_NOT_FOUND", 404, "Không tìm thấy tài khoản quản trị.");
+    }
+
+    const actorName = await resolveActorName(actor);
+
+    await prisma.$transaction(async (tx: any) => {
+      await tx.admin.delete({ where: { id: targetId } });
+
+      await auditLogService.log(
+        {
+          actorId: actor.id,
+          actorName,
+          action: "DELETE_ADMIN",
+          targetType: "ADMIN",
+          targetId,
+          payload: { email: existing.email, fullName: existing.fullName, role: existing.role },
+        },
+        tx,
+      );
+    });
   },
 };

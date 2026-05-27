@@ -4,6 +4,7 @@ import { success, successList } from "../../common/utils/response.js";
 import { adminService } from "./admin.service.js";
 import {
   AdminListAuditLogsQuerySchema,
+  AdminListAccountsQuerySchema,
   AdminListClassesQuerySchema,
   AdminListClassRequestsQuerySchema,
   AdminListCenterTeachersQuerySchema,
@@ -14,6 +15,7 @@ import {
   ClassIdParamSchema,
   ConfirmPaymentBodySchema,
   ConvertRequestBodySchema,
+  CreateAdminAccountBodySchema,
   CreateSessionBodySchema,
   CreateTutorBodySchema,
   CreateCenterTeacherBodySchema,
@@ -25,10 +27,12 @@ import {
   RejectRequestBodySchema,
   RejectTutorBodySchema,
   SessionIdParamSchema,
+  UpdateAdminAccountBodySchema,
   UpdateTutorBodySchema,
   UpdateCenterTeacherBodySchema,
   UpdateClassBodySchema,
 } from "./admin.schema.js";
+
 
 function getActor(request: FastifyRequest): { id: string; email: string } {
   if (!request.user) {
@@ -389,3 +393,50 @@ export async function listAuditLogsHandler(
   const result = await adminService.listAuditLogs(query);
   void reply.send(successList(result.data, result.meta));
 }
+
+export async function listAdminAccountsHandler(
+  request: FastifyRequest,
+  reply: FastifyReply,
+): Promise<void> {
+  const query = AdminListAccountsQuerySchema.parse(request.query);
+  const result = await adminService.listAdminAccounts(query);
+  void reply.send(successList(result.data, result.meta));
+}
+
+export async function getAdminAccountByIdHandler(
+  request: FastifyRequest,
+  reply: FastifyReply,
+): Promise<void> {
+  const { id } = IdParamSchema.parse(request.params);
+  const result = await adminService.getAdminAccountById(id);
+  void reply.send(success(result));
+}
+
+export async function createAdminAccountHandler(
+  request: FastifyRequest,
+  reply: FastifyReply,
+): Promise<void> {
+  const body = CreateAdminAccountBodySchema.parse(request.body);
+  const result = await adminService.createAdminAccount(getActor(request), body);
+  void reply.send(success(result));
+}
+
+export async function updateAdminAccountHandler(
+  request: FastifyRequest,
+  reply: FastifyReply,
+): Promise<void> {
+  const { id } = IdParamSchema.parse(request.params);
+  const body = UpdateAdminAccountBodySchema.parse(request.body);
+  const result = await adminService.updateAdminAccount(getActor(request), id, body);
+  void reply.send(success(result));
+}
+
+export async function deleteAdminAccountHandler(
+  request: FastifyRequest,
+  reply: FastifyReply,
+): Promise<void> {
+  const { id } = IdParamSchema.parse(request.params);
+  await adminService.deleteAdminAccount(getActor(request), id);
+  void reply.send(success({ deleted: true }));
+}
+
