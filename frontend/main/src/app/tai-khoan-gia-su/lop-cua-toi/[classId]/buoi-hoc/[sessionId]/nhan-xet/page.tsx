@@ -171,7 +171,9 @@ export default function SessionFeedbackPage() {
 
     const invalidScore = submitPayload.some((item) => {
       const scores = [item.attitudeScore, item.comprehensionScore, item.homeworkScore];
-      return scores.some((score) => score !== null && (score < 1 || score > 5));
+      return scores
+        .filter((score): score is number => typeof score === 'number')
+        .some((score) => score < 1 || score > 5);
     });
 
     if (invalidScore) {
