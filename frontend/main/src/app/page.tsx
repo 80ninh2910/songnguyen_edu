@@ -455,7 +455,7 @@ function ParentRegistrationForm({
   const monthlyBudgetRef = useRef<HTMLInputElement | null>(null);
   const subjectRef = useRef<HTMLSelectElement | null>(null);
   const genderRef = useRef<HTMLSelectElement | null>(null);
-  const locationRef = useRef<HTMLSelectElement | null>(null);
+  const locationRef = useRef<HTMLElement | null>(null);
   const levelRef = useRef<HTMLSelectElement | null>(null);
   const studentCountRef = useRef<HTMLSelectElement | null>(null);
   const sessionsPerWeekRef = useRef<HTMLSelectElement | null>(null);
