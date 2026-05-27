@@ -455,7 +455,8 @@ function ParentRegistrationForm({
   const monthlyBudgetRef = useRef<HTMLInputElement | null>(null);
   const subjectRef = useRef<HTMLSelectElement | null>(null);
   const genderRef = useRef<HTMLSelectElement | null>(null);
-  const locationRef = useRef<HTMLElement | null>(null);
+  const locationSelectRef = useRef<HTMLSelectElement | null>(null);
+  const locationContainerRef = useRef<HTMLDivElement | null>(null);
   const levelRef = useRef<HTMLSelectElement | null>(null);
   const studentCountRef = useRef<HTMLSelectElement | null>(null);
   const sessionsPerWeekRef = useRef<HTMLSelectElement | null>(null);
@@ -576,6 +577,7 @@ function ParentRegistrationForm({
       "weekdays",
       "timeSlots",
     ];
+    const locationFocusRef = mode === "center" ? locationContainerRef : locationSelectRef;
     const refMap: Record<string, React.RefObject<HTMLElement | null>> = {
       studentName: studentNameRef,
       parentName: parentNameRef,
@@ -583,7 +585,7 @@ function ParentRegistrationForm({
       monthlyBudget: monthlyBudgetRef,
       subject: subjectRef,
       gender: genderRef,
-      location: locationRef,
+      location: locationFocusRef,
       level: levelRef,
       studentCount: studentCountRef,
       sessionsPerWeek: sessionsPerWeekRef,
@@ -774,7 +776,7 @@ function ParentRegistrationForm({
                 </select>
                 {mode === "center" ? (
                   <div
-                    ref={locationRef}
+                    ref={locationContainerRef}
                     tabIndex={-1}
                     className={`rounded-xl border border-[#d5dff1] bg-white/95 p-3 text-sm font-semibold text-[#243b72] focus:outline-none focus:ring-4 focus:ring-[#8ab4ff]/25 ${
                       errors.location ? "border-[#e44b4b]" : ""
@@ -808,7 +810,7 @@ function ParentRegistrationForm({
                   </div>
                 ) : (
                   <select
-                    ref={locationRef}
+                    ref={locationSelectRef}
                     value={studentForm.location}
                     onChange={(e) => setStudentForm((prev) => ({ ...prev, location: e.target.value }))}
                     className={errorInputClass(!!errors.location)}
