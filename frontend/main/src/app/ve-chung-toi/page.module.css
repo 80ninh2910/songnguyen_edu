@@ -4,19 +4,6 @@
 /* ═══════════════════════════════════════════════════════════
    0. Tokens + Base
    ═══════════════════════════════════════════════════════════ */
-/* Hide default scrollbars globally when this page is active for a clean, ultra-premium experience */
-:global(html) {
-  scroll-behavior: smooth;
-  scrollbar-width: none !important; /* Firefox */
-  -ms-overflow-style: none !important; /* IE and Edge */
-}
-
-:global(html::-webkit-scrollbar),
-:global(body::-webkit-scrollbar),
-:global(*::-webkit-scrollbar) {
-  display: none !important; /* Chrome, Safari, Opera */
-}
-
 .page {
   --brand: #0b2f97;
   --brand-light: #0053cc;

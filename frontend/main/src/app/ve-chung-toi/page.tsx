@@ -332,6 +332,7 @@ function GlowText({
    ═══════════════════════════════════════════════════════════ */
 export default function VeChungToiPage() {
   const heroRef = useRef<HTMLElement>(null);
+  const scrollClassName = "ve-chung-toi-scroll";
   const { scrollYProgress: heroScroll } = useScroll({
     target: heroRef,
     offset: ["start start", "end start"],
@@ -342,6 +343,16 @@ export default function VeChungToiPage() {
   const heroScale = useTransform(heroScroll, [0, 1], [1, 1.15]);
   const heroBlur = useTransform(heroScroll, [0, 1], [0, 8]);
   const heroFilter = useMotionTemplate`blur(${heroBlur}px)`;
+
+  useEffect(() => {
+    document.documentElement.classList.add(scrollClassName);
+    document.body.classList.add(scrollClassName);
+
+    return () => {
+      document.documentElement.classList.remove(scrollClassName);
+      document.body.classList.remove(scrollClassName);
+    };
+  }, [scrollClassName]);
 
   return (
     <main className={styles.page}>
@@ -771,7 +782,7 @@ export default function VeChungToiPage() {
 
           <Reveal delay={0.2}>
             <div className={styles.ctaActions}>
-              <MagneticButton href="/dang-nhap-gia-su" className={styles.ctaBtnPrimary}>
+              <MagneticButton href="/?scrollTo=tutor-register-section" className={styles.ctaBtnPrimary}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
                   <circle cx="9" cy="7" r="4" />
