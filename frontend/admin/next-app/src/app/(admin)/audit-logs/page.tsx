@@ -24,10 +24,17 @@ const ACTION_LABELS: Record<string, string> = {
   REJECT_APPLICANT: "Từ chối ứng viên",
   CONVERT_REQUEST: "Chuyển yêu cầu → lớp",
   REJECT_REQUEST: "Từ chối yêu cầu",
+  ASSIGN_REQUEST_TO_CLASS: "Gán yêu cầu",
   CREATE_SESSION: "Tạo buổi học",
   CONFIRM_PAYMENT: "Xác nhận thanh toán",
   REJECT_PAYMENT: "Từ chối thanh toán",
   RESET_TUTOR_PASSWORD: "Đặt lại mật khẩu gia sư",
+  REJECT_CLASS_APPLICANT: "Từ chối ứng viên",
+  CREATE_ADMIN: "Tạo tài khoản admin",
+  UPDATE_ADMIN: "Cập nhật tài khoản admin",
+  DELETE_ADMIN: "Xoá tài khoản admin",
+  UPDATE_SETTING: "Cập nhật cài đặt",
+  SEED_INITIALIZED: "Khởi tạo dữ liệu hệ thống",
 };
 
 const TARGET_LABELS: Record<string, string> = {
