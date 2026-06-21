@@ -8,6 +8,7 @@ import {
   useMotionValueEvent,
 } from "motion/react";
 import Image from "next/image";
+import Link from "next/link";
 
 import React, { useRef, useState } from "react";
 import logoImage from "../assets/logo.png";
@@ -239,7 +240,7 @@ export const MobileNavToggle = ({
 
 export const NavbarLogo = () => {
   return (
-    <a
+    <Link
       href="/"
       className="relative z-20 mr-4 flex shrink-0 items-center space-x-2 px-2 py-1 text-sm font-normal text-black whitespace-nowrap"
     >
@@ -251,7 +252,7 @@ export const NavbarLogo = () => {
         className="rounded-full object-cover"
       />
       <span className="hidden whitespace-nowrap font-medium text-black lg:inline shrink-0">SONG NGUYEN EDU</span>
-    </a>
+    </Link>
   );
 };
 

@@ -76,6 +76,15 @@ export const cacheService = {
     return Boolean(redisClient);
   },
 
+  async ping(): Promise<boolean> {
+    if (!redisClient) {
+      return !env.USE_REDIS;
+    }
+
+    const response = await withRedis(async () => redisClient.ping(), null);
+    return response === "PONG";
+  },
+
   async get(key: string): Promise<string | null> {
     return withRedis(async () => redisClient!.get(key), null);
   },

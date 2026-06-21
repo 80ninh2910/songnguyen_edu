@@ -26,6 +26,7 @@ export type AdminIconName =
   | "sort"
   | "verified"
   | "cancel"
+  | "arrow_back"
   | "arrow_forward_ios"
   | "hub"
   | "person_check"
@@ -44,7 +45,8 @@ export type AdminIconName =
   | "manage_accounts"
   | "delete"
   | "close"
-  | "lock";
+  | "lock"
+  | "lock_reset";
 
 type AdminIconProps = SVGProps<SVGSVGElement> & {
   name: AdminIconName;
@@ -261,6 +263,14 @@ function IconPaths({ name }: { name: AdminIconName }) {
         </>
       );
 
+    case "arrow_back":
+      return (
+        <>
+          <path d="m10 6-6 6 6 6" />
+          <path d="M4 12h16" />
+        </>
+      );
+
     case "arrow_forward_ios":
       return <path d="m10 6 5 6-5 6" />;
 
@@ -434,9 +444,19 @@ function IconPaths({ name }: { name: AdminIconName }) {
         </>
       );
 
+    case "lock_reset":
+      return (
+        <>
+          <rect x="5" y="11" width="14" height="10" rx="2" />
+          <path d="M8 11V7a4 4 0 0 1 7.5-2" />
+          <path d="M17 3v4h-4" />
+          <path d="M17 7a5 5 0 0 0-8.5-2.5" />
+          <path d="M12 15v2" />
+        </>
+      );
+
     default:
       return <circle cx="12" cy="12" r="4" />;
-
   }
 }
 

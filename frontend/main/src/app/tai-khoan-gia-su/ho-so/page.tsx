@@ -227,7 +227,7 @@ export default function Profile() {
         </div>
         <div className="cred-list" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px', marginTop: '16px' }}>
           {profile.credentials.length > 0 ? (
-            profile.credentials.map((cred: any, idx) => (
+            profile.credentials.map((cred, idx) => (
               <div className="cred-item" key={idx} style={{ background: '#F9FAFB', padding: '16px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '16px', border: '1px solid #f1f5f9' }}>
                 <div className="cred-icon" style={{ background: '#3B82F6', color: 'white', width: '48px', height: '48px', minWidth: '48px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}><i className={`fas fa-${cred.icon}`}></i></div>
                 <div className="cred-info" style={{ flex: 1 }}>

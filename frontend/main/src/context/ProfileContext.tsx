@@ -3,6 +3,13 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { apiRequestWithAuth, getStoredAccessToken } from '@/lib/api';
 
+export type ProfileCredential = {
+  icon: string;
+  title: string;
+  detail: string;
+  imageUrl?: string | null;
+};
+
 export type ProfileData = {
   name: string;
   fullName: string;
@@ -19,7 +26,7 @@ export type ProfileData = {
   locations: { name: string; color: string }[];
   skills: string[];
   days: { label: string; available: boolean }[];
-  credentials: any[];
+  credentials: ProfileCredential[];
   avatarUrl: string | null;
   notifications: { id: string; message: string; time: string; read: boolean }[];
 };
