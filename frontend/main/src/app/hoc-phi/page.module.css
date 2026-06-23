@@ -330,3 +330,16 @@
     padding: 40px 36px;
   }
 }
+
+@media (max-width: 640px) {
+  .ctaActions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ctaPrimary,
+  .ctaSecondary {
+    width: 100%;
+    text-align: center;
+  }
+}

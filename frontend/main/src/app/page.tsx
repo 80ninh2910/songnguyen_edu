@@ -3,6 +3,7 @@ import { TextHoverEffect } from "@/components/ui/text-hover-effect";
 import Image from "next/image";
 import { Be_Vietnam_Pro, Bricolage_Grotesque } from "next/font/google";
 import { useEffect, useRef, useState } from "react";
+import { MapPin } from "lucide-react";
 import heroImage from "@/components/assets/image.png";
 import logoImage from "@/components/assets/logo.png";
 import background19 from "@/components/assets/19.png";
@@ -29,6 +30,17 @@ const beVietnamPro = Be_Vietnam_Pro({
   weight: ["400", "500", "600", "700", "800"],
 });
 
+const heroCampuses = [
+  {
+    label: "Cơ sở 1",
+    address: "Số 3 TA 15, Phường Thới An, TP.HCM",
+  },
+  {
+    label: "Cơ sở 2",
+    address: "27/31 Đường số 9, Phường An Hội Đông, TP.HCM",
+  },
+] as const;
+
 type ProcessType = "parent" | "tutor";
 type SignupType = "parent" | "center" | "tutor-free" | "tutor-trained";
 
@@ -49,10 +61,7 @@ export default function NavbarDemo() {
 
   return (
     <div className="relative w-full">
-      <BackgroundLinesDemo
-        onOpenParent={() => setActiveSignupModal("parent")}
-        onOpenTutor={() => setActiveSignupModal("tutor-free")}
-      />
+      <BackgroundLinesDemo />
       <TemplateContentSection
         onOpenTutorTrained={() => setActiveSignupModal("tutor-trained")}
       />
@@ -82,13 +91,7 @@ export default function NavbarDemo() {
   );
 
 };
-function BackgroundLinesDemo({
-  onOpenParent,
-  onOpenTutor,
-}: {
-  onOpenParent: () => void;
-  onOpenTutor: () => void;
-}) {
+function BackgroundLinesDemo() {
   return (
     <BackgroundLines
       className="flex w-full flex-col items-center justify-center px-4"
@@ -114,30 +117,29 @@ function BackgroundLinesDemo({
         </p>
       </div>
 
-      <div className={`${beVietnamPro.className} static z-30 mt-6 md:absolute md:inset-x-4 md:bottom-1 md:mt-0`}>
-        <div className="mx-auto grid w-full max-w-7xl grid-cols-1 gap-3 md:grid-cols-[1fr_2.2fr_1fr] md:gap-4">
-          <button
-            type="button"
-            onClick={onOpenParent}
-            className="w-full rounded-2xl bg-[linear-gradient(180deg,rgba(232,41,53,0.88)_0%,rgba(217,31,43,0.84)_55%,rgba(191,23,34,0.8)_100%)] px-6 py-3.5 text-sm font-semibold tracking-[-0.01em] text-white backdrop-blur-xl transition-transform duration-300 ease-out hover:scale-[1.04] active:scale-[0.98] max-[360px]:px-4 max-[360px]:py-3 max-[360px]:text-xs"
-          >
-            Tôi là phụ huynh tìm gia sư
-          </button>
-
-          <div className="flex min-h-14 items-center justify-center overflow-hidden rounded-full bg-[linear-gradient(180deg,rgba(255,255,255,0.95)_0%,rgba(241,246,255,0.9)_100%)] px-6 py-3.5 text-center text-sm font-medium tracking-[-0.01em] text-[#3a3a3c] backdrop-blur-xl transition-transform duration-300 ease-out hover:scale-[1.02] max-[360px]:px-4 max-[360px]:py-3 max-[360px]:text-[11px] md:text-base">
-            Cơ sở 1: Số 3 TA 15, Phường Thới An, TP.HCM
-            <br />
-            Cơ sở 2: 27/31 Đường số 9, Phường An Hội Đông, TP.HCM
-          </div>
-
-          <button
-            type="button"
-            onClick={onOpenTutor}
-            className="w-full rounded-2xl bg-[linear-gradient(180deg,rgba(232,41,53,0.88)_0%,rgba(217,31,43,0.84)_55%,rgba(191,23,34,0.8)_100%)] px-6 py-3.5 text-sm font-semibold tracking-[-0.01em] text-white backdrop-blur-xl transition-transform duration-300 ease-out hover:scale-[1.04] active:scale-[0.98] max-[360px]:px-4 max-[360px]:py-3 max-[360px]:text-xs"
-          >
-            Tôi là gia sư tìm lớp
-          </button>
-        </div>
+      <div className={`${beVietnamPro.className} static z-30 mt-5 w-full md:absolute md:inset-x-4 md:bottom-1 md:mt-0 md:w-auto`}>
+        <address className="mx-auto flex w-full max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-2xl border border-white/70 bg-white/[0.92] text-[#17233b] not-italic shadow-[0_10px_30px_rgba(15,47,119,0.14)] backdrop-blur-md sm:max-w-xl md:max-w-4xl md:flex-row">
+          {heroCampuses.map((campus, index) => (
+            <div
+              key={campus.label}
+              className={`grid flex-1 grid-cols-[2rem_minmax(0,1fr)] items-start gap-2.5 px-3.5 py-3.5 sm:gap-3 sm:px-4 md:flex md:items-start ${
+                index > 0 ? "border-t border-[#d6e2f5] md:border-l md:border-t-0" : ""
+              }`}
+            >
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#e9f0ff] text-[#1e4fbf] ring-1 ring-[#d8e5ff]">
+                <MapPin className="h-4 w-4" aria-hidden="true" strokeWidth={2.4} />
+              </span>
+              <span className="min-w-0 text-left">
+                <span className="block text-[10px] font-bold uppercase tracking-[0.08em] text-[#1e4fbf] sm:text-[11px]">
+                  {campus.label}
+                </span>
+                <span className="mt-0.5 block text-[13px] font-semibold leading-5 tracking-[-0.01em] text-[#25344f] [text-wrap:pretty] max-[360px]:text-xs sm:text-sm sm:leading-6 md:text-base">
+                  {campus.address}
+                </span>
+              </span>
+            </div>
+          ))}
+        </address>
       </div>
     </BackgroundLines>
   );
@@ -361,7 +363,7 @@ function RegistrationModal({
             </button>
           </div>
 
-          <div className="grid gap-2 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {(
               [
                 { key: "parent" as const, label: "Đăng ký gia sư" },
@@ -455,7 +457,7 @@ function ParentRegistrationForm({
   const monthlyBudgetRef = useRef<HTMLInputElement | null>(null);
   const subjectRef = useRef<HTMLSelectElement | null>(null);
   const genderRef = useRef<HTMLSelectElement | null>(null);
-  const locationRef = useRef<HTMLSelectElement | null>(null);
+  const locationRef = useRef<any | null>(null);
   const levelRef = useRef<HTMLSelectElement | null>(null);
   const studentCountRef = useRef<HTMLSelectElement | null>(null);
   const sessionsPerWeekRef = useRef<HTMLSelectElement | null>(null);
@@ -2043,16 +2045,16 @@ function CountingSection() {
             xây dựng tư duy và tạo hành trình tiến bộ bền vững cho từng học viên.
           </p>
 
-          <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <div className="mt-8 grid grid-cols-2 gap-3 sm:gap-5">
             {stats.map((item, idx) => (
               <article
                 key={item.id}
-                className={`group flex min-h-[200px] flex-col justify-center rounded-[24px] border border-white/60 p-8 shadow-[0_16px_40px_rgba(15,34,91,0.08)] transition-all duration-700 hover:-translate-y-1 hover:shadow-[0_24px_55px_rgba(15,34,91,0.16)] ${
+                className={`group flex min-h-[140px] sm:min-h-[200px] flex-col justify-center rounded-[20px] sm:rounded-[24px] border border-white/60 p-4 sm:p-8 shadow-[0_16px_40px_rgba(15,34,91,0.08)] transition-all duration-700 hover:-translate-y-1 hover:shadow-[0_24px_55px_rgba(15,34,91,0.16)] ${
                   inView ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
                 } ${item.cardClass}`}
                 style={{ transitionDelay: `${120 + idx * 110}ms` }}
               >
-                <h3 className="text-5xl font-extrabold tracking-tight md:text-6xl">
+                <h3 className="text-3xl sm:text-5xl font-extrabold tracking-tight md:text-6xl">
                   {item.kind === "number" ? (
                     <CountUpValue value={item.value} suffix={item.suffix} start={inView} />
                   ) : (
@@ -2060,7 +2062,7 @@ function CountingSection() {
                   )}
                 </h3>
                 <p
-                  className={`mt-5 max-w-[11ch] text-2xl font-bold uppercase leading-tight tracking-[0.08em] transition-all duration-700 md:text-3xl ${
+                  className={`mt-2 sm:mt-5 max-w-[11ch] text-[13px] sm:text-2xl font-bold uppercase leading-tight tracking-[0.08em] transition-all duration-700 md:text-3xl ${
                     inView ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
                   } ${item.labelClass}`}
                   style={{ transitionDelay: `${220 + idx * 110}ms` }}

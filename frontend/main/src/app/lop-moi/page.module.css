@@ -302,8 +302,17 @@
   background: #0053cc;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 480px) {
   .heroStats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .heroStat {
+    padding: 8px 4px;
+  }
+  .heroStat strong {
+    font-size: 1rem;
+  }
+  .heroStat span {
+    font-size: 0.7rem;
   }
 }
