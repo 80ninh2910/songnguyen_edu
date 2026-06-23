@@ -956,3 +956,128 @@ export async function rejectAdminClassApplicant(
     throw new Error(payload?.error?.message ?? "Không thể từ chối ứng viên.");
   }
 }
+
+export type AdminAuditLog = {
+  id: string;
+  actorId: string;
+  actorName: string;
+  action: string;
+  targetType: string;
+  targetId: string;
+  payload: unknown;
+  createdAt: string;
+};
+
+export async function fetchAdminAuditLogs(params: {
+  page?: number;
+  limit?: number;
+  action?: string;
+  targetType?: string;
+  actorId?: string;
+}): Promise<{
+  data: AdminAuditLog[];
+  meta: ApiSuccessList<unknown>["meta"];
+}> {
+  const searchParams = new URLSearchParams();
+
+  if (params.page) searchParams.set("page", String(params.page));
+  if (params.limit) searchParams.set("limit", String(params.limit));
+  if (params.action) searchParams.set("action", params.action);
+  if (params.targetType) searchParams.set("targetType", params.targetType);
+  if (params.actorId) searchParams.set("actorId", params.actorId);
+
+  const queryString = searchParams.toString();
+  const response = await adminFetch(
+    `/admin/audit-logs${queryString ? `?${queryString}` : ""}`,
+  );
+
+  if (!response.ok) {
+    throw new Error("Không thể tải nhật ký hệ thống.");
+  }
+
+  const payload = await parseJson<ApiSuccessList<AdminAuditLog>>(response);
+  return { data: payload.data, meta: payload.meta };
+}
+
+// ─── Admin Account CRUD (SUPERADMIN only) ─────────────────────────────────────
+
+export type AdminAccount = {
+  id: string;
+  email: string;
+  fullName: string;
+  role: "ADMIN" | "SUPERADMIN";
+  createdAt: string;
+  updatedAt: string;
+};
+
+export async function fetchAdminAccounts(params: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  role?: "ADMIN" | "SUPERADMIN";
+}): Promise<{ data: AdminAccount[]; meta: ApiSuccessList<unknown>["meta"] }> {
+  const searchParams = new URLSearchParams();
+  if (params.page) searchParams.set("page", String(params.page));
+  if (params.limit) searchParams.set("limit", String(params.limit));
+  if (params.search) searchParams.set("search", params.search);
+  if (params.role) searchParams.set("role", params.role);
+
+  const qs = searchParams.toString();
+  const response = await adminFetch(`/admin/admin-accounts${qs ? `?${qs}` : ""}`);
+
+  if (!response.ok) throw new Error("Không thể tải danh sách tài khoản admin.");
+
+  const payload = await parseJson<ApiSuccessList<AdminAccount>>(response);
+  return { data: payload.data, meta: payload.meta };
+}
+
+export async function createAdminAccount(body: {
+  email: string;
+  fullName: string;
+  role: "ADMIN" | "SUPERADMIN";
+  password: string;
+}): Promise<{ id: string }> {
+  const response = await adminFetch("/admin/admin-accounts", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const payload = await parseJson<{ error?: { message?: string } }>(response).catch(() => null);
+    throw new Error(payload?.error?.message ?? "Không thể tạo tài khoản admin.");
+  }
+
+  const payload = await parseJson<ApiSuccess<{ id: string }>>(response);
+  return payload.data;
+}
+
+export async function updateAdminAccount(
+  id: string,
+  body: {
+    fullName?: string;
+    email?: string;
+    role?: "ADMIN" | "SUPERADMIN";
+    password?: string;
+  },
+): Promise<void> {
+  const response = await adminFetch(`/admin/admin-accounts/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const payload = await parseJson<{ error?: { message?: string } }>(response).catch(() => null);
+    throw new Error(payload?.error?.message ?? "Không thể cập nhật tài khoản admin.");
+  }
+}
+
+export async function deleteAdminAccount(id: string): Promise<void> {
+  const response = await adminFetch(`/admin/admin-accounts/${id}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    const payload = await parseJson<{ error?: { message?: string } }>(response).catch(() => null);
+    throw new Error(payload?.error?.message ?? "Không thể xoá tài khoản admin.");
+  }
+}

@@ -586,7 +586,6 @@ export default function TutorsPage() {
               <th>Môn dạy</th>
               <th>Khu vực</th>
               <th>Trạng thái</th>
-              <th style={{ textAlign: "right" }}>Thao tác</th>
             </tr>
           </thead>
 
@@ -594,7 +593,7 @@ export default function TutorsPage() {
             {loading ? (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={5}
                   style={{ textAlign: "center", padding: "2rem" }}
                 >
                   Đang tải dữ liệu...
@@ -605,7 +604,7 @@ export default function TutorsPage() {
             {!loading && records.length === 0 ? (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={5}
                   style={{ textAlign: "center", padding: "2rem" }}
                 >
                   Không có gia sư phù hợp.
@@ -614,7 +613,25 @@ export default function TutorsPage() {
             ) : null}
 
             {sortedRecords.map((record) => (
-              <tr key={record.id}>
+              <tr
+                key={record.id}
+                onClick={() => router.push(`/tutors/${record.id}`)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    router.push(`/tutors/${record.id}`);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                style={{ cursor: "pointer", transition: "background 0.15s" }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(59,130,246,0.04)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "";
+                }}
+              >
                 <td>
                   <div className="table-user">
                     <div className="table-user-avatar">
@@ -664,29 +681,6 @@ export default function TutorsPage() {
                     tone={STATUS_META[record.status].tone}
                     dotColor={STATUS_META[record.status].dotColor}
                   />
-                </td>
-
-                <td>
-                  <div className="table-action-group">
-                    <button
-                      aria-label={`Xem chi tiết ${record.fullName}`}
-                      className="table-action-btn"
-                      onClick={() => router.push(`/tutors/${record.id}`)}
-                      type="button"
-                    >
-                      <AdminIcon name="visibility" />
-                    </button>
-                    <button
-                      aria-label={`Chỉnh sửa ${record.fullName}`}
-                      className="table-action-btn"
-                      onClick={() =>
-                        router.push(`/tutors/${record.id}?mode=edit`)
-                      }
-                      type="button"
-                    >
-                      <AdminIcon name="edit" />
-                    </button>
-                  </div>
                 </td>
               </tr>
             ))}

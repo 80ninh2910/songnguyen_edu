@@ -44,6 +44,11 @@ const attendanceOptions: Array<{ value: FeedbackDraft['attendance']; label: stri
 ];
 
 const scoreOptions = [1, 2, 3, 4, 5];
+const scoreFields: Array<keyof FeedbackDraft> = [
+  'attitudeScore',
+  'comprehensionScore',
+  'homeworkScore',
+];
 
 export default function SessionFeedbackPage() {
   const params = useParams<{ classId: string; sessionId: string }>();
@@ -97,11 +102,43 @@ export default function SessionFeedbackPage() {
       [memberId]: {
         ...prev[memberId],
         [key]: value,
+        ...(key === 'attendance' && value === 'ABSENT'
+          ? {
+              attitudeScore: null,
+              comprehensionScore: null,
+              homeworkScore: null,
+            }
+          : null),
       },
     }));
   };
 
-  const submitPayload = useMemo(() => Object.values(drafts), [drafts]);
+  const submitPayload = useMemo(
+    () =>
+      Object.values(drafts).map((draft) => {
+        const payload: Record<string, unknown> = {
+          memberId: draft.memberId,
+          attendance: draft.attendance,
+          strengths: draft.strengths,
+          weaknesses: draft.weaknesses,
+          recommendation: draft.recommendation,
+          overallComment: draft.overallComment,
+        };
+
+        if (typeof draft.attitudeScore === 'number') {
+          payload.attitudeScore = draft.attitudeScore;
+        }
+        if (typeof draft.comprehensionScore === 'number') {
+          payload.comprehensionScore = draft.comprehensionScore;
+        }
+        if (typeof draft.homeworkScore === 'number') {
+          payload.homeworkScore = draft.homeworkScore;
+        }
+
+        return payload;
+      }),
+    [drafts],
+  );
 
   const handleSubmit = async () => {
     setError('');
@@ -109,14 +146,34 @@ export default function SessionFeedbackPage() {
 
     if (!params?.sessionId) return;
 
-    if (submitPayload.length === 0) {
+    const validationItems = Object.values(drafts);
+
+    if (validationItems.length === 0) {
       setError('Khong co hoc sinh de nhan xet.');
       return;
     }
 
+    for (const item of validationItems) {
+      if (item.attendance === 'ABSENT') continue;
+      for (const field of scoreFields) {
+        if (item[field] == null) {
+          const target = document.querySelector<HTMLButtonElement>(
+            `button[data-member-id="${item.memberId}"][data-score-field="${field}"]`,
+          );
+          if (target) {
+            target.focus();
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+          return;
+        }
+      }
+    }
+
     const invalidScore = submitPayload.some((item) => {
       const scores = [item.attitudeScore, item.comprehensionScore, item.homeworkScore];
-      return scores.some((score) => score !== null && (score < 1 || score > 5));
+      return scores
+        .filter((score): score is number => typeof score === 'number')
+        .some((score) => score < 1 || score > 5);
     });
 
     if (invalidScore) {
@@ -205,7 +262,10 @@ export default function SessionFeedbackPage() {
                         <button
                           type="button"
                           key={`attitude-${member.id}-${score}`}
+                          data-member-id={member.id}
+                          data-score-field="attitudeScore"
                           className={draft.attitudeScore === score ? 'score-pill active' : 'score-pill'}
+                          disabled={draft.attendance === 'ABSENT'}
                           onClick={() => handleDraftChange(member.id, 'attitudeScore', score)}
                         >
                           {score}
@@ -220,7 +280,10 @@ export default function SessionFeedbackPage() {
                         <button
                           type="button"
                           key={`comprehension-${member.id}-${score}`}
+                          data-member-id={member.id}
+                          data-score-field="comprehensionScore"
                           className={draft.comprehensionScore === score ? 'score-pill active' : 'score-pill'}
+                          disabled={draft.attendance === 'ABSENT'}
                           onClick={() => handleDraftChange(member.id, 'comprehensionScore', score)}
                         >
                           {score}
@@ -235,7 +298,10 @@ export default function SessionFeedbackPage() {
                         <button
                           type="button"
                           key={`homework-${member.id}-${score}`}
+                          data-member-id={member.id}
+                          data-score-field="homeworkScore"
                           className={draft.homeworkScore === score ? 'score-pill active' : 'score-pill'}
+                          disabled={draft.attendance === 'ABSENT'}
                           onClick={() => handleDraftChange(member.id, 'homeworkScore', score)}
                         >
                           {score}

@@ -3,6 +3,16 @@ import { z } from "zod";
 
 loadEnv();
 
+const booleanString = z
+  .enum(["true", "false"])
+  .transform((value) => value === "true");
+
+const optionalString = (schema: z.ZodString) =>
+  z.preprocess(
+    (value) => (value === "" ? undefined : value),
+    schema.optional(),
+  );
+
 const envSchema = z
   .object({
     NODE_ENV: z
@@ -10,7 +20,9 @@ const envSchema = z
       .default("development"),
     PORT: z.coerce.number().default(3000),
     DATABASE_URL: z.string().min(1),
-    USE_REDIS: z.coerce.boolean().default(true),
+    USE_REDIS: booleanString.default("true"),
+    TRUST_PROXY: booleanString.default("false"),
+    ENABLE_API_DOCS: booleanString.default("false"),
     REDIS_URL: z.string().min(1).optional(),
     JWT_SECRET: z.string().min(16),
     JWT_REFRESH_SECRET: z.string().min(16),
@@ -22,10 +34,10 @@ const envSchema = z
     RATE_LIMIT_MAX_API: z.coerce.number().default(200),
     RATE_LIMIT_MAX_LOGIN: z.coerce.number().default(10),
     RATE_LIMIT_MAX_PUBLIC: z.coerce.number().default(20),
-    RESEND_API_KEY: z.string().optional(),
-    EMAIL_FROM: z.string().optional(),
-    NEXTJS_REVALIDATE_URL: z.string().url().optional(),
-    NEXTJS_REVALIDATE_SECRET: z.string().min(8).optional(),
+    RESEND_API_KEY: optionalString(z.string()),
+    EMAIL_FROM: optionalString(z.string()),
+    NEXTJS_REVALIDATE_URL: optionalString(z.string().url()),
+    NEXTJS_REVALIDATE_SECRET: optionalString(z.string().min(8)),
     SETTINGS_CACHE_PREFIX: z.string().default("settings"),
   })
   .superRefine((data, ctx) => {

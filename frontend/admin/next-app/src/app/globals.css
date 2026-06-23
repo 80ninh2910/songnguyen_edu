@@ -250,6 +250,43 @@ textarea {
   color: #f8fafc;
 }
 
+/* ── Role badges ──────────────────────────────────────────────── */
+.admin-role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.admin-role-badge.superadmin {
+  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+  color: #fff;
+}
+
+.admin-role-badge.admin {
+  background: rgba(59, 130, 246, 0.2);
+  color: #93c5fd;
+}
+
+.admin-nav-badge-sa {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 5px;
+  border-radius: 999px;
+  font-size: 0.58rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #7c3aed, #4f46e5);
+  color: #fff;
+  margin-left: auto;
+  letter-spacing: 0.04em;
+}
+
+
 .admin-main {
   margin-left: var(--admin-sidebar-width);
   min-height: 100vh;
@@ -673,7 +710,7 @@ textarea {
 
 .dashboard-kpi-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1.25rem;
 }
 

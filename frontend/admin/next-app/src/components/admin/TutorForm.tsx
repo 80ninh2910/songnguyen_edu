@@ -2,9 +2,18 @@
 
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 
-import type { AdminTutorCreatePayload } from "@/lib/adminApi";
+import type { AdminTutorCreatePayload, AdminTutorType } from "@/lib/adminApi";
 
-const EMPTY_VALUES = {
+type TutorFormValues = {
+  fullName: string;
+  email: string;
+  phone: string;
+  subject: string;
+  level: string;
+  tutorType: AdminTutorType;
+};
+
+const EMPTY_VALUES: TutorFormValues = {
   fullName: "",
   email: "",
   phone: "",
@@ -13,10 +22,8 @@ const EMPTY_VALUES = {
   tutorType: "GIA_SU_TU_DO",
 };
 
-type TutorFormValues = typeof EMPTY_VALUES;
-
 type TutorFormProps = {
-  initialValues?: Partial<TutorFormValues>;
+  initialValues?: Partial<TutorFormValues> & { districts?: string };
   submitLabel: string;
   onSubmit: (payload: AdminTutorCreatePayload) => Promise<void> | void;
   onCancel?: () => void;
