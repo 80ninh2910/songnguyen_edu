@@ -177,7 +177,7 @@ export default function TutorRegistrationForm({
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(personalForm.email.trim())) {
       nextErrors.email = "Email không hợp lệ.";
     }
-    if (!personalForm.fullName.trim()) nextErrors.fullName = "Vui long nhap ho ten.";
+    if (!personalForm.fullName.trim()) nextErrors.fullName = "Vui lòng nhập họ tên.";
     if (!personalForm.role) nextErrors.role = "Vui lòng chọn vai trò hiện tại.";
     if (!personalForm.gender) nextErrors.gender = "Vui lòng chọn giới tính.";
     if (!personalForm.address.trim()) nextErrors.address = "Vui lòng nhập địa chỉ.";
@@ -219,9 +219,9 @@ export default function TutorRegistrationForm({
       );
 
       localStorage.setItem("sne_tutor_register", JSON.stringify(registerResult));
-      setSubmitMessage("Dang ky thanh cong. Hoc vu se lien he xac minh ho so gia su.");
+      setSubmitMessage("Đăng ký thành công. Học vụ sẽ liên hệ xác minh hồ sơ gia sư.");
     } catch (err) {
-      setSubmitMessage(err instanceof Error ? err.message : "Dang ky that bai. Vui long thu lai.");
+      setSubmitMessage(err instanceof Error ? err.message : "Đăng ký thất bại. Vui lòng thử lại.");
     } finally {
       setIsSubmitting(false);
     }

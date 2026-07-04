@@ -978,7 +978,7 @@ export default function TutorsPage() {
                   <p style={{ margin: 0, color: "#ba1a1a" }}>{createTeacherError}</p>
                 ) : null}
                 <p style={{ margin: 0, color: "#64748b", fontSize: "0.85rem" }}>
-                  Mat khau mac dinh: 123456. Tai khoan bat buoc doi mat khau o lan dang nhap dau.
+                  Mật khẩu mặc định: 123456. Tài khoản bắt buộc đổi mật khẩu ở lần đăng nhập đầu.
                 </p>
               </div>
               <div className="admin-dialog-actions">

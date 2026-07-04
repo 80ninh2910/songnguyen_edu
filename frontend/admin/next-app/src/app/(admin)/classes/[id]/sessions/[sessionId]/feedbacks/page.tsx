@@ -75,7 +75,7 @@ export default function AdminSessionFeedbacksPage() {
         setError("");
       })
       .catch((err) => {
-        setError(err instanceof Error ? err.message : "Khong the tai nhan xet buoi hoc.");
+        setError(err instanceof Error ? err.message : "Không thể tải nhận xét buổi học.");
       })
       .finally(() => setLoading(false));
   }, [params?.sessionId]);

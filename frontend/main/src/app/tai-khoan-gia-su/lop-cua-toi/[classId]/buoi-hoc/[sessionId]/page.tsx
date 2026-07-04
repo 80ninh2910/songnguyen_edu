@@ -59,7 +59,7 @@ export default function SessionDetailPage() {
   useEffect(() => {
     const token = getStoredAccessToken();
     if (!token) {
-      setError('Vui long dang nhap lai.');
+      setError('Vui lòng đăng nhập lại.');
       setIsLoading(false);
       return;
     }
@@ -77,7 +77,7 @@ export default function SessionDetailPage() {
         setError('');
       })
       .catch((err) => {
-        setError(err instanceof Error ? err.message : 'Khong the tai thong tin buoi hoc.');
+        setError(err instanceof Error ? err.message : 'Không thể tải thông tin buổi học.');
       })
       .finally(() => setIsLoading(false));
   }, [params?.sessionId]);
@@ -109,14 +109,14 @@ export default function SessionDetailPage() {
         </div>
       </div>
 
-      {isLoading && <div className="session-empty">Dang tai thong tin buoi hoc...</div>}
+      {isLoading && <div className="session-empty">Đang tải thông tin buổi học...</div>}
       {!isLoading && error && <div className="session-empty error">{error}</div>}
 
       {!isLoading && !error && session && (
         <>
           <div className="session-summary">
             <div className="session-summary-card">
-              <div className="label-upper">Lop hoc</div>
+              <div className="label-upper">Lớp học</div>
               <div className="session-summary-title">{session.class.title}</div>
               <div className="session-summary-meta">
                 {session.class.subject} • {session.class.grade} • {session.class.district}
@@ -136,7 +136,7 @@ export default function SessionDetailPage() {
               </div>
             </div>
             <div className="session-summary-card">
-              <div className="label-upper">Nhan xet</div>
+              <div className="label-upper">Nhận xét</div>
               <div className="session-summary-value">{feedbacks.length}</div>
             </div>
           </div>
@@ -148,7 +148,7 @@ export default function SessionDetailPage() {
           ) : null}
 
           {feedbacks.length === 0 ? (
-            <div className="session-empty">Chua co nhan xet nao cho buoi hoc nay.</div>
+            <div className="session-empty">Chưa có nhận xét nào cho buổi học này.</div>
           ) : (
             <div className="feedback-list">
               {feedbacks.map((feedback) => (
@@ -183,7 +183,7 @@ export default function SessionDetailPage() {
 
                   <div className="feedback-fields">
                     <div>
-                      <label>Diem manh</label>
+                      <label>Điểm mạnh</label>
                       <div className="session-summary-meta">{feedback.strengths || 'Chua nhap'}</div>
                     </div>
                     <div>
@@ -195,7 +195,7 @@ export default function SessionDetailPage() {
                       <div className="session-summary-meta">{feedback.recommendation || 'Chua nhap'}</div>
                     </div>
                     <div>
-                      <label>Nhan xet chu</label>
+                      <label>Nhận xét chữ</label>
                       <div className="session-summary-meta">{feedback.overallComment || 'Chua nhap'}</div>
                     </div>
                   </div>

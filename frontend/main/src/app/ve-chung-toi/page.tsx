@@ -845,7 +845,7 @@ export default function VeChungToiPage() {
       <footer className={styles.footer}>
         <Reveal>
           <div className={styles.footerBrand}>Song Nguyen Education</div>
-          <p>© {new Date().getFullYear()} Song Nguyen Education Co., Ltd. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Công ty TNHH Giáo dục Song Nguyen Bảo lưu mọi quyền.</p>
         </Reveal>
       </footer>
     </main>

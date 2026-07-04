@@ -664,17 +664,17 @@ function ParentRegistrationForm({
     const budgetPerHour = baseSessionFee > 0 ? Math.round(baseSessionFee) : undefined;
     const tutorType =
       tutorForm.level === "Gia sư đào tạo" ? "GIA_SU_DAO_TAO" : "GIA_SU_TU_DO";
-    const feeLabel = mode === "center" ? "Hoc phi mong muon/thang" : "Hoc phi mong muon/buoi";
+    const feeLabel = mode === "center" ? "Học phí mong muốn/tháng" : "Học phí mong muốn/buổi";
     const noteParts = [
-      studentForm.gender ? `Gioi tinh hoc vien: ${studentForm.gender}` : null,
-      `So hoc vien: ${studentForm.studentCount}`,
+      studentForm.gender ? `Giới tính học viên: ${studentForm.gender}` : null,
+      `Số học viên: ${studentForm.studentCount}`,
       `So buoi/tuan: ${studentForm.sessionsPerWeek}`,
       sessionFeeValue > 0 ? `${feeLabel}: ${formatVnd(sessionFeeValue)}` : null,
-      `Lich hoc: ${activeWeekdays.join(", ") || "Chua chon"} | ${activeTimeSlots.join(", ") || "Chua chon"}`,
-      mode === "parent" ? `Loai gia su: ${tutorForm.level || "Chua chon"}` : null,
-      tutorForm.gender ? `Gioi tinh gia su: ${tutorForm.gender}` : null,
-      tutorForm.level ? `Trinh do gia su: ${tutorForm.level}` : null,
-      tutorForm.detail ? `Yeu cau chi tiet: ${tutorForm.detail}` : null,
+      `Lich hoc: ${activeWeekdays.join(", ") || "Chưa chọn"} | ${activeTimeSlots.join(", ") || "Chưa chọn"}`,
+      mode === "parent" ? `Loại gia sư: ${tutorForm.level || "Chưa chọn"}` : null,
+      tutorForm.gender ? `Giới tính gia sư: ${tutorForm.gender}` : null,
+      tutorForm.level ? `Trình độ gia sư: ${tutorForm.level}` : null,
+      tutorForm.detail ? `Yêu cầu chi tiết: ${tutorForm.detail}` : null,
     ].filter(Boolean);
 
     try {
@@ -694,9 +694,9 @@ function ParentRegistrationForm({
         },
       });
 
-      setSubmitMessage("Yeu cau da duoc gui. Hoc vu se lien he trong 24h.");
+      setSubmitMessage("Yêu cầu đã được gửi. Học vụ sẽ liên hệ trong 24 giờ.");
     } catch (err) {
-      setSubmitMessage(err instanceof Error ? err.message : "Gui yeu cau that bai. Vui long thu lai.");
+      setSubmitMessage(err instanceof Error ? err.message : "Gửi yêu cầu thất bại. Vui lòng thử lại.");
     } finally {
       setIsSubmitting(false);
     }
@@ -807,7 +807,7 @@ function ParentRegistrationForm({
                       })}
                     </div>
                     <div className="mt-2 text-xs text-[#6b7aa0]">
-                      Da chon: {centerLocations.length ? centerLocations.join(", ") : "Chua chon"}
+                      Da chon: {centerLocations.length ? centerLocations.join(", ") : "Chưa chọn"}
                     </div>
                   </div>
                 ) : (
@@ -997,7 +997,7 @@ function ParentRegistrationForm({
                       const rawValue = e.target.value.replace(/\D/g, "");
                       setStudentForm((prev) => ({ ...prev, monthlyBudget: rawValue }));
                     }}
-                    placeholder={mode === "center" ? "Nhap hoc phi / thang" : "Nhap hoc phi / buoi"}
+                    placeholder={mode === "center" ? "Nhập học phí / tháng" : "Nhập học phí / buổi"}
                     inputMode="numeric"
                     className={`${errorInputClass(!!errors.monthlyBudget)} h-14 text-lg font-bold pr-14`}
                   />
@@ -1188,7 +1188,7 @@ function TutorClassSection() {
     {
       id: 1,
       name: "Nguyễn Bá Thọ",
-      role: "Giáo viên Academic tại Song Nguyen Education",
+      role: "Giáo viên học thuật tại Song Nguyen Education",
       score: "8.5 IELTS Overall",
       qualification: "Cử nhân Sư phạm Tiếng Anh",
       certificates: ["TESOL Quốc tế", "Nghiệp vụ Sư phạm"],
@@ -1197,25 +1197,25 @@ function TutorClassSection() {
     {
       id: 2,
       name: "Từ Kim Loan",
-      role: "IELTS Academic Director tại Song Nguyen Education",
+      role: "Giám đốc học thuật IELTS tại Song Nguyen Education",
       score: "8.5 IELTS Overall",
       qualification: "Thạc sĩ Ngôn ngữ Anh",
-      certificates: ["CELTA", "IELTS Train The Trainer"],
+      certificates: ["CELTA", "Đào tạo Giảng viên IELTS"],
       image: tutorImage2,
     },
     {
       id: 3,
       name: "Võ Đình Phúc",
-      role: "Academic Manager tại Song Nguyen Education",
+      role: "Quản lý học thuật tại Song Nguyen Education",
       score: "8.5 IELTS Overall",
       qualification: "Cử nhân Ngôn ngữ Anh",
-      certificates: ["TESOL Quốc tế", "Academic Writing Specialist"],
+      certificates: ["TESOL Quốc tế", "Chuyên gia Viết học thuật"],
       image: tutorImage3,
     },
     {
       id: 4,
       name: "Dương Hoàng Anh Nhật",
-      role: "IELTS Academic Manager tại Song Nguyen Education",
+      role: "Quản lý học thuật IELTS tại Song Nguyen Education",
       score: "8.0 IELTS Writing",
       qualification: "Thạc sĩ Giảng dạy Tiếng Anh",
       certificates: ["TESOL", "Chứng chỉ Đánh giá Năng lực IELTS"],
@@ -1224,10 +1224,10 @@ function TutorClassSection() {
     {
       id: 5,
       name: "Đặng Lê Phương Uyên",
-      role: "Acting IELTS Academic Manager tại Song Nguyen Education",
+      role: "Quyền Quản lý học thuật IELTS tại Song Nguyen Education",
       score: "8.5 IELTS Overall",
       qualification: "Cử nhân Sư phạm Anh",
-      certificates: ["TESOL", "Classroom Management Certification"],
+      certificates: ["TESOL", "Chứng chỉ Quản lý lớp học"],
       image: tutorImage5,
     },
     {
@@ -1242,10 +1242,10 @@ function TutorClassSection() {
     {
       id: 7,
       name: "Lê Hà An",
-      role: "Giáo viên SAT Verbal tại Song Nguyen Education",
+      role: "Giáo viên Ngôn ngữ SAT tại Song Nguyen Education",
       score: "1500 SAT",
       qualification: "Thạc sĩ Ngôn ngữ học ứng dụng",
-      certificates: ["SAT Instructor Certification", "CELTA"],
+      certificates: ["Chứng chỉ Giảng dạy SAT", "CELTA"],
       image: tutorImage7,
     },
     {
@@ -1254,16 +1254,16 @@ function TutorClassSection() {
       role: "Giáo viên IELTS tại Song Nguyen Education",
       score: "8.5 IELTS Overall",
       qualification: "Cử nhân Sư phạm Anh",
-      certificates: ["TESOL", "Classroom Management Certification"],
+      certificates: ["TESOL", "Chứng chỉ Quản lý lớp học"],
       image: tutorImage2,
     },
     {
       id: 9,
       name: "Ngô Minh Quân",
-      role: "Giáo viên Academic Writing tại Song Nguyen Education",
+      role: "Giáo viên Viết học thuật tại Song Nguyen Education",
       score: "8.0 IELTS Writing",
       qualification: "Cử nhân Ngôn ngữ Anh",
-      certificates: ["Academic Writing Specialist", "TESOL"],
+      certificates: ["Chuyên gia Viết học thuật", "TESOL"],
       image: tutorImage4,
     },
     {
@@ -1272,7 +1272,7 @@ function TutorClassSection() {
       role: "Giáo viên luyện thi IELTS tại Song Nguyen Education",
       score: "8.5 IELTS Overall",
       qualification: "Thạc sĩ TESOL",
-      certificates: ["TESOL Quốc tế", "IELTS Train The Trainer"],
+      certificates: ["TESOL Quốc tế", "Đào tạo Giảng viên IELTS"],
       image: tutorImage1,
     },
   ];
@@ -2085,7 +2085,7 @@ function CountingSection() {
           <div className="relative overflow-hidden rounded-[34px] bg-[#dce7ff] p-3 shadow-[0_24px_60px_rgba(14,39,111,0.22)] w-full">
             <Image
               src={statsMainImage}
-              alt="Hoc vien trong lop hoc"
+              alt="Học viên trong lớp học"
               className="h-[480px] w-full rounded-[26px] object-cover transition-transform duration-700 hover:scale-[1.03]"
             />
             <div className="pointer-events-none absolute inset-x-3 bottom-3 h-32 rounded-b-[26px] bg-gradient-to-t from-[#0b2f97]/55 to-transparent" />
@@ -2094,7 +2094,7 @@ function CountingSection() {
           <div className="absolute -bottom-4 left-0 w-[60%] overflow-hidden rounded-[20px] border border-white/70 bg-white/85 p-2 shadow-[0_18px_36px_rgba(15,34,91,0.18)] backdrop-blur-md md:-bottom-7 md:-left-7 md:w-[46%]">
             <Image
               src={statsSubImage}
-              alt="Gia su huong dan hoc vien"
+              alt="Gia sư hướng dẫn học viên"
               className="h-36 w-full rounded-[14px] object-cover"
             />
             <p className="px-2 pb-1 pt-3 text-xs font-semibold uppercase tracking-[0.12em] text-[#29417b] md:text-sm">
@@ -2281,7 +2281,7 @@ function ProjectFooter() {
         </div>
 
         <div className="mt-10 flex flex-col gap-4 border-t border-white/10 pt-5 text-sm text-[#a9bbdf] md:flex-row md:items-center md:justify-between">
-          <p>© {currentYear} Song Nguyen Education. All rights reserved.</p>
+          <p>© {currentYear} Song Nguyen Education. Bảo lưu mọi quyền.</p>
           <div className="flex flex-wrap gap-4">
             <button type="button" className="transition-colors hover:text-white">Giới thiệu</button>
             <button type="button" className="transition-colors hover:text-white">Chính sách bảo mật</button>

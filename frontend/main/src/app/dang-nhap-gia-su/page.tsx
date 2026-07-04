@@ -52,7 +52,7 @@ export default function LoginPage() {
         router.push('/tai-khoan-gia-su');
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Dang nhap khong thanh cong.');
+      setError(err instanceof Error ? err.message : 'Đăng nhập không thành công.');
       setIsLoading(false);
     }
   };

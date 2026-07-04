@@ -41,7 +41,7 @@ export default function ClassDetail() {
         setError('');
       })
       .catch((err) => {
-        setError(err instanceof Error ? err.message : 'Khong the tai chi tiet lop.');
+        setError(err instanceof Error ? err.message : 'Không thể tải chi tiết lớp.');
       })
       .finally(() => setIsLoading(false));
   }, [params?.id]);
@@ -49,27 +49,27 @@ export default function ClassDetail() {
   const handleApply = async () => {
     const token = getStoredAccessToken();
     if (!token) {
-      setApplyMessage('Vui long dang nhap lai.');
+      setApplyMessage('Vui lòng đăng nhập lại.');
       return;
     }
 
     if (!course) return;
 
     if (!isRoleMatch) {
-      setApplyMessage('Ban khong duoc phep nhan lop nay do khac loai gia su.');
+      setApplyMessage('Bạn không được phép nhận lớp này do khác loại gia sư.');
       return;
     }
 
     if (course.status !== 'OPEN') {
-      setApplyMessage('Lop nay khong con dang tuyen.');
+      setApplyMessage('Lớp này không còn đăng tuyển.');
       return;
     }
 
     try {
       await apiRequestWithAuth(`/tutor/classes/${course.id}/apply`, { method: 'POST', body: {} });
-      setApplyMessage('Da gui yeu cau tham gia lop.');
+      setApplyMessage('Đã gửi yêu cầu tham gia lớp.');
     } catch (err) {
-      setApplyMessage(err instanceof Error ? err.message : 'Khong the gui yeu cau.');
+      setApplyMessage(err instanceof Error ? err.message : 'Không thể gửi yêu cầu.');
     }
   };
 
@@ -92,20 +92,20 @@ export default function ClassDetail() {
       </nav>
 
       <div className="page-container">
-        {isLoading && <p>Dang tai...</p>}
+        {isLoading && <p>Đang tải...</p>}
         {!isLoading && error && (
           <p style={{ color: '#ef4444' }}>
-            Lop nay khong con dang tuyen hoac da duoc phan.
+            Lớp này không còn đăng tuyển hoặc đã được phân.
           </p>
         )}
         {!isLoading && !error && course && (
           <>
             <div className="course-badges">
-              <span className="badge-approved">{course.status === 'OPEN' ? 'Dang tuyen' : course.status}</span>
+              <span className="badge-approved">{course.status === 'OPEN' ? 'Đang tuyển' : course.status}</span>
               <span className="course-id">MA LOP: {course.id}</span>
             </div>
             <h1 className="course-title">{course.title}</h1>
-            <p className="course-desc">Lop {course.subject} - {course.grade} tai {course.district}.</p>
+            <p className="course-desc">Lớp {course.subject} - {course.grade} tại {course.district}.</p>
           </>
         )}
 
@@ -137,7 +137,7 @@ export default function ClassDetail() {
                     <div className="avail-total">/ {course ? 0 : 0}</div>
                   </div>
                 </div>
-                <p className="avail-sub">Thong tin suc chua se cap nhat sau.</p>
+                <p className="avail-sub">Thông tin sức chứa sẽ cập nhật sau.</p>
               </div>
             </div>
 
@@ -146,8 +146,8 @@ export default function ClassDetail() {
                 <div className="info-chip-icon avatar-icon"><i className="fas fa-user"></i></div>
                 <div>
                   <div className="chip-label">Giảng Viên</div>
-                  <div className="chip-value">Chua co gia su</div>
-                  <div className="chip-sub">Dang tuyen gia su cho lop nay</div>
+                  <div className="chip-value">Chưa có gia sư</div>
+                  <div className="chip-sub">Đang tuyển gia su cho lop nay</div>
                 </div>
               </div>
               <div className="info-chip">
@@ -170,11 +170,11 @@ export default function ClassDetail() {
 
             <div className="req-section">
               <div className="req-block">
-                <h3>Yêu Cầu Phụ Huynh</h3>
+                <h3>Yêu Cầu Phụ Hủynh</h3>
                 <div className="req-list">
                   {[
                     'Co kinh nghiem giang day tu 6 thang tro len.',
-                    'Phu hop voi yeu cau mon hoc va cap do.',
+                    'Phù hợp với yêu cầu môn học và cấp độ.',
                   ].map((req, idx) => (
                     <div className="req-item" key={idx}><div className="req-dot"></div> {req}</div>
                   ))}
@@ -184,7 +184,7 @@ export default function ClassDetail() {
                 <h3>Yêu Cầu Gia Sư</h3>
                 <div className="req-list">
                   {[
-                    'Cam ket day dung lich da dang ky.',
+                    'Cam kết dạy đúng lịch đã đăng ký.',
                     'Tuân thu noi quy trung tam.',
                   ].map((req, idx) => (
                     <div className="req-item" key={idx}><div className="req-dot"></div> {req}</div>
@@ -206,7 +206,7 @@ export default function ClassDetail() {
             <div className="enroll-card">
               <div className="enroll-label">Đăng Ký Lớp Học</div>
               <div className="enroll-price">
-                {course ? `${Math.round(course.feePerHour / 1000)}.000đ` : '---'} <span>/ gio</span>
+                {course ? `${Math.round(course.feePerHour / 1000)}.000đ` : '---'} <span>/ giờ</span>
               </div>
               <div className="enroll-status">
                 <div className="enroll-status-label"><i className="fas fa-clipboard-check"></i> Trạng thái</div>
@@ -225,10 +225,10 @@ export default function ClassDetail() {
                 onClick={handleApply}
                 disabled={!canApply}
               >
-                Dang ky lop <i className="fas fa-chevron-right"></i>
+                Đăng ký lớp <i className="fas fa-chevron-right"></i>
               </button>
               {applyMessage && <p style={{ marginTop: '12px', color: '#2563EB' }}>{applyMessage}</p>}
-              <button className="btn-download">Tai giao trinh</button>
+              <button className="btn-download">Tải giáo trình</button>
             </div>
 
             <div className="protocol-card">

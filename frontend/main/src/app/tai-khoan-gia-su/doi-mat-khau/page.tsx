@@ -19,12 +19,12 @@ export default function ChangePasswordPage() {
     setSuccess('');
 
     if (!currentPassword || !newPassword || !confirmPassword) {
-      setError('Vui long nhap day du thong tin.');
+      setError('Vui lòng nhập đầy đủ thông tin.');
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setError('Mat khau moi khong khop.');
+      setError('Mật khẩu mới không khớp.');
       return;
     }
 
@@ -47,7 +47,7 @@ export default function ChangePasswordPage() {
         }
       }
 
-      setSuccess('Doi mat khau thanh cong.');
+      setSuccess('Đổi mật khẩu thành công.');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -55,7 +55,7 @@ export default function ChangePasswordPage() {
         router.push('/tai-khoan-gia-su');
       }, 800);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Doi mat khau that bai.');
+      setError(err instanceof Error ? err.message : 'Đổi mật khẩu thất bại.');
     } finally {
       setIsSubmitting(false);
     }
@@ -64,15 +64,15 @@ export default function ChangePasswordPage() {
   return (
     <div className="change-password-page">
       <div className="change-password-card">
-        <h1>Doi mat khau</h1>
-        <p>Vui long dat mat khau moi de tiep tuc.</p>
+        <h1>Đổi mật khẩu</h1>
+        <p>Vui lòng đặt mật khẩu mới để tiếp tục.</p>
 
         {error ? <div className="change-password-alert error">{error}</div> : null}
         {success ? <div className="change-password-alert success">{success}</div> : null}
 
         <form onSubmit={handleSubmit} className="change-password-form">
           <label>
-            Mat khau hien tai
+            Mật khẩu hiện tại
             <input
               type="password"
               value={currentPassword}
@@ -82,7 +82,7 @@ export default function ChangePasswordPage() {
           </label>
 
           <label>
-            Mat khau moi
+            Mật khẩu mới
             <input
               type="password"
               value={newPassword}
@@ -102,7 +102,7 @@ export default function ChangePasswordPage() {
           </label>
 
           <button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Dang xu ly...' : 'Cap nhat mat khau'}
+            {isSubmitting ? 'Đang xử lý...' : 'Cập nhật mật khẩu'}
           </button>
         </form>
       </div>

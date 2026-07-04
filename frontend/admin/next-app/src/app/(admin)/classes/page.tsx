@@ -1404,7 +1404,7 @@ export default function ClassesPage() {
                               }}
                             >
                               <p style={{ margin: 0, fontWeight: 700 }}>
-                                Hoc vien {index + 1}
+                                Học viên {index + 1}
                               </p>
                               <button
                                 className="admin-btn ghost"
@@ -1428,7 +1428,7 @@ export default function ClassesPage() {
                               }}
                             >
                               <label className="admin-dialog-field">
-                                Ten hoc vien
+                                Tên học viên
                                 <input
                                   type="text"
                                   value={member.studentName}
@@ -1445,7 +1445,7 @@ export default function ClassesPage() {
                                 />
                               </label>
                               <label className="admin-dialog-field">
-                                Lop hoc
+                                Lớp học
                                 <input
                                   type="text"
                                   value={member.studentGrade ?? ""}
@@ -1827,7 +1827,7 @@ export default function ClassesPage() {
                     </p>
                     {applicantsLoading ? (
                       <p style={{ margin: 0, color: "#64748b" }}>
-                        Dang tai ung vien...
+                        Đang tải ứng viên...
                       </p>
                     ) : applicantsError ? (
                       <p style={{ margin: 0, color: "#ba1a1a" }}>

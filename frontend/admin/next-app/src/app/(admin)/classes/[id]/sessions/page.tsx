@@ -38,7 +38,7 @@ export default function AdminClassSessionsPage() {
         setError("");
       })
       .catch((err) => {
-        setError(err instanceof Error ? err.message : "Khong the tai danh sach buoi hoc.");
+        setError(err instanceof Error ? err.message : "Không thể tải danh sách buổi học.");
       })
       .finally(() => setLoading(false));
   }, [params?.id]);

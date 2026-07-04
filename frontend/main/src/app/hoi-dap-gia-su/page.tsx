@@ -111,7 +111,7 @@ export default function FaqPage() {
             Để lại thông tin, chúng tôi sẽ liên hệ trong giờ làm việc sớm nhất để tư vấn lộ trình học phù hợp.
           </p>
           <div className={styles.ctaActions}>
-            <a href="/lop-moi" className={styles.ctaPrimary}>
+            <a href="/" className={styles.ctaPrimary}>
               Liên hệ hỗ trợ
             </a>
             <a href="/hoc-phi" className={styles.ctaSecondary}>

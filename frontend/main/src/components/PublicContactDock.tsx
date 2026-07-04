@@ -6,7 +6,7 @@ const contactItems = [
   {
     key: "phone",
     href: "tel:0988 212 316",
-    label: "Goi dien",
+    label: "Gọi điện",
     bgClass: "bg-[#34c759]",
     icon: (
       <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" aria-hidden="true">

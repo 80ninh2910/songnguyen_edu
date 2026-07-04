@@ -416,7 +416,7 @@ export default function TutorRegistrationProcessPage() {
             </div>
             <div className={styles.dashboardMockup}>
               <div className={styles.dashboardHeader}>
-                <h3>Dashboard quản lý gia sư</h3>
+                <h3>Bảng điều khiển quản lý gia sư</h3>
                 <span>Cập nhật lớp, lịch dạy, đánh giá</span>
               </div>
               <div className={styles.dashboardPanels}>

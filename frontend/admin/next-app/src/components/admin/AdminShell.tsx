@@ -211,7 +211,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                   <div
                     style={{ position: "fixed", inset: 0, zIndex: 90 }}
                     onClick={() => setNotificationsOpen(false)}
-                    aria-label="Close notifications"
+                    aria-label="Đóng thông báo"
                   />
                   <div
                     className="admin-notifications-dropdown"

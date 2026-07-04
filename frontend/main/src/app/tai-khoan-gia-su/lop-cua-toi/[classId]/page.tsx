@@ -40,7 +40,7 @@ export default function ClassSessionListPage() {
   useEffect(() => {
     const token = getStoredAccessToken();
     if (!token) {
-      setError('Vui long dang nhap lai.');
+      setError('Vui lòng đăng nhập lại.');
       setIsLoading(false);
       return;
     }
@@ -53,7 +53,7 @@ export default function ClassSessionListPage() {
         setError('');
       })
       .catch((err) => {
-        setError(err instanceof Error ? err.message : 'Khong the tai danh sach buoi hoc.');
+        setError(err instanceof Error ? err.message : 'Không thể tải danh sách buổi học.');
       })
       .finally(() => setIsLoading(false));
   }, [params?.classId]);
@@ -135,18 +135,18 @@ export default function ClassSessionListPage() {
         </div>
       </div>
 
-      {isLoading && <div className="session-empty">Dang tai danh sach buoi hoc...</div>}
+      {isLoading && <div className="session-empty">Đang tải danh sách buổi học...</div>}
       {!isLoading && error && <div className="session-empty error">{error}</div>}
 
       {!isLoading && !error && data && data.sessions.length === 0 && (
-        <div className="session-empty">Chua co buoi hoc nao. Hay tao buoi moi.</div>
+        <div className="session-empty">Chưa có buổi học nào. Hãy tạo buổi mới.</div>
       )}
 
       {!isLoading && !error && data && data.sessions.length > 0 && (
         <div className="session-list">
           {data.sessions.map((session) => {
             const statusInfo = statusLabel(session.status);
-            const feedbackLabel = `${session.feedbackCount}/${session.totalMembers} da nhan xet`;
+            const feedbackLabel = `${session.feedbackCount}/${session.totalMembers} đã nhận xét`;
             return (
               <div className="session-card" key={session.id}>
                 <div className="session-card-left">

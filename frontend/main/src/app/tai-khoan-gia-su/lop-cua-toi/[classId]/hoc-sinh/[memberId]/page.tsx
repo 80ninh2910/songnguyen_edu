@@ -59,7 +59,7 @@ export default function StudentProgressPage() {
   useEffect(() => {
     const token = getStoredAccessToken();
     if (!token) {
-      setError('Vui long dang nhap lai.');
+      setError('Vui lòng đăng nhập lại.');
       setIsLoading(false);
       return;
     }
@@ -74,7 +74,7 @@ export default function StudentProgressPage() {
         setError('');
       })
       .catch((err) => {
-        setError(err instanceof Error ? err.message : 'Khong the tai tien do hoc sinh.');
+        setError(err instanceof Error ? err.message : 'Không thể tải tiến độ học sinh.');
       })
       .finally(() => setIsLoading(false));
   }, [params?.classId, params?.memberId]);
@@ -107,7 +107,7 @@ export default function StudentProgressPage() {
         </div>
       </div>
 
-      {isLoading && <div className="session-empty">Dang tai tien do hoc sinh...</div>}
+      {isLoading && <div className="session-empty">Đang tải tiến độ học sinh...</div>}
       {!isLoading && error && <div className="session-empty error">{error}</div>}
 
       {!isLoading && !error && data && stats && (
@@ -163,7 +163,7 @@ export default function StudentProgressPage() {
             <h2>Lịch sử nhận xét</h2>
             <div className="student-feedback-list">
               {data.feedbacks.length === 0 && (
-                <div className="session-empty">Chua co nhan xet nao.</div>
+                <div className="session-empty">Chưa có nhận xét nào.</div>
               )}
               {data.feedbacks.map((feedback) => (
                 <div className="student-feedback-card" key={feedback.id}>

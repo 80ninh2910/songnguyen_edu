@@ -63,7 +63,7 @@ export default function SessionFeedbackPage() {
   useEffect(() => {
     const token = getStoredAccessToken();
     if (!token) {
-      setError('Vui long dang nhap lai.');
+      setError('Vui lòng đăng nhập lại.');
       setIsLoading(false);
       return;
     }
@@ -91,7 +91,7 @@ export default function SessionFeedbackPage() {
         setError('');
       })
       .catch((err) => {
-        setError(err instanceof Error ? err.message : 'Khong the tai thong tin buoi hoc.');
+        setError(err instanceof Error ? err.message : 'Không thể tải thông tin buổi học.');
       })
       .finally(() => setIsLoading(false));
   }, [params?.sessionId]);
@@ -149,7 +149,7 @@ export default function SessionFeedbackPage() {
     const validationItems = Object.values(drafts);
 
     if (validationItems.length === 0) {
-      setError('Khong co hoc sinh de nhan xet.');
+      setError('Không có học sinh để nhận xét.');
       return;
     }
 
@@ -177,7 +177,7 @@ export default function SessionFeedbackPage() {
     });
 
     if (invalidScore) {
-      setError('Diem danh gia phai nam trong khoang 1-5.');
+      setError('Điểm đánh giá phải nằm trong khoảng 1–5.');
       return;
     }
 
@@ -192,7 +192,7 @@ export default function SessionFeedbackPage() {
         router.push(`/tai-khoan-gia-su/lop-cua-toi/${params.classId}`);
       }, 700);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Khong the gui nhan xet.');
+      setError(err instanceof Error ? err.message : 'Không thể gửi nhận xét.');
     } finally {
       setIsSubmitting(false);
     }
@@ -219,11 +219,11 @@ export default function SessionFeedbackPage() {
           onClick={handleSubmit}
           disabled={isSubmitting || isLoading || !session}
         >
-          {isSubmitting ? 'Dang luu...' : 'Luu nhan xet'}
+          {isSubmitting ? 'Đang lưu...' : 'Lưu nhận xét'}
         </button>
       </div>
 
-      {isLoading && <div className="session-empty">Dang tai nhan xet...</div>}
+      {isLoading && <div className="session-empty">Đang tải nhận xét...</div>}
       {!isLoading && error && <div className="session-empty error">{error}</div>}
       {successMessage && <div className="session-empty success">{successMessage}</div>}
 
@@ -313,12 +313,12 @@ export default function SessionFeedbackPage() {
 
                 <div className="feedback-fields">
                   <div>
-                    <label>Diem manh</label>
+                    <label>Điểm mạnh</label>
                     <textarea
                       rows={2}
                       value={draft.strengths}
                       onChange={(event) => handleDraftChange(member.id, 'strengths', event.target.value)}
-                      placeholder="Vi du: Tich cuc phat bieu, lam bai day du..."
+                      placeholder="Ví dụ: Tích cực phát biểu, làm bài đầy đủ..."
                     />
                   </div>
                   <div>
@@ -327,7 +327,7 @@ export default function SessionFeedbackPage() {
                       rows={2}
                       value={draft.weaknesses}
                       onChange={(event) => handleDraftChange(member.id, 'weaknesses', event.target.value)}
-                      placeholder="Vi du: Can luyen them phan bai tap kho..."
+                      placeholder="Ví dụ: Cần luyện thêm phần bài tập khó..."
                     />
                   </div>
                   <div>
@@ -336,16 +336,16 @@ export default function SessionFeedbackPage() {
                       rows={2}
                       value={draft.recommendation}
                       onChange={(event) => handleDraftChange(member.id, 'recommendation', event.target.value)}
-                      placeholder="Vi du: Luyen tap them dang bai ..."
+                      placeholder="Ví dụ: Luyện tập thêm dạng bài..."
                     />
                   </div>
                   <div>
-                    <label>Nhan xet chu</label>
+                    <label>Nhận xét chữ</label>
                     <textarea
                       rows={2}
                       value={draft.overallComment}
                       onChange={(event) => handleDraftChange(member.id, 'overallComment', event.target.value)}
-                      placeholder="Nhan xet tong quan ve buoi hoc..."
+                      placeholder="Nhận xét tong quan ve buoi hoc..."
                     />
                   </div>
                 </div>

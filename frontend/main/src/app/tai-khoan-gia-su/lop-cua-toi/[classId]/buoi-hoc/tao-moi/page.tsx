@@ -37,17 +37,17 @@ export default function CreateSessionPage() {
 
     const token = getStoredAccessToken();
     if (!token) {
-      setError('Vui long dang nhap lai.');
+      setError('Vui lòng đăng nhập lại.');
       return;
     }
 
     if (!params?.classId) {
-      setError('Khong tim thay lop hoc.');
+      setError('Không tìm thấy lớp học.');
       return;
     }
 
     if (!form.sessionDate) {
-      setError('Vui long chon ngay day.');
+      setError('Vui lòng chọn ngày dạy.');
       return;
     }
 
@@ -65,12 +65,12 @@ export default function CreateSessionPage() {
         method: 'POST',
         body: payload,
       });
-      setSuccessMessage('Tao buoi hoc thanh cong.');
+      setSuccessMessage('Tạo buổi học thành công.');
       setTimeout(() => {
         router.push(`/tai-khoan-gia-su/lop-cua-toi/${params.classId}`);
       }, 600);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Khong the tao buoi hoc.');
+      setError(err instanceof Error ? err.message : 'Không thể tạo buổi học.');
     } finally {
       setIsSubmitting(false);
     }
@@ -125,7 +125,7 @@ export default function CreateSessionPage() {
               type="text"
               value={form.topic}
               onChange={(event) => updateField('topic', event.target.value)}
-              placeholder="Vi du: Chuong 3 - Phuong trinh bac 2"
+              placeholder="Ví dụ: Chương 3 - Phương trình bậc 2"
             />
           </div>
           <div className="session-form-field session-form-field--full">
@@ -148,10 +148,10 @@ export default function CreateSessionPage() {
             className="btn-outline"
             style={{ textDecoration: 'none' }}
           >
-            Huy
+            Hủy
           </Link>
           <button className="btn-primary" type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Dang tao...' : 'Tao buoi hoc'}
+            {isSubmitting ? 'Đang tạo...' : 'Tạo buổi học'}
           </button>
         </div>
       </form>
