@@ -90,6 +90,11 @@ export type AdminTutorDetail = {
   tutorType?: AdminTutorType;
   subjects: string[];
   districts: string[];
+  gender: string | null;
+  address: string | null;
+  school: string | null;
+  availableWeekdays: string[];
+  note: string | null;
   mustChangePassword?: boolean;
   rejectReason: string | null;
   approvedAt: string | null;

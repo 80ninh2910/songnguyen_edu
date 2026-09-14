@@ -1,0 +1,373 @@
+diff --git a/frontend/main/src/app/page.tsx b/frontend/main/src/app/page.tsx
+index da4802a..ef7c584 100644
+--- a/frontend/main/src/app/page.tsx
++++ b/frontend/main/src/app/page.tsx
+@@ -1,6 +1,7 @@
+ "use client";
+ import { TextHoverEffect } from "@/components/ui/text-hover-effect";
+ import Image from "next/image";
++import Link from "next/link";
+ import { Be_Vietnam_Pro, Bricolage_Grotesque } from "next/font/google";
+ import { useEffect, useRef, useState } from "react";
+ import { FileText, Home, MapPin } from "lucide-react";
+@@ -13,6 +14,18 @@ import DomeGallery from "@/components/DomeGallery";
+ import TutorRegistrationForm from "@/components/TutorRegistrationForm";
+ import TuitionPdfModal from "@/components/TuitionPdfModal";
+ import { apiRequest } from "@/lib/api";
++import {
++  isSignupType,
++  SIGNUP_MODAL_EVENT,
++  type SignupType,
++} from "@/lib/signup-modal";
++import {
++  calculateTuitionEstimate,
++  getTuitionLevelOptions,
++  getTuitionPackageOptions,
++  getTuitionSessionOptions,
++  getTuitionSubjectOptions,
++} from "@/lib/tuition-pricing";
+ const bricolageGrotesque = Bricolage_Grotesque({
+   subsets: ["latin", "vietnamese"],
+ });
+@@ -34,7 +47,6 @@ const heroCampuses = [
+ ] as const;
+ 
+ type ProcessType = "parent" | "tutor";
+-type SignupType = "parent" | "center" | "tutor-free" | "tutor-trained";
+ 
+ export default function NavbarDemo() {
+   const [activeProcessModal, setActiveProcessModal] = useState<ProcessType | null>(null);
+@@ -43,23 +55,32 @@ export default function NavbarDemo() {
+   useEffect(() => {
+     const searchParams = new URLSearchParams(window.location.search);
+     const signupType = searchParams.get("signup");
+-    const validSignupTypes: SignupType[] = [
+-      "parent",
+-      "center",
+-      "tutor-free",
+-      "tutor-trained",
+-    ];
+-    const requestedSignup = validSignupTypes.find((type) => type === signupType);
++    const requestedSignup = isSignupType(signupType) ? signupType : null;
+     const shouldOpenLegacyTutorForm =
+       searchParams.get("scrollTo") === "tutor-register-section" ||
+       window.location.hash === "#tutor-register-section";
++    let openTimer: number | undefined;
++
++    const handleSignupRequest = (event: Event) => {
++      const requestedType = (event as CustomEvent<unknown>).detail;
++      if (isSignupType(requestedType)) {
++        setActiveSignupModal(requestedType);
++      }
++    };
++
++    window.addEventListener(SIGNUP_MODAL_EVENT, handleSignupRequest);
+ 
+     if (requestedSignup || shouldOpenLegacyTutorForm) {
+-      setTimeout(() => {
++      openTimer = window.setTimeout(() => {
+         setActiveSignupModal(requestedSignup ?? "tutor-free");
+         window.history.replaceState({}, document.title, "/");
+       }, 200);
+     }
++
++    return () => {
++      if (openTimer !== undefined) window.clearTimeout(openTimer);
++      window.removeEventListener(SIGNUP_MODAL_EVENT, handleSignupRequest);
++    };
+   }, []);
+ 
+   return (
+@@ -449,6 +470,7 @@ function ParentRegistrationForm({
+     level: "",
+     studentCount: "",
+     sessionsPerWeek: "",
++    pricingPackage: "",
+     monthlyBudget: "",
+   });
+   const [tutorForm, setTutorForm] = useState({
+@@ -457,7 +479,9 @@ function ParentRegistrationForm({
+     level: "",
+   });
+   const [activeWeekdays, setActiveWeekdays] = useState<string[]>([]);
+-  const [activeTimeSlots, setActiveTimeSlots] = useState<string[]>([]);
++  const [preferredTimes, setPreferredTimes] = useState<
++    Record<string, { startTime: string; endTime: string }>
++  >({});
+   const [centerLocations, setCenterLocations] = useState<string[]>([]);
+   const [submitMessage, setSubmitMessage] = useState("");
+   const [errors, setErrors] = useState<Record<string, string>>({});
+@@ -474,22 +498,21 @@ function ParentRegistrationForm({
+   const levelRef = useRef<HTMLSelectElement | null>(null);
+   const studentCountRef = useRef<HTMLSelectElement | null>(null);
+   const sessionsPerWeekRef = useRef<HTMLSelectElement | null>(null);
++  const pricingPackageRef = useRef<HTMLSelectElement | null>(null);
+   const tutorLevelRef = useRef<HTMLSelectElement | null>(null);
+   const weekdaysRef = useRef<HTMLDivElement | null>(null);
+-  const timeSlotsRef = useRef<HTMLDivElement | null>(null);
++  const scheduleTimesRef = useRef<HTMLDivElement | null>(null);
+ 
+   const weekDays = [
+-    { key: "su", label: "Su", full: "Chủ nhật" },
+-    { key: "mo", label: "Mo", full: "Thứ 2" },
+-    { key: "tu", label: "Tu", full: "Thứ 3" },
+-    { key: "we", label: "We", full: "Thứ 4" },
+-    { key: "th", label: "Th", full: "Thứ 5" },
+-    { key: "fr", label: "Fr", full: "Thứ 6" },
+-    { key: "sa", label: "Sa", full: "Thứ 7" },
++    { key: "mo", label: "T2", full: "Thứ 2" },
++    { key: "tu", label: "T3", full: "Thứ 3" },
++    { key: "we", label: "T4", full: "Thứ 4" },
++    { key: "th", label: "T5", full: "Thứ 5" },
++    { key: "fr", label: "T6", full: "Thứ 6" },
++    { key: "sa", label: "T7", full: "Thứ 7" },
++    { key: "su", label: "CN", full: "Chủ nhật" },
+   ];
+ 
+-  const timeSlots = ["Sáng", "Chiều", "Tối"];
+-
+   const centerLocationOptions = ["Quận 12", "Quận Gò Vấp"];
+   const locationOptions = [
+     "Quận 1",
+@@ -511,22 +534,18 @@ function ParentRegistrationForm({
+     "TP Thủ Đức",
+   ];
+ 
+-  const subjectBasePrice: Record<string, number> = {
+-    "Tiếng Anh": 280000,
+-    "Toán": 250000,
+-    "Văn": 240000,
+-    "Lý - Hóa - Sinh": 270000,
+-    IELTS: 320000,
+-    SAT: 380000,
+-  };
+-
+-  const levelMultiplier: Record<string, number> = {
+-    "Tiểu học": 1,
+-    "THCS": 1.1,
+-    "THPT": 1.2,
+-    IELTS: 1.35,
+-    SAT: 1.5,
+-  };
++  const subjectOptions = getTuitionSubjectOptions(mode);
++  const levelOptions = getTuitionLevelOptions(mode, studentForm.subject);
++  const sessionOptions = getTuitionSessionOptions(
++    mode,
++    studentForm.subject,
++    studentForm.level,
++  );
++  const packageOptions = getTuitionPackageOptions(
++    mode,
++    studentForm.subject,
++    studentForm.level,
++  );
+ 
+   const inputBaseClass =
+     "h-12 w-full rounded-xl border border-[#d5dff1] bg-white/95 px-4 text-[15px] font-medium text-[#243b72] outline-none transition-all duration-300 placeholder:text-[#6b7aa0] focus:border-[#4f86ff] focus:ring-4 focus:ring-[#8ab4ff]/25";
+@@ -545,22 +564,30 @@ function ParentRegistrationForm({
+     studentForm.level,
+     studentForm.studentCount,
+     studentForm.sessionsPerWeek,
+-    studentForm.monthlyBudget,
++    ...(packageOptions.length > 0 ? [studentForm.pricingPackage] : []),
+     ...(mode === "parent" ? [tutorForm.level] : []),
+   ];
+ 
+   const completedFields = requiredFields.filter((value) => value.trim().length > 0).length;
+-  const scheduleDone = activeWeekdays.length > 0 && activeTimeSlots.length > 0;
++  const scheduleDone =
++    activeWeekdays.length > 0 &&
++    activeWeekdays.every((day) => {
++      const time = preferredTimes[day];
++      return Boolean(
++        time?.startTime && time.endTime && time.endTime > time.startTime,
++      );
++    });
+   const completionRate = Math.round(((completedFields + (scheduleDone ? 2 : 0)) / (requiredFields.length + 2)) * 100);
+ 
+-  const estimatedFee = (() => {
+-    const students = Math.max(Number(studentForm.studentCount) || 1, 1);
+-    const base = subjectBasePrice[studentForm.subject] ?? 250000;
+-    const levelScale = levelMultiplier[studentForm.level] ?? 1;
+-    const groupDiscount = students >= 3 ? 0.86 : students === 2 ? 0.93 : 1;
+-    const value = Math.round(base * levelScale * groupDiscount);
+-    return value > 0 ? value : 250000;
+-  })();
++  const tuitionEstimate = calculateTuitionEstimate({
++    mode,
++    subject: studentForm.subject,
++    level: studentForm.level,
++    sessionsPerWeek: studentForm.sessionsPerWeek,
++    studentCount: studentForm.studentCount,
++    tutorLevel: tutorForm.level,
++    pricingPackage: studentForm.pricingPackage,
++  });
+ 
+   const formatVnd = (value: number) =>
+     new Intl.NumberFormat("vi-VN", {
+@@ -587,6 +614,7 @@ function ParentRegistrationForm({
+       "level",
+       "studentCount",
+       "sessionsPerWeek",
++      "pricingPackage",
+       "tutorLevel",
+       "weekdays",
+       "timeSlots",
+@@ -603,9 +631,10 @@ function ParentRegistrationForm({
+       level: levelRef,
+       studentCount: studentCountRef,
+       sessionsPerWeek: sessionsPerWeekRef,
++      pricingPackage: pricingPackageRef,
+       tutorLevel: tutorLevelRef,
+       weekdays: weekdaysRef,
+-      timeSlots: timeSlotsRef,
++      timeSlots: scheduleTimesRef,
+     };
+ 
+     const firstKey = focusOrder.find((key) => nextErrors[key]);
+@@ -618,25 +647,31 @@ function ParentRegistrationForm({
+   };
+ 
+   const toggleWeekday = (key: string) => {
+-    setActiveWeekdays((prev) => {
+-      if (prev.includes(key)) {
+-        return prev.filter((item) => item !== key);
+-      }
+-      const maxDays = studentForm.sessionsPerWeek
+-        ? (studentForm.sessionsPerWeek === "5" ? 7 : Number(studentForm.sessionsPerWeek))
+-        : 7;
+-      if (prev.length >= maxDays) {
+-        alert("Vui lòng điền đầy đủ thông tin.");
+-        return prev;
+-      }
+-      return [...prev, key];
+-    });
+-  };
++    if (activeWeekdays.includes(key)) {
++      setActiveWeekdays((prev) => prev.filter((item) => item !== key));
++      setPreferredTimes((prev) => {
++        const next = { ...prev };
++        delete next[key];
++        return next;
++      });
++      return;
++    }
++
++    const maxDays = studentForm.sessionsPerWeek
++      ? studentForm.sessionsPerWeek === "5"
++        ? 7
++        : Number(studentForm.sessionsPerWeek)
++      : 7;
++    if (activeWeekdays.length >= maxDays) {
++      alert(`Bạn chỉ có thể chọn tối đa ${maxDays} ngày theo số buổi mỗi tuần.`);
++      return;
++    }
+ 
+-  const toggleTimeSlot = (slot: string) => {
+-    setActiveTimeSlots((prev) =>
+-      prev.includes(slot) ? prev.filter((item) => item !== slot) : [...prev, slot]
+-    );
++    setActiveWeekdays((prev) => [...prev, key]);
++    setPreferredTimes((prev) => ({
++      ...prev,
++      [key]: prev[key] ?? { startTime: "", endTime: "" },
++    }));
+   };
+ 
+   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+@@ -653,12 +688,22 @@ function ParentRegistrationForm({
+     if (!studentForm.level) nextErrors.level = "Vui lòng chọn cấp độ.";
+     if (!studentForm.sessionsPerWeek) nextErrors.sessionsPerWeek = "Vui lòng chọn số buổi.";
+     if (!studentForm.studentCount) nextErrors.studentCount = "Vui lòng chọn số học viên.";
+-    if (!studentForm.monthlyBudget.trim()) nextErrors.monthlyBudget = "Vui lòng nhập học phí mong muốn.";
++    if (packageOptions.length > 0 && !studentForm.pricingPackage) {
++      nextErrors.pricingPackage = "Vui lòng chọn gói học phí.";
++    }
+     if (mode === "parent" && !tutorForm.level) {
+       nextErrors.tutorLevel = "Vui lòng chọn trình độ gia sư.";
+     }
+     if (activeWeekdays.length === 0) nextErrors.weekdays = "Hãy chọn ít nhất 1 ngày học.";
+-    if (activeTimeSlots.length === 0) nextErrors.timeSlots = "Hãy chọn ít nhất 1 khung giờ.";
++    if (
++      activeWeekdays.length > 0 &&
++      activeWeekdays.some((day) => {
++        const time = preferredTimes[day];
++        return !time?.startTime || !time.endTime || time.endTime <= time.startTime;
++      })
++    ) {
++      nextErrors.timeSlots = "Giờ kết thúc phải sau giờ bắt đầu cho tất cả ngày đã chọn.";
++    }
+ 
+     setErrors(nextErrors);
+ 
+@@ -671,22 +716,38 @@ function ParentRegistrationForm({
+     setIsSubmitting(true);
+     setSubmitMessage("");
+ 
+-    const sessionFeeValue = Number(studentForm.monthlyBudget) || 0;
+-    const baseSessionFee = sessionFeeValue > 0 ? sessionFeeValue : estimatedFee;
+-    const budgetPerHour = baseSessionFee > 0 ? Math.round(baseSessionFee) : undefined;
++    const desiredFeeValue = Number(studentForm.monthlyBudget) || 0;
++    const budgetPerHour = desiredFeeValue > 0 ? Math.round(desiredFeeValue) : 0;
+     const tutorType =
+       tutorForm.level === "Gia sư đào tạo" ? "GIA_SU_DAO_TAO" : "GIA_SU_TU_DO";
+     const feeLabel = mode === "center" ? "Học phí mong muốn/tháng" : "Học phí mong muốn/buổi";
++    const scheduleDescription = activeWeekdays
++      .map((dayKey) => {
++        const day = weekDays.find((item) => item.key === dayKey);
++        const time = preferredTimes[dayKey];
++        return `${day?.full ?? dayKey}: ${time.startTime}-${time.endTime}`;
++      })
++      .join(", ");
+     const noteParts = [
+       studentForm.gender ? `Giới tính học viên: ${studentForm.gender}` : null,
+       `Số học viên: ${studentForm.studentCount}`,
+       `So buoi/tuan: ${studentForm.sessionsPerWeek}`,
+-      sessionFeeValue > 0 ? `${feeLabel}: ${formatVnd(sessionFeeValue)}` : null,
+-      `Lich hoc: ${activeWeekdays.join(", ") || "Chưa chọn"} | ${activeTimeSlots.join(", ") || "Chưa chọn"}`,
++      desiredFeeValue > 0 ? `${feeLabel}: ${formatVnd(desiredFeeValue)}` : null,
++      tuitionEstimate
++        ? `Học phí tham khảo: ${formatVnd(tuitionEstimate.amount)} / ${tuitionEstimate.unitLabel}`
++        : null,
++      tuitionEstimate?.monthlyAmount
++        ? `Ước tính 4 tuần: ${formatVnd(tuitionEstimate.monthlyAmount)}`
++        : null,
++      tuitionEstimate ? `Cách tính: ${tuitionEstimate.calculation}` : null,
++      `Lịch học: ${scheduleDescription || "Chưa chọn"}`,
+       mode === "parent" ? `Loại gia sư: ${tutorForm.level || "Chưa chọn"}` : null,
+-      tutorForm.gender ? `Giới tính gia sư: ${tutorForm.gender}` : null,
+-      tutorForm.level ? `Trình độ gia sư: ${tutorForm.level}` : null,
+-      tutorForm.detail ? `Yêu cầu chi tiết: ${tutorForm.detail}` : null,
++      mode === "parent" && tutorForm.gender
++        ? `Giới tính gia sư: ${tutorForm.gender}`
++        : null,
++      mode === "parent" && tutorForm.detail
++        ? `Yêu cầu chi tiết: ${tutorForm.detail}`
++        : null,
+     ].filter(Boolean);
+ 
+     try {
+@@ -702,6 +763,23 @@ function ParentRegistrationForm({
+           budgetPerHour,
+           formType: mode === "center" ? "TRUNG_TAM" : "GIA_SU",
+           tutorType: mode === "center" ? undefined : tutorType,
++          referenceTuitionAmount: tuitionEstimate?.amount,
++          referenceTuitionUnit: tuitionEstimate?.unitLabel,
++          pricingDetails: tuitionEstimate
++            ? {
++                mode,
++                subject: studentForm.subject,
++                level: studentForm.level,
++                sessionsPerWeek: Number(studentForm.sessionsPerWeek),
++                studentCount: Number(studentForm.studentCount),
++                package: studentForm.pricingPackage || null,
++                tutorLevel: mode === "parent" ? tutorForm.level : null,
++                monthlyEstimate: tuitionEstimate.monthlyAmount,
++                calculation: tuitionEstimate.calculation,
++                sourceCategory: tuitionEstimate.sourceCategory,
++                note: tuitionEstimate.note,
++              }
++            : undefined,
+           note: noteParts.join("; "),
+         },
+       });

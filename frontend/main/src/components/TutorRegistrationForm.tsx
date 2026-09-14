@@ -53,13 +53,13 @@ export default function TutorRegistrationForm({
   const tutorWeekdaysRef = useRef<HTMLDivElement | null>(null);
 
   const weekDays = [
-    { key: "su", label: "Su", full: "Chủ nhật" },
-    { key: "mo", label: "Mo", full: "Thứ 2" },
-    { key: "tu", label: "Tu", full: "Thứ 3" },
-    { key: "we", label: "We", full: "Thứ 4" },
-    { key: "th", label: "Th", full: "Thứ 5" },
-    { key: "fr", label: "Fr", full: "Thứ 6" },
-    { key: "sa", label: "Sa", full: "Thứ 7" },
+    { key: "mo", label: "T2", full: "Thứ 2" },
+    { key: "tu", label: "T3", full: "Thứ 3" },
+    { key: "we", label: "T4", full: "Thứ 4" },
+    { key: "th", label: "T5", full: "Thứ 5" },
+    { key: "fr", label: "T6", full: "Thứ 6" },
+    { key: "sa", label: "T7", full: "Thứ 7" },
+    { key: "su", label: "CN", full: "Chủ nhật" },
   ];
 
   const districtOptions = [
@@ -214,6 +214,11 @@ export default function TutorRegistrationForm({
             tutorType,
             subjects: subjects.length > 0 ? subjects : undefined,
             districts: districts.length > 0 ? districts : undefined,
+            gender: personalForm.gender,
+            address: personalForm.address,
+            school: tutorForm.school,
+            availableWeekdays: activeWeekdays,
+            note: personalForm.note.trim() || undefined,
           },
         }
       );

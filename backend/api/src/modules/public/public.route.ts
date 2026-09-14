@@ -37,7 +37,16 @@ const classRequestBodySchema = {
 
 const tutorRegisterBodySchema = {
   type: "object",
-  required: ["fullName", "email", "phone", "tutorType"],
+  required: [
+    "fullName",
+    "email",
+    "phone",
+    "tutorType",
+    "gender",
+    "address",
+    "school",
+    "availableWeekdays",
+  ],
   properties: {
     fullName: { type: "string" },
     email: { type: "string", format: "email" },
@@ -54,6 +63,19 @@ const tutorRegisterBodySchema = {
       type: "array",
       items: { type: "string" },
     },
+    gender: { type: "string", enum: ["Nam", "Nữ", "Khác"] },
+    address: { type: "string", minLength: 1, maxLength: 500 },
+    school: { type: "string", minLength: 1, maxLength: 300 },
+    availableWeekdays: {
+      type: "array",
+      minItems: 1,
+      uniqueItems: true,
+      items: {
+        type: "string",
+        enum: ["su", "mo", "tu", "we", "th", "fr", "sa"],
+      },
+    },
+    note: { type: "string", maxLength: 1000 },
   },
 };
 
@@ -320,6 +342,11 @@ export async function registerPublicRoutes(
         tutorType: "GIA_SU_TU_DO" | "GIA_SU_DAO_TAO";
         subjects?: string[];
         districts?: string[];
+        gender: "Nam" | "Nữ" | "Khác";
+        address: string;
+        school: string;
+        availableWeekdays: string[];
+        note?: string;
       };
 
       const existing = await prisma.tutor.findUnique({
@@ -339,6 +366,11 @@ export async function registerPublicRoutes(
           tutorType: body.tutorType,
           subjects: body.subjects ?? [],
           districts: body.districts ?? [],
+          gender: body.gender,
+          address: body.address.trim(),
+          school: body.school.trim(),
+          availableWeekdays: body.availableWeekdays,
+          note: body.note?.trim() || null,
         },
         select: { id: true },
       });

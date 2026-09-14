@@ -125,6 +125,11 @@ model Tutor {
   rejectReason   String?     @map("reject_reason")
   subjects       String[]    @default([])
   districts      String[]    @default([])
+  gender         String?
+  address        String?
+  school         String?
+  availableWeekdays String[] @default([]) @map("available_weekdays")
+  note           String?
   mustChangePassword Boolean  @default(false) @map("must_change_password")
   sessionVersion Int          @default(0) @map("session_version")
   approvedAt     DateTime?   @map("approved_at")

@@ -137,7 +137,7 @@ export default function LoginPage() {
             </button>
 
             <div className="signup-link">
-              Chưa có tài khoản? <a href="#" onClick={(e) => { e.preventDefault(); window.location.href = '/?scrollTo=tutor-register-section'; }}>Đăng ký làm gia sư</a>
+              Chưa có tài khoản? <Link href="/?signup=tutor-free">Đăng ký làm gia sư</Link>
             </div>
           </form>
         </div>

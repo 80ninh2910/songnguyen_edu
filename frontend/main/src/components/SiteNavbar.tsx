@@ -11,9 +11,12 @@ import {
   NavbarButton,
   NavbarLogo,
 } from "@/components/ui/resizable-navbar";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
 import { BookOpenCheck, GraduationCap } from "lucide-react";
+
+import { SIGNUP_MODAL_EVENT, type SignupType } from "@/lib/signup-modal";
 
 export default function SiteNavbar() {
   const pathname = usePathname();
@@ -36,6 +39,19 @@ export default function SiteNavbar() {
 
   const isLoginActive = pathname === "/dang-nhap-gia-su";
 
+  const handleSignupClick = (
+    event: React.MouseEvent<HTMLAnchorElement>,
+    signupType: SignupType,
+  ) => {
+    setIsMobileMenuOpen(false);
+    if (pathname !== "/") return;
+
+    event.preventDefault();
+    window.dispatchEvent(
+      new CustomEvent<SignupType>(SIGNUP_MODAL_EVENT, { detail: signupType }),
+    );
+  };
+
   if (shouldHideNavbar) {
     return null;
   }
@@ -55,20 +71,22 @@ export default function SiteNavbar() {
 
         {/* Right Section: Primary signup actions + login */}
         <div className="flex shrink-0 items-center justify-end gap-2 whitespace-nowrap">
-          <a
+          <Link
             href="/?signup=parent"
+            onClick={(event) => handleSignupClick(event, "parent")}
             className="inline-flex items-center gap-1.5 rounded-full bg-[#d92335] px-3.5 py-2 text-xs font-extrabold text-white shadow-[0_8px_20px_rgba(217,35,53,0.28)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#bf1728] hover:shadow-[0_10px_24px_rgba(217,35,53,0.34)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d92335]"
           >
             <BookOpenCheck className="h-4 w-4" aria-hidden="true" />
             Đăng ký lớp
-          </a>
-          <a
+          </Link>
+          <Link
             href="/?signup=tutor-free"
+            onClick={(event) => handleSignupClick(event, "tutor-free")}
             className="inline-flex items-center gap-1.5 rounded-full bg-[#1559c7] px-3.5 py-2 text-xs font-extrabold text-white shadow-[0_8px_20px_rgba(21,89,199,0.26)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#0d47a8] hover:shadow-[0_10px_24px_rgba(21,89,199,0.32)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1559c7]"
           >
             <GraduationCap className="h-4 w-4" aria-hidden="true" />
             Đăng ký gia sư
-          </a>
+          </Link>
           <NavbarButton
             href="/dang-nhap-gia-su"
             variant={isLoginActive ? "dark" : "secondary"}
@@ -87,23 +105,25 @@ export default function SiteNavbar() {
         <MobileNavHeader className="rounded-full border border-white/80 bg-white/92 px-2.5 py-1.5 shadow-[0_8px_24px_rgba(16,42,91,0.12)] backdrop-blur-xl">
           <NavbarLogo />
           <div className="ml-auto mr-3 flex items-center gap-1.5">
-            <a
+            <Link
               href="/?signup=parent"
               aria-label="Đăng ký lớp"
+              onClick={(event) => handleSignupClick(event, "parent")}
               className="inline-flex h-9 items-center gap-1 whitespace-nowrap rounded-full bg-[#d92335] px-2.5 text-[11px] font-extrabold text-white shadow-[0_6px_16px_rgba(217,35,53,0.25)] transition-transform active:scale-95"
             >
               <BookOpenCheck className="h-3.5 w-3.5" aria-hidden="true" />
               <span>Đăng ký lớp</span>
-            </a>
-            <a
+            </Link>
+            <Link
               href="/?signup=tutor-free"
               aria-label="Đăng ký gia sư"
+              onClick={(event) => handleSignupClick(event, "tutor-free")}
               className="inline-flex h-9 items-center gap-1 whitespace-nowrap rounded-full bg-[#1559c7] px-2.5 text-[11px] font-extrabold text-white shadow-[0_6px_16px_rgba(21,89,199,0.24)] transition-transform active:scale-95"
             >
               <GraduationCap className="h-3.5 w-3.5" aria-hidden="true" />
               <span className="min-[360px]:hidden">Gia sư</span>
               <span className="hidden min-[360px]:inline">Đăng ký gia sư</span>
-            </a>
+            </Link>
           </div>
           <MobileNavToggle
             isOpen={isMobileMenuOpen}

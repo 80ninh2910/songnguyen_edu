@@ -38,6 +38,16 @@ function formatDate(value: string | null): string {
   return date.toLocaleDateString("vi-VN");
 }
 
+const WEEKDAY_LABELS: Record<string, string> = {
+  su: "Chủ nhật",
+  mo: "Thứ 2",
+  tu: "Thứ 3",
+  we: "Thứ 4",
+  th: "Thứ 5",
+  fr: "Thứ 6",
+  sa: "Thứ 7",
+};
+
 export default function TutorDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -369,6 +379,18 @@ export default function TutorDetailPage() {
                       </p>
                     </div>
                     <div className="settings-field">
+                      <label>Giới tính</label>
+                      <p style={{ margin: 0, fontWeight: 700 }}>
+                        {detail.gender ?? "-"}
+                      </p>
+                    </div>
+                    <div className="settings-field">
+                      <label>Địa chỉ</label>
+                      <p style={{ margin: 0, fontWeight: 700 }}>
+                        {detail.address ?? "-"}
+                      </p>
+                    </div>
+                    <div className="settings-field">
                       <label>Loại gia sư</label>
                       <p style={{ margin: 0, fontWeight: 700 }}>
                         {detail.tutorType === "GIAO_VIEN_TRUNG_TAM"
@@ -393,6 +415,37 @@ export default function TutorDetailPage() {
                   <p style={{ margin: "0.6rem 0 0", fontWeight: 700 }}>
                     {detail.districts.join(", ")}
                   </p>
+                </section>
+
+                <section>
+                  <h3 className="settings-group-title">Hồ sơ đăng ký</h3>
+                  <div
+                    className="settings-input-grid"
+                    style={{ marginTop: "0.6rem" }}
+                  >
+                    <div className="settings-field">
+                      <label>Trường đã/đang học</label>
+                      <p style={{ margin: 0, fontWeight: 700 }}>
+                        {detail.school ?? "-"}
+                      </p>
+                    </div>
+                    <div className="settings-field">
+                      <label>Các ngày có thể dạy</label>
+                      <p style={{ margin: 0, fontWeight: 700 }}>
+                        {detail.availableWeekdays.length > 0
+                          ? detail.availableWeekdays
+                              .map((day) => WEEKDAY_LABELS[day] ?? day)
+                              .join(", ")
+                          : "-"}
+                      </p>
+                    </div>
+                    <div className="settings-field" style={{ gridColumn: "1 / -1" }}>
+                      <label>Ghi chú thêm</label>
+                      <p style={{ margin: 0, fontWeight: 700, whiteSpace: "pre-wrap" }}>
+                        {detail.note ?? "-"}
+                      </p>
+                    </div>
+                  </div>
                 </section>
 
                 <section>

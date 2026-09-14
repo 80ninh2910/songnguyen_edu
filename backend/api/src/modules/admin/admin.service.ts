@@ -1135,6 +1135,11 @@ export const adminService = {
     tutorType: "GIA_SU_TU_DO" | "GIA_SU_DAO_TAO" | "GIAO_VIEN_TRUNG_TAM" | "ANY";
     subjects: string[];
     districts: string[];
+    gender: string | null;
+    address: string | null;
+    school: string | null;
+    availableWeekdays: string[];
+    note: string | null;
     mustChangePassword: boolean;
     rejectReason: string | null;
     approvedAt: Date | null;

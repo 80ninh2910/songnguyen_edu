@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { Be_Vietnam_Pro } from "next/font/google";
 
 import styles from "./page.module.css";
@@ -79,9 +80,9 @@ export default function HocPhiPage() {
                   <li key={bullet}>{bullet}</li>
                 ))}
               </ul>
-              <button type="button" className={styles.planButton}>
-                Xem chi tiết cấp học
-              </button>
+              <Link href="/?signup=parent" className={styles.planButton}>
+                Đăng ký ngay
+              </Link>
             </article>
           ))}
         </section>
