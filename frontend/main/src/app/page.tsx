@@ -1083,7 +1083,11 @@ function ParentRegistrationForm({
           </form>
         </div>
       </div>
-      <TuitionPdfModal open={isTuitionOpen} onClose={() => setIsTuitionOpen(false)} />
+      <TuitionPdfModal
+        open={isTuitionOpen}
+        onClose={() => setIsTuitionOpen(false)}
+        initialLearningFormat={mode === "center" ? "center" : "tutor"}
+      />
     </>
   );
 }

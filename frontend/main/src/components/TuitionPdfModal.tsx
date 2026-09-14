@@ -121,12 +121,17 @@ const TUITION_DOCUMENTS: Record<
 type TuitionPdfModalProps = {
   open: boolean;
   onClose: () => void;
+  initialLearningFormat?: LearningFormat;
 };
 
-export default function TuitionPdfModal({ open, onClose }: TuitionPdfModalProps) {
+export default function TuitionPdfModal({
+  open,
+  onClose,
+  initialLearningFormat = "center",
+}: TuitionPdfModalProps) {
   const [mounted, setMounted] = useState(false);
   const [learningFormat, setLearningFormat] =
-    useState<LearningFormat>("center");
+    useState<LearningFormat>(initialLearningFormat);
   const [subjectGroup, setSubjectGroup] = useState<SubjectGroup>("english");
 
   const activeDocument = useMemo(
@@ -135,6 +140,10 @@ export default function TuitionPdfModal({ open, onClose }: TuitionPdfModalProps)
   );
 
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    if (open) setLearningFormat(initialLearningFormat);
+  }, [initialLearningFormat, open]);
 
   useEffect(() => {
     if (!open) return;
