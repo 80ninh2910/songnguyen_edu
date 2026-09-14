@@ -5,6 +5,7 @@ export type TokenPayload = {
   role: UserRole;
   email: string;
   typ: "access" | "refresh";
+  sessionVersion?: number;
 };
 
 export type AuthUser = {

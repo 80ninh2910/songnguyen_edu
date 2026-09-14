@@ -17,7 +17,7 @@ type AdminActor = {
   email: string;
 };
 
-type TutorApprovalStatus = "PENDING" | "APPROVED" | "REJECTED";
+type TutorApprovalStatus = "PENDING" | "APPROVED" | "REJECTED" | "INACTIVE";
 type PaymentStatus = "PENDING" | "CONFIRMED" | "REJECTED";
 
 type DashboardStatsRow = {
@@ -555,7 +555,7 @@ export const adminService = {
     }
 
     const status = body.status ?? "ACTIVE";
-    const tutorStatus = status === "ACTIVE" ? "APPROVED" : "REJECTED";
+    const tutorStatus = status === "ACTIVE" ? "APPROVED" : "INACTIVE";
 
     const created = await prisma.$transaction(async (tx: any) => {
       const centerTeacher = await tx.centerTeacher.create({
@@ -580,7 +580,7 @@ export const adminService = {
           districts: body.districts,
           tutorType: "GIAO_VIEN_TRUNG_TAM",
           status: tutorStatus,
-          rejectReason: tutorStatus === "REJECTED" ? "Center teacher inactive" : null,
+          rejectReason: tutorStatus === "INACTIVE" ? "Center teacher inactive" : null,
           approvedAt: tutorStatus === "APPROVED" ? new Date() : null,
           approvedById: tutorStatus === "APPROVED" ? actor.id : null,
           passwordHash,
@@ -681,7 +681,7 @@ export const adminService = {
       });
 
       if (body.email || body.fullName || body.phone || body.subjects || body.districts || body.status) {
-        const tutorStatus = (body.status ?? existing.status) === "ACTIVE" ? "APPROVED" : "REJECTED";
+        const tutorStatus = (body.status ?? existing.status) === "ACTIVE" ? "APPROVED" : "INACTIVE";
         const existingTutor = await tx.tutor.findUnique({
           where: { email: existing.email },
           select: { id: true },
@@ -698,7 +698,10 @@ export const adminService = {
               districts: body.districts ?? existing.districts,
               tutorType: "GIAO_VIEN_TRUNG_TAM",
               status: tutorStatus,
-              rejectReason: tutorStatus === "REJECTED" ? "Center teacher inactive" : null,
+              ...(body.status === "INACTIVE" && existing.status !== "INACTIVE"
+                ? { sessionVersion: { increment: 1 } }
+                : {}),
+              rejectReason: tutorStatus === "INACTIVE" ? "Center teacher inactive" : null,
               approvedAt: tutorStatus === "APPROVED" ? new Date() : null,
               approvedById: tutorStatus === "APPROVED" ? actor.id : null,
             },
@@ -713,7 +716,7 @@ export const adminService = {
               districts: body.districts ?? existing.districts,
               tutorType: "GIAO_VIEN_TRUNG_TAM",
               status: tutorStatus,
-              rejectReason: tutorStatus === "REJECTED" ? "Center teacher inactive" : null,
+              rejectReason: tutorStatus === "INACTIVE" ? "Center teacher inactive" : null,
               approvedAt: tutorStatus === "APPROVED" ? new Date() : null,
               approvedById: tutorStatus === "APPROVED" ? actor.id : null,
               passwordHash,
@@ -963,6 +966,123 @@ export const adminService = {
 
       throw error;
     }
+  },
+
+  async updateTutorActivityStatus(
+    actor: AdminActor,
+    tutorId: string,
+    activityStatus: "ACTIVE" | "INACTIVE",
+  ): Promise<{
+    id: string;
+    fullName: string;
+    email: string;
+    phone: string | null;
+    status: TutorApprovalStatus;
+    subjects: string[];
+    districts: string[];
+    rejectReason: string | null;
+    approvedAt: Date | null;
+    approvedBy: { id: string; fullName: string } | null;
+    createdAt: Date;
+    updatedAt: Date;
+    _count: {
+      applications: number;
+      assignments: number;
+      payments: number;
+    };
+  }> {
+    const tutor = await prisma.tutor.findUnique({
+      where: { id: tutorId },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        tutorType: true,
+        status: true,
+        approvedAt: true,
+      },
+    });
+
+    if (!tutor) {
+      throw new AppError("TUTOR_NOT_FOUND", 404, "Không tìm thấy gia sư");
+    }
+
+    if (tutor.tutorType === "GIAO_VIEN_TRUNG_TAM") {
+      invalidState("Vui lòng cập nhật giáo viên trung tâm trong danh sách giáo viên trung tâm");
+    }
+
+    if (tutor.tutorType !== "GIA_SU_TU_DO" && tutor.tutorType !== "GIA_SU_DAO_TAO") {
+      invalidState("Loại gia sư này không hỗ trợ cập nhật trạng thái hoạt động");
+    }
+
+    if (tutor.status !== "APPROVED" && tutor.status !== "INACTIVE") {
+      invalidState("Chỉ có thể khóa hoặc mở lại tài khoản gia sư đã được duyệt");
+    }
+
+    const nextStatus = activityStatus === "ACTIVE" ? "APPROVED" : "INACTIVE";
+    const actorName = await resolveActorName(actor);
+
+    if (tutor.status !== nextStatus) {
+      await prisma.$transaction(async (tx: any) => {
+        await tx.tutor.update({
+          where: { id: tutorId },
+          data: {
+            status: nextStatus,
+            rejectReason:
+              nextStatus === "INACTIVE"
+                ? "Tài khoản đã bị tạm dừng bởi quản trị viên"
+                : null,
+            ...(nextStatus === "INACTIVE"
+              ? { sessionVersion: { increment: 1 } }
+              : {
+                  approvedAt: tutor.approvedAt ?? new Date(),
+                  approvedById: actor.id,
+                }),
+          },
+        });
+
+        await auditLogService.log(
+          {
+            actorId: actor.id,
+            actorName,
+            action: "UPDATE_TUTOR_ACTIVITY_STATUS",
+            targetType: "TUTOR",
+            targetId: tutorId,
+            payload: {
+              tutorType: tutor.tutorType,
+              previousStatus: tutor.status,
+              nextStatus,
+            },
+          },
+          tx,
+        );
+      });
+    }
+
+    const detail = await prisma.tutor.findUnique({
+      where: { id: tutorId },
+      include: {
+        approvedBy: {
+          select: {
+            id: true,
+            fullName: true,
+          },
+        },
+        _count: {
+          select: {
+            applications: true,
+            assignments: true,
+            payments: true,
+          },
+        },
+      },
+    });
+
+    if (!detail) {
+      throw new AppError("TUTOR_NOT_FOUND", 404, "Không tìm thấy gia sư");
+    }
+
+    return detail;
   },
 
   async resetTutorPassword(
@@ -1448,37 +1568,56 @@ export const adminService = {
       );
     }
 
-    const createdClass = await prisma.$transaction(async (tx: any) => {
-      const newClass = await tx.class.create({
-        data: {
-          title: input.title ?? `${request.subject} ${request.grade}`,
-          subject: request.subject,
-          grade: request.grade,
-          district: request.district,
-          feePerHour: input.feePerHour ?? request.budgetPerHour,
-          schedule: input.schedule,
-          status: "OPEN",
-          sourceRequestId: request.id,
-          createdById: actor.id,
-          classType,
-          tutorType,
-          centerTeacherId: input.centerTeacherId ?? null,
-        },
-        select: {
-          id: true,
-        },
+    const convertedClass = await prisma.$transaction(async (tx: any) => {
+      const existingClass = await tx.class.findFirst({
+        where: { sourceRequestId: request.id },
+        orderBy: { createdAt: "asc" },
+        select: { id: true },
       });
+      const classRecord = existingClass
+        ? await tx.class.update({
+            where: { id: existingClass.id },
+            data: {
+              title: input.title ?? `${request.subject} ${request.grade}`,
+              subject: request.subject,
+              grade: request.grade,
+              district: request.district,
+              feePerHour: input.feePerHour ?? request.budgetPerHour,
+              schedule: input.schedule,
+              classType,
+              tutorType,
+              centerTeacherId: input.centerTeacherId ?? null,
+            },
+            select: { id: true },
+          })
+        : await tx.class.create({
+            data: {
+              title: input.title ?? `${request.subject} ${request.grade}`,
+              subject: request.subject,
+              grade: request.grade,
+              district: request.district,
+              feePerHour: input.feePerHour ?? request.budgetPerHour,
+              schedule: input.schedule,
+              status: "OPEN",
+              sourceRequestId: request.id,
+              createdById: actor.id,
+              classType,
+              tutorType,
+              centerTeacherId: input.centerTeacherId ?? null,
+            },
+            select: { id: true },
+          });
 
       const updatedMembers = await tx.classMember.updateMany({
         where: { requestId: request.id },
-        data: { classId: newClass.id },
+        data: { classId: classRecord.id },
       });
 
       if (updatedMembers.count === 0) {
         await tx.classMember.create({
           data: {
             requestId: request.id,
-            classId: newClass.id,
+            classId: classRecord.id,
             studentName: (request as any).studentName?.trim() || request.parentName,
             studentGrade: request.grade,
             parentName: request.parentName,
@@ -1494,7 +1633,7 @@ export const adminService = {
           status: "CONVERTED",
           processedAt: new Date(),
           processedById: actor.id,
-          assignedClassId: newClass.id,
+          assignedClassId: classRecord.id,
         },
       });
 
@@ -1506,8 +1645,9 @@ export const adminService = {
           targetType: "CLASS_REQUEST",
           targetId: request.id,
           payload: {
-            classId: newClass.id,
+            classId: classRecord.id,
             migratedMembers: updatedMembers.count,
+            reusedExistingClass: Boolean(existingClass),
             classType,
             tutorType,
             centerTeacherId: input.centerTeacherId ?? null,
@@ -1516,11 +1656,11 @@ export const adminService = {
         tx,
       );
 
-      return newClass;
+      return classRecord;
     });
 
     return {
-      classId: createdClass.id,
+      classId: convertedClass.id,
       converted: true,
     };
   },
@@ -1867,7 +2007,7 @@ export const adminService = {
       schedule?: string;
       classType?: "LOP_GIA_SU_TU_DO" | "LOP_GIA_SU_DAO_TAO" | "LOP_TRUNG_TAM";
       tutorType?: "GIA_SU_TU_DO" | "GIA_SU_DAO_TAO" | "GIAO_VIEN_TRUNG_TAM" | "ANY";
-      centerTeacherId?: string;
+      centerTeacherId?: string | null;
     },
   ) {
     const classItem = await prisma.class.findUnique({
@@ -1905,7 +2045,8 @@ export const adminService = {
           schedule: input.schedule,
           classType: input.classType,
           tutorType: input.tutorType,
-          centerTeacherId: input.centerTeacherId ?? undefined,
+          centerTeacherId:
+            input.centerTeacherId === undefined ? undefined : input.centerTeacherId,
         },
       });
 

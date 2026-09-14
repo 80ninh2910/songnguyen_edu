@@ -1,32 +1,26 @@
 'use client';
+
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { apiRequestWithAuth, getStoredAccessToken } from '@/lib/api';
 
+type Attendance = 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
+
 type SessionDetail = {
   id: string;
-  classId: string;
-  tutorId: string;
   sessionNumber: number;
   sessionDate: string;
-  startTime: string | null;
-  endTime: string | null;
   topic: string | null;
-  status: 'SCHEDULED' | 'COMPLETED' | 'CANCELLED';
   class: {
-    id: string;
     title: string;
-    subject: string;
-    grade: string;
-    district: string;
     members: Array<{ id: string; studentName: string }>;
   };
 };
 
 type FeedbackDraft = {
   memberId: string;
-  attendance: 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
+  attendance: Attendance;
   attitudeScore: number | null;
   comprehensionScore: number | null;
   homeworkScore: number | null;
@@ -36,322 +30,287 @@ type FeedbackDraft = {
   overallComment: string;
 };
 
-const attendanceOptions: Array<{ value: FeedbackDraft['attendance']; label: string }> = [
+const attendanceOptions: Array<{ value: Attendance; label: string }> = [
   { value: 'PRESENT', label: 'Có mặt' },
   { value: 'ABSENT', label: 'Vắng' },
   { value: 'LATE', label: 'Đi muộn' },
   { value: 'EXCUSED', label: 'Có phép' },
 ];
 
-const scoreOptions = [1, 2, 3, 4, 5];
-const scoreFields: Array<keyof FeedbackDraft> = [
-  'attitudeScore',
-  'comprehensionScore',
-  'homeworkScore',
+const scoreGroups = [
+  { field: 'attitudeScore' as const, label: 'Thái độ' },
+  { field: 'comprehensionScore' as const, label: 'Tiếp thu' },
+  { field: 'homeworkScore' as const, label: 'Bài tập' },
 ];
+
+const scoreHints: Record<number, string> = {
+  1: 'Cần hỗ trợ',
+  2: 'Chưa đạt',
+  3: 'Đạt',
+  4: 'Tốt',
+  5: 'Rất tốt',
+};
+
+const createDraft = (memberId: string): FeedbackDraft => ({
+  memberId,
+  attendance: 'PRESENT',
+  attitudeScore: null,
+  comprehensionScore: null,
+  homeworkScore: null,
+  strengths: '',
+  weaknesses: '',
+  recommendation: '',
+  overallComment: '',
+});
+
+const isDraftComplete = (draft: FeedbackDraft) =>
+  draft.attendance === 'ABSENT' ||
+  scoreGroups.every(({ field }) => typeof draft[field] === 'number');
 
 export default function SessionFeedbackPage() {
   const params = useParams<{ classId: string; sessionId: string }>();
-  const router = useRouter();
   const [session, setSession] = useState<SessionDetail | null>(null);
   const [drafts, setDrafts] = useState<Record<string, FeedbackDraft>>({});
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [invalidMembers, setInvalidMembers] = useState<Record<string, boolean>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
+  const storageKey = params?.sessionId ? `sne-feedback-draft:${params.sessionId}` : '';
+
   useEffect(() => {
-    const token = getStoredAccessToken();
-    if (!token) {
+    if (!getStoredAccessToken()) {
       setError('Vui lòng đăng nhập lại.');
       setIsLoading(false);
       return;
     }
-
     if (!params?.sessionId) return;
 
     apiRequestWithAuth<SessionDetail>(`/tutor/sessions/${params.sessionId}`)
       .then((result) => {
+        const saved = window.localStorage.getItem(`sne-feedback-draft:${result.id}`);
+        const savedDrafts = saved ? (JSON.parse(saved) as Record<string, FeedbackDraft>) : {};
+        const initialDrafts = Object.fromEntries(
+          result.class.members.map((member) => [
+            member.id,
+            savedDrafts[member.id] ?? createDraft(member.id),
+          ]),
+        );
         setSession(result);
-        const initialDrafts: Record<string, FeedbackDraft> = {};
-        result.class.members.forEach((member) => {
-          initialDrafts[member.id] = {
-            memberId: member.id,
-            attendance: 'PRESENT',
-            attitudeScore: null,
-            comprehensionScore: null,
-            homeworkScore: null,
-            strengths: '',
-            weaknesses: '',
-            recommendation: '',
-            overallComment: '',
-          };
-        });
         setDrafts(initialDrafts);
-        setError('');
+        setExpanded(Object.fromEntries(result.class.members.map((member, index) => [member.id, index === 0])));
       })
-      .catch((err) => {
-        setError(err instanceof Error ? err.message : 'Không thể tải thông tin buổi học.');
-      })
+      .catch((err) => setError(err instanceof Error ? err.message : 'Không thể tải thông tin buổi học.'))
       .finally(() => setIsLoading(false));
   }, [params?.sessionId]);
 
-  const handleDraftChange = (memberId: string, key: keyof FeedbackDraft, value: string | number) => {
-    setDrafts((prev) => ({
-      ...prev,
-      [memberId]: {
-        ...prev[memberId],
-        [key]: value,
-        ...(key === 'attendance' && value === 'ABSENT'
-          ? {
-              attitudeScore: null,
-              comprehensionScore: null,
-              homeworkScore: null,
-            }
-          : null),
-      },
-    }));
-  };
+  useEffect(() => {
+    if (!storageKey || isLoading || Object.keys(drafts).length === 0) return;
+    window.localStorage.setItem(storageKey, JSON.stringify(drafts));
+  }, [drafts, isLoading, storageKey]);
 
-  const submitPayload = useMemo(
-    () =>
-      Object.values(drafts).map((draft) => {
-        const payload: Record<string, unknown> = {
-          memberId: draft.memberId,
-          attendance: draft.attendance,
-          strengths: draft.strengths,
-          weaknesses: draft.weaknesses,
-          recommendation: draft.recommendation,
-          overallComment: draft.overallComment,
-        };
-
-        if (typeof draft.attitudeScore === 'number') {
-          payload.attitudeScore = draft.attitudeScore;
-        }
-        if (typeof draft.comprehensionScore === 'number') {
-          payload.comprehensionScore = draft.comprehensionScore;
-        }
-        if (typeof draft.homeworkScore === 'number') {
-          payload.homeworkScore = draft.homeworkScore;
-        }
-
-        return payload;
-      }),
+  const completedCount = useMemo(
+    () => Object.values(drafts).filter(isDraftComplete).length,
     [drafts],
   );
+  const totalCount = Object.keys(drafts).length;
+
+  const updateDraft = <K extends keyof FeedbackDraft>(
+    memberId: string,
+    field: K,
+    value: FeedbackDraft[K],
+  ) => {
+    setDrafts((current) => ({
+      ...current,
+      [memberId]: {
+        ...current[memberId],
+        [field]: value,
+        ...(field === 'attendance' && value === 'ABSENT'
+          ? { attitudeScore: null, comprehensionScore: null, homeworkScore: null }
+          : {}),
+      },
+    }));
+    setInvalidMembers((current) => ({ ...current, [memberId]: false }));
+    setSuccessMessage('');
+  };
 
   const handleSubmit = async () => {
     setError('');
     setSuccessMessage('');
-
+    const incomplete = Object.values(drafts).filter((draft) => !isDraftComplete(draft));
+    if (incomplete.length > 0) {
+      const invalid = Object.fromEntries(incomplete.map((draft) => [draft.memberId, true]));
+      setInvalidMembers(invalid);
+      setExpanded((current) => ({ ...current, ...invalid }));
+      document.getElementById(`feedback-${incomplete[0].memberId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setError(`Còn ${incomplete.length} học viên chưa được chấm đủ điểm.`);
+      return;
+    }
     if (!params?.sessionId) return;
-
-    const validationItems = Object.values(drafts);
-
-    if (validationItems.length === 0) {
-      setError('Không có học sinh để nhận xét.');
-      return;
-    }
-
-    for (const item of validationItems) {
-      if (item.attendance === 'ABSENT') continue;
-      for (const field of scoreFields) {
-        if (item[field] == null) {
-          const target = document.querySelector<HTMLButtonElement>(
-            `button[data-member-id="${item.memberId}"][data-score-field="${field}"]`,
-          );
-          if (target) {
-            target.focus();
-            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
-          return;
-        }
-      }
-    }
-
-    const invalidScore = submitPayload.some((item) => {
-      const scores = [item.attitudeScore, item.comprehensionScore, item.homeworkScore];
-      return scores
-        .filter((score): score is number => typeof score === 'number')
-        .some((score) => score < 1 || score > 5);
-    });
-
-    if (invalidScore) {
-      setError('Điểm đánh giá phải nằm trong khoảng 1–5.');
-      return;
-    }
 
     setIsSubmitting(true);
     try {
       await apiRequestWithAuth(`/tutor/sessions/${params.sessionId}/feedbacks`, {
         method: 'POST',
-        body: { feedbacks: submitPayload },
+        body: { feedbacks: Object.values(drafts) },
       });
-      setSuccessMessage('Da luu nhan xet thanh cong.');
-      setTimeout(() => {
-        router.push(`/tai-khoan-gia-su/lop-cua-toi/${params.classId}`);
-      }, 700);
+      if (storageKey) window.localStorage.removeItem(storageKey);
+      setSuccessMessage('Đã lưu nhận xét thành công.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Không thể gửi nhận xét.');
+      setError(err instanceof Error ? err.message : 'Không thể lưu nhận xét.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const sessionTitle = session ? `Buổi ${session.sessionNumber} • ${new Date(session.sessionDate).toLocaleDateString('vi-VN')}` : '';
+  const sessionTitle = session
+    ? `Buổi ${session.sessionNumber} · ${new Date(session.sessionDate).toLocaleDateString('vi-VN')}`
+    : '';
 
   return (
-    <div className="page-content">
-      <div className="session-feedback-header">
+    <div className="page-content feedback-page">
+      <header className="session-feedback-header">
         <div>
-          <Link
-            href={`/tai-khoan-gia-su/lop-cua-toi/${params?.classId ?? ''}`}
-            className="btn-text"
-            style={{ textDecoration: 'none' }}
-          >
-            ← Quay lại danh sách buổi học
+          <Link href={`/tai-khoan-gia-su/lop-cua-toi/${params?.classId ?? ''}`} className="feedback-back-link">
+            ← Danh sách buổi học
           </Link>
           <h1 className="page-title">Nhận xét buổi học</h1>
-          <p className="page-subtitle">{sessionTitle || '...'} {session?.topic ? `• ${session.topic}` : ''}</p>
+          <p className="page-subtitle">
+            {sessionTitle || '...'} {session?.topic ? `· ${session.topic}` : ''}
+          </p>
         </div>
-        <button
-          className="btn-primary"
-          onClick={handleSubmit}
-          disabled={isSubmitting || isLoading || !session}
-        >
-          {isSubmitting ? 'Đang lưu...' : 'Lưu nhận xét'}
-        </button>
-      </div>
+        {session && (
+          <div className="feedback-progress-card">
+            <strong>{completedCount}/{totalCount}</strong>
+            <span>học viên hoàn thành</span>
+            <div><i style={{ width: `${totalCount ? (completedCount / totalCount) * 100 : 0}%` }} /></div>
+          </div>
+        )}
+      </header>
 
       {isLoading && <div className="session-empty">Đang tải nhận xét...</div>}
-      {!isLoading && error && <div className="session-empty error">{error}</div>}
-      {successMessage && <div className="session-empty success">{successMessage}</div>}
+      {error && <div className="feedback-alert error">{error}</div>}
+      {successMessage && (
+        <div className="feedback-alert success">
+          <span>{successMessage}</span>
+          <Link href={`/tai-khoan-gia-su/lop-cua-toi/${params?.classId ?? ''}`}>Quay lại danh sách</Link>
+        </div>
+      )}
 
-      {!isLoading && !error && session && (
+      {!isLoading && session && (
         <div className="feedback-list">
-          {session.class.members.map((member) => {
+          {session.class.members.map((member, index) => {
             const draft = drafts[member.id];
             if (!draft) return null;
+            const open = expanded[member.id];
             return (
-              <div className="feedback-card" key={member.id}>
-                <div className="feedback-card-header">
-                  <div>
-                    <h3>{member.studentName}</h3>
-                    <span>{session.class.title}</span>
-                  </div>
-                  <div className="feedback-attendance">
-                    {attendanceOptions.map((option) => (
-                      <label key={option.value}>
-                        <input
-                          type="radio"
-                          name={`attendance-${member.id}`}
-                          checked={draft.attendance === option.value}
-                          onChange={() => handleDraftChange(member.id, 'attendance', option.value)}
-                        />
-                        <span>{option.label}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
+              <section id={`feedback-${member.id}`} className={`feedback-card${invalidMembers[member.id] ? ' invalid' : ''}`} key={member.id}>
+                <button
+                  type="button"
+                  className="feedback-card-toggle"
+                  onClick={() => setExpanded((current) => ({ ...current, [member.id]: !open }))}
+                  aria-expanded={open}
+                >
+                  <span className="student-index">{index + 1}</span>
+                  <span className="student-summary">
+                    <strong>{member.studentName}</strong>
+                    <small>{session.class.title}</small>
+                  </span>
+                  <span className={`completion-badge${isDraftComplete(draft) ? ' done' : ''}`}>
+                    {isDraftComplete(draft) ? 'Đã hoàn thành' : 'Chưa hoàn thành'}
+                  </span>
+                  <span className="toggle-chevron">⌄</span>
+                </button>
 
-                <div className="feedback-scores">
-                  <div>
-                    <p>Thai do</p>
-                    <div className="feedback-score-row">
-                      {scoreOptions.map((score) => (
+                {open && (
+                  <div className="feedback-card-body">
+                    <div className="feedback-section-label">Điểm danh</div>
+                    <div className="feedback-attendance" role="radiogroup" aria-label={`Điểm danh ${member.studentName}`}>
+                      {attendanceOptions.map((option) => (
                         <button
                           type="button"
-                          key={`attitude-${member.id}-${score}`}
-                          data-member-id={member.id}
-                          data-score-field="attitudeScore"
-                          className={draft.attitudeScore === score ? 'score-pill active' : 'score-pill'}
-                          disabled={draft.attendance === 'ABSENT'}
-                          onClick={() => handleDraftChange(member.id, 'attitudeScore', score)}
+                          key={option.value}
+                          className={draft.attendance === option.value ? `active attendance-${option.value.toLowerCase()}` : ''}
+                          onClick={() => updateDraft(member.id, 'attendance', option.value)}
                         >
-                          {score}
+                          {option.label}
                         </button>
                       ))}
                     </div>
-                  </div>
-                  <div>
-                    <p>Nang luc</p>
-                    <div className="feedback-score-row">
-                      {scoreOptions.map((score) => (
-                        <button
-                          type="button"
-                          key={`comprehension-${member.id}-${score}`}
-                          data-member-id={member.id}
-                          data-score-field="comprehensionScore"
-                          className={draft.comprehensionScore === score ? 'score-pill active' : 'score-pill'}
-                          disabled={draft.attendance === 'ABSENT'}
-                          onClick={() => handleDraftChange(member.id, 'comprehensionScore', score)}
-                        >
-                          {score}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <p>Bai tap</p>
-                    <div className="feedback-score-row">
-                      {scoreOptions.map((score) => (
-                        <button
-                          type="button"
-                          key={`homework-${member.id}-${score}`}
-                          data-member-id={member.id}
-                          data-score-field="homeworkScore"
-                          className={draft.homeworkScore === score ? 'score-pill active' : 'score-pill'}
-                          disabled={draft.attendance === 'ABSENT'}
-                          onClick={() => handleDraftChange(member.id, 'homeworkScore', score)}
-                        >
-                          {score}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
 
-                <div className="feedback-fields">
-                  <div>
-                    <label>Điểm mạnh</label>
-                    <textarea
-                      rows={2}
-                      value={draft.strengths}
-                      onChange={(event) => handleDraftChange(member.id, 'strengths', event.target.value)}
-                      placeholder="Ví dụ: Tích cực phát biểu, làm bài đầy đủ..."
-                    />
+                    {draft.attendance !== 'ABSENT' && (
+                      <>
+                        <div className="feedback-section-label">Đánh giá học tập</div>
+                        <div className="feedback-scores">
+                          {scoreGroups.map(({ field, label }) => (
+                            <div className="score-group" key={field}>
+                              <div className="score-group-heading">
+                                <strong>{label}</strong>
+                                <span>{draft[field] ? scoreHints[draft[field] as number] : 'Chưa chấm'}</span>
+                              </div>
+                              <div className="feedback-score-row">
+                                {[1, 2, 3, 4, 5].map((score) => (
+                                  <button
+                                    type="button"
+                                    key={score}
+                                    className={draft[field] === score ? 'score-pill active' : 'score-pill'}
+                                    onClick={() => updateDraft(member.id, field, score)}
+                                    aria-label={`${label}: ${score} - ${scoreHints[score]}`}
+                                  >
+                                    {score}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {invalidMembers[member.id] && (
+                          <p className="feedback-inline-error">Vui lòng chấm đủ ba tiêu chí cho học viên này.</p>
+                        )}
+
+                        <div className="feedback-section-label">Nhận xét chi tiết</div>
+                        <div className="feedback-fields">
+                          {[
+                            ['strengths', 'Điểm mạnh', 'Ví dụ: Tích cực phát biểu, làm bài đầy đủ...'],
+                            ['weaknesses', 'Cần cải thiện', 'Ví dụ: Cần luyện thêm phần bài tập khó...'],
+                            ['recommendation', 'Khuyến nghị', 'Ví dụ: Luyện tập thêm dạng bài phương trình...'],
+                            ['overallComment', 'Nhận xét tổng quan', 'Tóm tắt quá trình học trong buổi...'],
+                          ].map(([field, label, placeholder]) => (
+                            <label key={field}>
+                              <span>{label}</span>
+                              <textarea
+                                rows={3}
+                                maxLength={500}
+                                value={draft[field as keyof FeedbackDraft] as string}
+                                onChange={(event) => updateDraft(member.id, field as keyof FeedbackDraft, event.target.value)}
+                                placeholder={placeholder}
+                              />
+                              <small>{(draft[field as keyof FeedbackDraft] as string).length}/500</small>
+                            </label>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
-                  <div>
-                    <label>Han che</label>
-                    <textarea
-                      rows={2}
-                      value={draft.weaknesses}
-                      onChange={(event) => handleDraftChange(member.id, 'weaknesses', event.target.value)}
-                      placeholder="Ví dụ: Cần luyện thêm phần bài tập khó..."
-                    />
-                  </div>
-                  <div>
-                    <label>Khuyen nghi</label>
-                    <textarea
-                      rows={2}
-                      value={draft.recommendation}
-                      onChange={(event) => handleDraftChange(member.id, 'recommendation', event.target.value)}
-                      placeholder="Ví dụ: Luyện tập thêm dạng bài..."
-                    />
-                  </div>
-                  <div>
-                    <label>Nhận xét chữ</label>
-                    <textarea
-                      rows={2}
-                      value={draft.overallComment}
-                      onChange={(event) => handleDraftChange(member.id, 'overallComment', event.target.value)}
-                      placeholder="Nhận xét tong quan ve buoi hoc..."
-                    />
-                  </div>
-                </div>
-              </div>
+                )}
+              </section>
             );
           })}
+        </div>
+      )}
+
+      {!isLoading && session && (
+        <div className="feedback-sticky-actions">
+          <div>
+            <strong>{completedCount}/{totalCount} học viên</strong>
+            <span>Bản nháp được lưu tự động trên thiết bị này</span>
+          </div>
+          <button className="btn-primary" onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting ? 'Đang lưu...' : 'Lưu nhận xét'}
+          </button>
         </div>
       )}
     </div>

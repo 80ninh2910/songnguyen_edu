@@ -23,6 +23,7 @@ enum TutorStatus {
   PENDING
   APPROVED
   REJECTED
+  INACTIVE
 }
 
 enum TutorType {
@@ -125,6 +126,7 @@ model Tutor {
   subjects       String[]    @default([])
   districts      String[]    @default([])
   mustChangePassword Boolean  @default(false) @map("must_change_password")
+  sessionVersion Int          @default(0) @map("session_version")
   approvedAt     DateTime?   @map("approved_at")
   approvedById   String?     @map("approved_by_id")
   createdAt      DateTime    @default(now()) @map("created_at")

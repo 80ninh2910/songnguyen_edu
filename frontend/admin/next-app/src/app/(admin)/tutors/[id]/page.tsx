@@ -12,6 +12,7 @@ import {
   rejectAdminTutor,
   resetAdminTutorPassword,
   updateAdminTutor,
+  updateAdminTutorActivityStatus,
   type AdminTutorDetail,
   type AdminTutorStatus,
 } from "@/lib/adminApi";
@@ -27,6 +28,7 @@ const STATUS_META: Record<
   APPROVED: { label: "ĐÃ DUYỆT", tone: "approved", dotColor: "#0058be" },
   PENDING: { label: "CHỜ DUYỆT", tone: "pending", dotColor: "#924700" },
   REJECTED: { label: "TỪ CHỐI", tone: "rejected", dotColor: "#ba1a1a" },
+  INACTIVE: { label: "TẠM DỪNG", tone: "rejected", dotColor: "#ba1a1a" },
 };
 
 function formatDate(value: string | null): string {
@@ -170,6 +172,43 @@ export default function TutorDetailPage() {
     } catch (err) {
       setActionError(
         err instanceof Error ? err.message : "Không thể cập nhật hồ sơ.",
+      );
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleActivityStatusChange = async (
+    activityStatus: "ACTIVE" | "INACTIVE",
+  ) => {
+    if (!tutorId || !detail) return;
+
+    if (
+      activityStatus === "INACTIVE" &&
+      !window.confirm(
+        `Tạm dừng ${detail.fullName}? Tài khoản sẽ bị khóa và các phiên đang đăng nhập sẽ kết thúc.`,
+      )
+    ) {
+      return;
+    }
+
+    setProcessing(true);
+    setActionError(null);
+    setActionMessage(null);
+
+    try {
+      const updated = await updateAdminTutorActivityStatus(tutorId, activityStatus);
+      setDetail(updated);
+      setActionMessage(
+        activityStatus === "ACTIVE"
+          ? "Đã mở lại tài khoản gia sư."
+          : "Đã khóa tài khoản và kết thúc các phiên đăng nhập.",
+      );
+    } catch (err) {
+      setActionError(
+        err instanceof Error
+          ? err.message
+          : "Không thể cập nhật trạng thái hoạt động.",
       );
     } finally {
       setProcessing(false);
@@ -436,6 +475,34 @@ export default function TutorDetailPage() {
                 Hồ sơ đã được xử lý.
               </p>
             )}
+
+            {canEdit &&
+            (detail.status === "APPROVED" || detail.status === "INACTIVE") ? (
+              <div style={{ marginTop: "1rem" }}>
+                <button
+                  className={
+                    detail.status === "APPROVED"
+                      ? "admin-btn danger"
+                      : "admin-btn success"
+                  }
+                  disabled={processing}
+                  onClick={() =>
+                    void handleActivityStatusChange(
+                      detail.status === "APPROVED" ? "INACTIVE" : "ACTIVE",
+                    )
+                  }
+                  style={{ width: "100%" }}
+                  type="button"
+                >
+                  <AdminIcon
+                    name={detail.status === "APPROVED" ? "lock" : "check_circle"}
+                  />
+                  {detail.status === "APPROVED"
+                    ? "Tạm dừng tài khoản"
+                    : "Mở lại tài khoản"}
+                </button>
+              </div>
+            ) : null}
 
             <div style={{ marginTop: "1rem" }}>
               <button

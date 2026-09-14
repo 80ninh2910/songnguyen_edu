@@ -433,13 +433,22 @@ function ParentRequestsTab({
         const trimmedTitle = convertForm.title.trim();
         const feeValue = Number(convertForm.feePerHour);
 
-        if (trimmedTitle) payload.title = trimmedTitle;
-        if (Number.isFinite(feeValue) && feeValue > 0) {
-          payload.feePerHour = Math.round(feeValue);
+        if (trimmedTitle.length < 3) {
+          showToast("error", "Tiêu đề lớp phải có ít nhất 3 ký tự.");
+          return;
         }
-        if (convertForm.scheduleDays.length > 0) {
-          payload.schedule = WEEK_DAYS.filter((day) => convertForm.scheduleDays.includes(day)).join(", ");
+        if (!Number.isFinite(feeValue) || feeValue <= 0) {
+          showToast("error", "Học phí phải là số lớn hơn 0.");
+          return;
         }
+        if (convertForm.scheduleDays.length === 0) {
+          showToast("error", "Vui lòng chọn ít nhất một ngày học.");
+          return;
+        }
+
+        payload.title = trimmedTitle;
+        payload.feePerHour = Math.round(feeValue);
+        payload.schedule = WEEK_DAYS.filter((day) => convertForm.scheduleDays.includes(day)).join(", ");
       }
 
       await convertAdminClassRequest(detail.id, payload);
@@ -809,7 +818,7 @@ function ParentRequestsTab({
                       />
                     </label>
                     <label className="admin-dialog-field admin-dialog-field-full">
-                      Lịch học (tuỳ chọn)
+                      Lịch học (bắt buộc)
                       <div
                         style={{
                           display: "grid",

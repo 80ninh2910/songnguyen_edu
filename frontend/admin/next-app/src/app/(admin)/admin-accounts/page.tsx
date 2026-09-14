@@ -90,15 +90,31 @@ export default function AdminAccountsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
+    const fullName = form.fullName.trim();
+    const email = form.email.trim();
+
+    if (fullName.length < 2) {
+      setFormError("Họ và tên phải có ít nhất 2 ký tự.");
+      return;
+    }
+    if (!email) {
+      setFormError("Email là trường bắt buộc.");
+      return;
+    }
+    if (form.password && form.password.length < 6) {
+      setFormError("Mật khẩu phải có ít nhất 6 ký tự.");
+      return;
+    }
+
     setFormLoading(true);
     try {
       if (modalMode === "create") {
         if (!form.password) { setFormError("Mật khẩu là bắt buộc khi tạo tài khoản mới."); setFormLoading(false); return; }
-        await createAdminAccount(form);
+        await createAdminAccount({ ...form, fullName, email });
       } else if (modalMode === "edit" && editTarget) {
         const body: Partial<FormState> = {};
-        if (form.fullName !== editTarget.fullName) body.fullName = form.fullName;
-        if (form.email !== editTarget.email) body.email = form.email;
+        if (fullName !== editTarget.fullName) body.fullName = fullName;
+        if (email !== editTarget.email) body.email = email;
         if (form.role !== editTarget.role) body.role = form.role;
         if (form.password) body.password = form.password;
         await updateAdminAccount(editTarget.id, body);
@@ -285,12 +301,14 @@ export default function AdminAccountsPage() {
               <div className="settings-field">
                 <label htmlFor="acc-fullname">Họ và tên *</label>
                 <input id="acc-fullname" className="settings-input" required value={form.fullName}
+                  minLength={2} maxLength={200}
                   onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))} />
               </div>
 
               <div className="settings-field">
                 <label htmlFor="acc-email">Email *</label>
                 <input id="acc-email" className="settings-input" type="email" required value={form.email}
+                  maxLength={200}
                   onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} />
               </div>
 
@@ -309,6 +327,7 @@ export default function AdminAccountsPage() {
                 </label>
                 <input id="acc-password" className="settings-input" type="password"
                   required={modalMode === "create"} value={form.password}
+                  minLength={form.password || modalMode === "create" ? 6 : undefined} maxLength={100}
                   onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))} />
               </div>
 

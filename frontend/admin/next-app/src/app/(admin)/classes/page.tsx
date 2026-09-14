@@ -591,8 +591,8 @@ export default function ClassesPage() {
       return null;
     })();
 
-    if (!title) {
-      showToast("error", "Vui lòng nhập tiêu đề lớp.");
+    if (title.length < 3) {
+      showToast("error", "Tiêu đề lớp phải có ít nhất 3 ký tự.");
       return;
     }
 
@@ -626,11 +626,11 @@ export default function ClassesPage() {
         const studentName = member.studentName.trim();
         const parentName = member.parentName.trim();
         const parentPhone = member.parentPhone.trim();
-        return !studentName || !parentName || !parentPhone;
+        return studentName.length < 2 || parentName.length < 2 || parentPhone.length < 9;
       });
 
       if (invalidMember) {
-        showToast("error", "Vui lòng nhập đầy đủ tên học viên, phụ huynh và SĐT.");
+        showToast("error", "Tên học viên/phụ huynh phải có ít nhất 2 ký tự và SĐT ít nhất 9 ký tự.");
         return;
       }
     }
@@ -638,6 +638,11 @@ export default function ClassesPage() {
     if (formMode === "create") {
       if (!subject || !grade || !district) {
         showToast("error", "Vui lòng nhập đầy đủ môn, lớp và khu vực.");
+        return;
+      }
+
+      if (formState.scheduleDays.length === 0) {
+        showToast("error", "Vui lòng chọn ít nhất một ngày học.");
         return;
       }
     }
@@ -659,7 +664,7 @@ export default function ClassesPage() {
               : undefined,
           classType,
           tutorType: derivedTutorType,
-          centerTeacherId: classType === "LOP_TRUNG_TAM" ? centerTeacherId : null,
+          centerTeacherId: classType === "LOP_TRUNG_TAM" ? centerTeacherId : undefined,
           members:
             classType === "LOP_TRUNG_TAM"
               ? formState.members.map((member) => ({
@@ -1108,6 +1113,9 @@ export default function ClassesPage() {
                     }
                     type="text"
                     value={formState.title}
+                    minLength={3}
+                    maxLength={200}
+                    required
                   />
                 </label>
 
@@ -1139,6 +1147,7 @@ export default function ClassesPage() {
                       });
                     }}
                     value={formState.classType}
+                    required
                   >
                     <option value="">Chọn loại lớp</option>
                     <option value="LOP_GIA_SU_TU_DO">Gia sư tự do</option>
@@ -1159,6 +1168,8 @@ export default function ClassesPage() {
                     }
                     type="text"
                     value={formState.subject}
+                    maxLength={100}
+                    required={formMode === "create"}
                   />
                 </label>
 
@@ -1174,6 +1185,8 @@ export default function ClassesPage() {
                     }
                     type="text"
                     value={formState.grade}
+                    maxLength={100}
+                    required={formMode === "create"}
                   />
                 </label>
 
@@ -1220,6 +1233,7 @@ export default function ClassesPage() {
                         }))
                       }
                       value={formState.district}
+                      required={formMode === "create"}
                     >
                       <option value="">Chọn quận</option>
                       {DISTRICT_OPTIONS.map((item) => (
@@ -1245,6 +1259,7 @@ export default function ClassesPage() {
                     inputMode="numeric"
                     type="text"
                     value={formState.feePerHour}
+                    required
                   />
                   {formState.feePerHour ? (
                     <span style={{ fontSize: "0.78rem", color: "#64748b" }}>
@@ -1254,7 +1269,7 @@ export default function ClassesPage() {
                 </label>
 
                 <label className="admin-dialog-field admin-dialog-field-full">
-                  Lịch học (tuỳ chọn)
+                  Lịch học *
                   <div
                     style={{
                       display: "grid",
@@ -1432,6 +1447,9 @@ export default function ClassesPage() {
                                 <input
                                   type="text"
                                   value={member.studentName}
+                                  minLength={2}
+                                  maxLength={200}
+                                  required
                                   onChange={(event) =>
                                     setFormState((prev) => ({
                                       ...prev,
@@ -1466,6 +1484,9 @@ export default function ClassesPage() {
                                 <input
                                   type="text"
                                   value={member.parentName}
+                                  minLength={2}
+                                  maxLength={200}
+                                  required
                                   onChange={(event) =>
                                     setFormState((prev) => ({
                                       ...prev,
@@ -1481,8 +1502,11 @@ export default function ClassesPage() {
                               <label className="admin-dialog-field">
                                 So dien thoai
                                 <input
-                                  type="text"
+                                  type="tel"
                                   value={member.parentPhone}
+                                  minLength={9}
+                                  maxLength={30}
+                                  required
                                   onChange={(event) =>
                                     setFormState((prev) => ({
                                       ...prev,

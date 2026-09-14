@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-
 import { AdminIcon } from "@/components/admin/AdminIcon";
 import {
   listAdminSessionFeedbacks,
@@ -11,196 +10,210 @@ import {
   type AdminSessionFeedbacksResponse,
 } from "@/lib/adminApi";
 
-const attendanceLabel = (value: AdminSessionFeedback["attendance"]) => {
-  if (value === "PRESENT") return "Có mặt";
-  if (value === "ABSENT") return "Vắng";
-  if (value === "LATE") return "Đi muộn";
-  return "Có phép";
+const attendanceMeta: Record<AdminSessionFeedback["attendance"], { label: string; tone: string }> = {
+  PRESENT: { label: "Có mặt", tone: "present" },
+  ABSENT: { label: "Vắng", tone: "absent" },
+  LATE: { label: "Đi muộn", tone: "late" },
+  EXCUSED: { label: "Có phép", tone: "excused" },
 };
 
-const attendancePillStyle = (
-  value: AdminSessionFeedback["attendance"],
-): CSSProperties => {
-  if (value === "PRESENT") {
-    return { background: "#e8f7ee", color: "#15803d", borderColor: "#86efac" };
-  }
-  if (value === "ABSENT") {
-    return { background: "#fee2e2", color: "#b91c1c", borderColor: "#fecaca" };
-  }
-  if (value === "LATE") {
-    return { background: "#fff7ed", color: "#c2410c", borderColor: "#fed7aa" };
-  }
-  return { background: "#e0f2fe", color: "#0369a1", borderColor: "#bae6fd" };
+const averageScore = (feedback: AdminSessionFeedback) => {
+  const values = [feedback.attitudeScore, feedback.comprehensionScore, feedback.homeworkScore]
+    .filter((score): score is number => typeof score === "number");
+  return values.length ? values.reduce((sum, score) => sum + score, 0) / values.length : null;
 };
 
-const scorePillStyle = (value: number): CSSProperties => {
-  if (value >= 5) {
-    return { background: "#dcfce7", color: "#166534", borderColor: "#86efac" };
-  }
-  if (value === 4) {
-    return { background: "#e0f2fe", color: "#0369a1", borderColor: "#bae6fd" };
-  }
-  if (value === 3) {
-    return { background: "#fef3c7", color: "#b45309", borderColor: "#fde68a" };
-  }
-  return { background: "#fee2e2", color: "#b91c1c", borderColor: "#fecaca" };
-};
-
-const pillBaseStyle: CSSProperties = {
-  display: "inline-flex",
-  alignItems: "center",
-  justifyContent: "center",
-  minWidth: "2.1rem",
-  padding: "0.2rem 0.6rem",
-  borderRadius: "999px",
-  border: "1px solid transparent",
-  fontWeight: 700,
-  fontSize: "0.78rem",
-  textAlign: "center",
+const scoreTone = (value: number | null) => {
+  if (value == null) return "neutral";
+  if (value >= 4) return "good";
+  if (value >= 3) return "average";
+  return "warning";
 };
 
 export default function AdminSessionFeedbacksPage() {
   const params = useParams<{ id: string; sessionId: string }>();
   const [data, setData] = useState<AdminSessionFeedbacksResponse | null>(null);
+  const [selected, setSelected] = useState<AdminSessionFeedback | null>(null);
+  const [filter, setFilter] = useState<"ALL" | AdminSessionFeedback["attendance"] | "NEEDS_ATTENTION">("ALL");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
+  const loadFeedbacks = () => {
     if (!params?.sessionId) return;
-
     setLoading(true);
     listAdminSessionFeedbacks(params.sessionId)
       .then((response) => {
         setData(response);
         setError("");
       })
-      .catch((err) => {
-        setError(err instanceof Error ? err.message : "Không thể tải nhận xét buổi học.");
-      })
+      .catch((err) => setError(err instanceof Error ? err.message : "Không thể tải nhận xét buổi học."))
       .finally(() => setLoading(false));
-  }, [params?.sessionId]);
+  };
 
-  const sessionTitle = useMemo(() => {
-    if (!data) return "";
-    return `Buoi ${data.session.sessionNumber} • ${new Date(data.session.sessionDate).toLocaleDateString("vi-VN")}`;
+  useEffect(loadFeedbacks, [params?.sessionId]);
+
+  const summary = useMemo(() => {
+    const feedbacks = data?.feedbacks ?? [];
+    const scores = feedbacks.map(averageScore).filter((value): value is number => value != null);
+    return {
+      total: feedbacks.length,
+      present: feedbacks.filter((item) => item.attendance === "PRESENT").length,
+      absent: feedbacks.filter((item) => item.attendance === "ABSENT").length,
+      late: feedbacks.filter((item) => item.attendance === "LATE").length,
+      average: scores.length ? scores.reduce((sum, score) => sum + score, 0) / scores.length : null,
+      attention: feedbacks.filter((item) => {
+        const score = averageScore(item);
+        return score != null && score < 3;
+      }).length,
+    };
   }, [data]);
 
+  const filteredFeedbacks = useMemo(() => {
+    const feedbacks = data?.feedbacks ?? [];
+    if (filter === "ALL") return feedbacks;
+    if (filter === "NEEDS_ATTENTION") {
+      return feedbacks.filter((item) => {
+        const score = averageScore(item);
+        return score != null && score < 3;
+      });
+    }
+    return feedbacks.filter((item) => item.attendance === filter);
+  }, [data, filter]);
+
+  const copyFeedback = async (feedback: AdminSessionFeedback) => {
+    const text = [
+      `Nhận xét học viên: ${feedback.member.studentName}`,
+      `Điểm danh: ${attendanceMeta[feedback.attendance].label}`,
+      `Thái độ: ${feedback.attitudeScore ?? "-"} | Tiếp thu: ${feedback.comprehensionScore ?? "-"} | Bài tập: ${feedback.homeworkScore ?? "-"}`,
+      `Điểm mạnh: ${feedback.strengths || "-"}`,
+      `Cần cải thiện: ${feedback.weaknesses || "-"}`,
+      `Khuyến nghị: ${feedback.recommendation || "-"}`,
+      `Nhận xét tổng quan: ${feedback.overallComment || "-"}`,
+    ].join("\n");
+    await navigator.clipboard.writeText(text);
+  };
+
+  const sessionTitle = data
+    ? `Buổi ${data.session.sessionNumber} · ${new Date(data.session.sessionDate).toLocaleDateString("vi-VN")}`
+    : "";
+
   return (
-    <div className="admin-page">
+    <div className="admin-page admin-feedback-page">
       <header className="admin-page-header">
         <div>
-          <p style={{ margin: 0, color: "#64748b", fontSize: "0.8rem" }}>
-            Lớp học • Nhận xét buổi học
-          </p>
-          <h1 className="admin-page-title">Danh sách nhận xét</h1>
+          <p className="admin-feedback-breadcrumb">Lớp học · Nhận xét buổi học</p>
+          <h1 className="admin-page-title">Nhận xét học viên</h1>
           <p className="admin-page-subtitle">{sessionTitle || "..."}</p>
         </div>
         <div className="admin-page-actions">
-          <Link
-            className="admin-btn tonal"
-            href={`/classes/${params?.id ?? ""}/sessions`}
-            style={{ textDecoration: "none" }}
-          >
-            <AdminIcon name="arrow_back" />
-            Quay lại danh sách buổi học
+          <button className="admin-btn tonal" type="button" onClick={() => window.print()}>
+            <AdminIcon name="download" /> In báo cáo
+          </button>
+          <Link className="admin-btn tonal" href={`/classes/${params?.id ?? ""}/sessions`}>
+            <AdminIcon name="chevron_left" /> Danh sách buổi học
           </Link>
         </div>
       </header>
 
-      {error ? (
-        <div className="admin-panel" style={{ marginBottom: "1rem" }}>
-          <p style={{ margin: 0, color: "#ba1a1a" }}>{error}</p>
+      {error && (
+        <div className="admin-feedback-alert">
+          <span>{error}</span>
+          <button type="button" onClick={loadFeedbacks}>Thử lại</button>
         </div>
-      ) : null}
+      )}
 
       {loading ? (
-        <section className="admin-panel">
-          <p style={{ margin: 0, color: "#64748b" }}>Đang tải nhận xét...</p>
-        </section>
+        <div className="admin-feedback-skeleton-grid">
+          {[1, 2, 3, 4].map((item) => <div key={item} />)}
+        </div>
+      ) : data ? (
+        <>
+          <section className="admin-feedback-stats">
+            <article><span>Tổng nhận xét</span><strong>{summary.total}</strong></article>
+            <article><span>Có mặt</span><strong>{summary.present}</strong></article>
+            <article><span>Điểm trung bình</span><strong>{summary.average?.toFixed(1) ?? "-"}</strong></article>
+            <article className={summary.attention > 0 ? "attention" : ""}><span>Cần chú ý</span><strong>{summary.attention}</strong></article>
+          </section>
+
+          <section className="admin-panel admin-feedback-list-panel">
+            <div className="admin-feedback-toolbar">
+              <div>
+                <h2>Danh sách học viên</h2>
+                <p>Chọn một học viên để xem đầy đủ nhận xét.</p>
+              </div>
+              <div className="admin-feedback-filters">
+                {[
+                  ["ALL", "Tất cả"], ["PRESENT", "Có mặt"], ["ABSENT", "Vắng"],
+                  ["LATE", "Đi muộn"], ["NEEDS_ATTENTION", "Cần chú ý"],
+                ].map(([value, label]) => (
+                  <button key={value} type="button" className={filter === value ? "active" : ""} onClick={() => setFilter(value as typeof filter)}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {filteredFeedbacks.length === 0 ? (
+              <div className="admin-feedback-empty">Không có nhận xét phù hợp với bộ lọc.</div>
+            ) : (
+              <div className="admin-feedback-cards">
+                {filteredFeedbacks.map((feedback) => {
+                  const average = averageScore(feedback);
+                  return (
+                    <article className="admin-feedback-card" key={feedback.id}>
+                      <div className="admin-feedback-student">
+                        <span>{feedback.member.studentName.slice(0, 2).toUpperCase()}</span>
+                        <div>
+                          <strong>{feedback.member.studentName}</strong>
+                          <small>{feedback.member.parentName || "Chưa có tên phụ huynh"} · {feedback.member.parentPhone || "Chưa có SĐT"}</small>
+                        </div>
+                      </div>
+                      <span className={`admin-attendance-pill ${attendanceMeta[feedback.attendance].tone}`}>
+                        {attendanceMeta[feedback.attendance].label}
+                      </span>
+                      <div className={`admin-average-score ${scoreTone(average)}`}>
+                        <strong>{average?.toFixed(1) ?? "-"}</strong><span>Điểm TB</span>
+                      </div>
+                      <p>{feedback.overallComment || feedback.recommendation || "Chưa có nhận xét tổng quan."}</p>
+                      <button className="admin-btn tonal" type="button" onClick={() => setSelected(feedback)}>Xem chi tiết</button>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        </>
       ) : null}
 
-      {!loading && data ? (
-        <section className="admin-panel">
-          <div className="admin-table-wrap">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>Học viên</th>
-                  <th>Điểm danh</th>
-                  <th>Thái độ</th>
-                  <th>Năng lực</th>
-                  <th>Bài tập</th>
-                  <th>Điểm mạnh</th>
-                  <th>Hạn chế</th>
-                  <th>Nhận xét chữ</th>
-                  <th>Gia sư</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.feedbacks.length === 0 ? (
-                  <tr>
-                    <td colSpan={9} style={{ textAlign: "center" }}>
-                      Chưa có nhận xét nào.
-                    </td>
-                  </tr>
-                ) : (
-                  data.feedbacks.map((feedback) => (
-                    <tr key={feedback.id}>
-                      <td>
-                        <div style={{ fontWeight: 700 }}>{feedback.member.studentName}</div>
-                        <div style={{ color: "#64748b", fontSize: "0.78rem" }}>
-                          {feedback.member.parentName ?? "-"} • {feedback.member.parentPhone ?? "-"}
-                        </div>
-                      </td>
-                      <td>
-                        <span
-                          style={{
-                            ...pillBaseStyle,
-                            ...attendancePillStyle(feedback.attendance),
-                          }}
-                        >
-                          {attendanceLabel(feedback.attendance)}
-                        </span>
-                      </td>
-                      <td>
-                        {feedback.attitudeScore == null ? (
-                          "-"
-                        ) : (
-                          <span style={{ ...pillBaseStyle, ...scorePillStyle(feedback.attitudeScore) }}>
-                            {feedback.attitudeScore}
-                          </span>
-                        )}
-                      </td>
-                      <td>
-                        {feedback.comprehensionScore == null ? (
-                          "-"
-                        ) : (
-                          <span style={{ ...pillBaseStyle, ...scorePillStyle(feedback.comprehensionScore) }}>
-                            {feedback.comprehensionScore}
-                          </span>
-                        )}
-                      </td>
-                      <td>
-                        {feedback.homeworkScore == null ? (
-                          "-"
-                        ) : (
-                          <span style={{ ...pillBaseStyle, ...scorePillStyle(feedback.homeworkScore) }}>
-                            {feedback.homeworkScore}
-                          </span>
-                        )}
-                      </td>
-                      <td>{feedback.strengths || "-"}</td>
-                      <td>{feedback.weaknesses || "-"}</td>
-                      <td>{feedback.overallComment || "-"}</td>
-                      <td>{feedback.tutor.fullName}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      ) : null}
+      {selected && (
+        <div className="admin-feedback-drawer-layer" role="dialog" aria-modal="true" aria-label={`Nhận xét ${selected.member.studentName}`}>
+          <button className="admin-feedback-drawer-backdrop" type="button" aria-label="Đóng" onClick={() => setSelected(null)} />
+          <aside className="admin-feedback-drawer">
+            <header>
+              <div><span>Chi tiết nhận xét</span><h2>{selected.member.studentName}</h2></div>
+              <button type="button" aria-label="Đóng" onClick={() => setSelected(null)}><AdminIcon name="close" /></button>
+            </header>
+            <div className="admin-feedback-drawer-content">
+              <div className="admin-feedback-detail-meta">
+                <span className={`admin-attendance-pill ${attendanceMeta[selected.attendance].tone}`}>{attendanceMeta[selected.attendance].label}</span>
+                <span>Gia sư: <strong>{selected.tutor.fullName}</strong></span>
+              </div>
+              <div className="admin-feedback-score-grid">
+                {[["Thái độ", selected.attitudeScore], ["Tiếp thu", selected.comprehensionScore], ["Bài tập", selected.homeworkScore]].map(([label, value]) => (
+                  <article key={label}><span>{label}</span><strong className={scoreTone(value as number | null)}>{value ?? "-"}</strong></article>
+                ))}
+              </div>
+              {[["Điểm mạnh", selected.strengths], ["Cần cải thiện", selected.weaknesses], ["Khuyến nghị", selected.recommendation], ["Nhận xét tổng quan", selected.overallComment]].map(([label, value]) => (
+                <section className="admin-feedback-note" key={label}><h3>{label}</h3><p>{value || "Chưa có nội dung."}</p></section>
+              ))}
+            </div>
+            <footer>
+              <button className="admin-btn tonal" type="button" onClick={() => copyFeedback(selected)}>Sao chép nhận xét</button>
+              <button className="admin-btn primary" type="button" onClick={() => setSelected(null)}>Đóng</button>
+            </footer>
+          </aside>
+        </div>
+      )}
     </div>
   );
 }

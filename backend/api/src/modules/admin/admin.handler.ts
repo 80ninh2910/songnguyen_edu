@@ -28,6 +28,7 @@ import {
   RejectTutorBodySchema,
   SessionIdParamSchema,
   UpdateAdminAccountBodySchema,
+  UpdateTutorActivityStatusBodySchema,
   UpdateTutorBodySchema,
   UpdateCenterTeacherBodySchema,
   UpdateClassBodySchema,
@@ -113,6 +114,20 @@ export async function updateTutorHandler(
   const { id } = IdParamSchema.parse(request.params);
   const body = UpdateTutorBodySchema.parse(request.body);
   const result = await adminService.updateTutor(getActor(request), id, body);
+  void reply.send(success(result));
+}
+
+export async function updateTutorActivityStatusHandler(
+  request: FastifyRequest,
+  reply: FastifyReply,
+): Promise<void> {
+  const { id } = IdParamSchema.parse(request.params);
+  const body = UpdateTutorActivityStatusBodySchema.parse(request.body);
+  const result = await adminService.updateTutorActivityStatus(
+    getActor(request),
+    id,
+    body.status,
+  );
   void reply.send(success(result));
 }
 

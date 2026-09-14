@@ -3,23 +3,15 @@ import { TextHoverEffect } from "@/components/ui/text-hover-effect";
 import Image from "next/image";
 import { Be_Vietnam_Pro, Bricolage_Grotesque } from "next/font/google";
 import { useEffect, useRef, useState } from "react";
-import { MapPin } from "lucide-react";
+import { FileText, Home, MapPin } from "lucide-react";
 import heroImage from "@/components/assets/image.png";
 import logoImage from "@/components/assets/logo.png";
 import background19 from "@/components/assets/19.png";
-import statsMainImage from "@/components/assets/21.jpg";
-import statsSubImage from "@/components/assets/20.jpg";
-import tutorImage1 from "@/components/assets/ninh.png";
-import tutorImage2 from "@/components/assets/vinh1.jpg";
-import tutorImage3 from "@/components/assets/viet.png";
-import tutorImage4 from "@/components/assets/thanh.png";
-import tutorImage5 from "@/components/assets/ninh.png";
-import tutorImage6 from "@/components/assets/vinh1.jpg";
-import tutorImage7 from "@/components/assets/viet.png";
 import { BackgroundLines } from "@/components/ui/background-lines";
 import HeroParallaxDemo from "@/components/hero-parallax-demo";
 import DomeGallery from "@/components/DomeGallery";
 import TutorRegistrationForm from "@/components/TutorRegistrationForm";
+import TuitionPdfModal from "@/components/TuitionPdfModal";
 import { apiRequest } from "@/lib/api";
 const bricolageGrotesque = Bricolage_Grotesque({
   subsets: ["latin", "vietnamese"],
@@ -49,12 +41,23 @@ export default function NavbarDemo() {
   const [activeSignupModal, setActiveSignupModal] = useState<SignupType | null>(null);
 
   useEffect(() => {
-    // Handle cross-page navigation to tutor registration
     const searchParams = new URLSearchParams(window.location.search);
-    if (searchParams.get('scrollTo') === 'tutor-register-section' || window.location.hash === '#tutor-register-section') {
+    const signupType = searchParams.get("signup");
+    const validSignupTypes: SignupType[] = [
+      "parent",
+      "center",
+      "tutor-free",
+      "tutor-trained",
+    ];
+    const requestedSignup = validSignupTypes.find((type) => type === signupType);
+    const shouldOpenLegacyTutorForm =
+      searchParams.get("scrollTo") === "tutor-register-section" ||
+      window.location.hash === "#tutor-register-section";
+
+    if (requestedSignup || shouldOpenLegacyTutorForm) {
       setTimeout(() => {
-        setActiveSignupModal("tutor-free");
-        window.history.replaceState({}, document.title, '/');
+        setActiveSignupModal(requestedSignup ?? "tutor-free");
+        window.history.replaceState({}, document.title, "/");
       }, 200);
     }
   }, []);
@@ -71,9 +74,7 @@ export default function NavbarDemo() {
       {/* ĐÃ XÓA: Hệ Thống Gia Sư & Giáo Viên section theo yêu cầu */}
       {/* Đã xóa div.relative.z-20... (phần học viên xuất sắc) theo yêu cầu */}
       {/* <DomeGallerySection /> đã bị xóa theo yêu cầu */}
-      <TutorClassSection />
       <HeroParallaxDemo />
-      <CountingSection />
       <ProjectFooter />
       <ProcessPopupModal
         type={activeProcessModal}
@@ -353,14 +354,24 @@ function RegistrationModal({
                 {header.desc}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-2xl font-bold text-[#1d4aa8] shadow-sm transition-all duration-200 hover:bg-[#eaf1ff]"
-              aria-label="Đóng popup"
-            >
-              ×
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-full border border-[#d8e3fb] bg-white px-4 text-sm font-bold text-[#1d4aa8] shadow-sm transition-all duration-200 hover:border-[#9bb7ef] hover:bg-[#eaf1ff]"
+              >
+                <Home className="h-4 w-4" aria-hidden="true" />
+                Về trang chủ
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white text-2xl font-bold text-[#1d4aa8] shadow-sm transition-all duration-200 hover:bg-[#eaf1ff]"
+                aria-label="Đóng popup"
+              >
+                ×
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -451,6 +462,7 @@ function ParentRegistrationForm({
   const [submitMessage, setSubmitMessage] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isTuitionOpen, setIsTuitionOpen] = useState(false);
   const studentNameRef = useRef<HTMLInputElement | null>(null);
   const parentNameRef = useRef<HTMLInputElement | null>(null);
   const phoneRef = useRef<HTMLInputElement | null>(null);
@@ -703,7 +715,8 @@ function ParentRegistrationForm({
   };
 
   return (
-    <div className={`w-full ${beVietnamPro.className}`}>
+    <>
+      <div className={`w-full ${beVietnamPro.className}`}>
       <div className="rounded-[26px] border border-[#d5dff3] bg-[#f5f7fb] p-4 shadow-[0_20px_45px_rgba(17,45,112,0.12)] md:p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -712,13 +725,23 @@ function ParentRegistrationForm({
               Điền nhanh thông tin học viên để nhận tư vấn lộ trình và học phí.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onOpenProcessModal}
-            className="text-xs font-semibold text-[#21408c] underline decoration-[#6f88c0] underline-offset-4 hover:text-[#17367b]"
-          >
-            Xem quy trình đăng ký lớp
-          </button>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setIsTuitionOpen(true)}
+              className="inline-flex items-center gap-2 rounded-full bg-[#d92335] px-4 py-2.5 text-xs font-extrabold text-white shadow-[0_10px_24px_rgba(217,35,53,0.28)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#bd1727] md:text-sm"
+            >
+              <FileText className="h-4 w-4" aria-hidden="true" />
+              Xem các bảng học phí
+            </button>
+            <button
+              type="button"
+              onClick={onOpenProcessModal}
+              className="text-xs font-semibold text-[#21408c] underline decoration-[#6f88c0] underline-offset-4 hover:text-[#17367b]"
+            >
+              Xem quy trình đăng ký lớp
+            </button>
+          </div>
         </div>
 
         <div className="mt-4 overflow-hidden rounded-full border border-[#d3dff5] bg-white/80">
@@ -1060,6 +1083,8 @@ function ParentRegistrationForm({
           </form>
         </div>
       </div>
+      <TuitionPdfModal open={isTuitionOpen} onClose={() => setIsTuitionOpen(false)} />
+    </>
   );
 }
 
@@ -1170,335 +1195,6 @@ function ProcessPopupModal({
 }
 
 // Đã xóa DomeGallerySection (div.h-screen.w-full.bg-white) theo yêu cầu
-
-function TutorClassSection() {
-  const [isVisible, setIsVisible] = useState(false);
-  const sectionRef = useRef<HTMLElement | null>(null);
-  const sliderRef = useRef<HTMLDivElement | null>(null);
-  const isDraggingRef = useRef(false);
-  const pointerIdRef = useRef<number | null>(null);
-  const dragStartXRef = useRef(0);
-  const dragStartScrollLeftRef = useRef(0);
-  const lastPointerXRef = useRef(0);
-  const lastPointerTimeRef = useRef(0);
-  const velocityRef = useRef(0);
-  const momentumFrameRef = useRef<number | null>(null);
-
-  const tutors = [
-    {
-      id: 1,
-      name: "Nguyễn Bá Thọ",
-      role: "Giáo viên học thuật tại Song Nguyen Education",
-      score: "8.5 IELTS Overall",
-      qualification: "Cử nhân Sư phạm Tiếng Anh",
-      certificates: ["TESOL Quốc tế", "Nghiệp vụ Sư phạm"],
-      image: tutorImage1,
-    },
-    {
-      id: 2,
-      name: "Từ Kim Loan",
-      role: "Giám đốc học thuật IELTS tại Song Nguyen Education",
-      score: "8.5 IELTS Overall",
-      qualification: "Thạc sĩ Ngôn ngữ Anh",
-      certificates: ["CELTA", "Đào tạo Giảng viên IELTS"],
-      image: tutorImage2,
-    },
-    {
-      id: 3,
-      name: "Võ Đình Phúc",
-      role: "Quản lý học thuật tại Song Nguyen Education",
-      score: "8.5 IELTS Overall",
-      qualification: "Cử nhân Ngôn ngữ Anh",
-      certificates: ["TESOL Quốc tế", "Chuyên gia Viết học thuật"],
-      image: tutorImage3,
-    },
-    {
-      id: 4,
-      name: "Dương Hoàng Anh Nhật",
-      role: "Quản lý học thuật IELTS tại Song Nguyen Education",
-      score: "8.0 IELTS Writing",
-      qualification: "Thạc sĩ Giảng dạy Tiếng Anh",
-      certificates: ["TESOL", "Chứng chỉ Đánh giá Năng lực IELTS"],
-      image: tutorImage4,
-    },
-    {
-      id: 5,
-      name: "Đặng Lê Phương Uyên",
-      role: "Quyền Quản lý học thuật IELTS tại Song Nguyen Education",
-      score: "8.5 IELTS Overall",
-      qualification: "Cử nhân Sư phạm Anh",
-      certificates: ["TESOL", "Chứng chỉ Quản lý lớp học"],
-      image: tutorImage5,
-    },
-    {
-      id: 6,
-      name: "Trần Gia Minh",
-      role: "Giáo viên IELTS tại Song Nguyen Education",
-      score: "8.0 IELTS Speaking",
-      qualification: "Cử nhân Ngôn ngữ Anh",
-      certificates: ["TESOL Quốc tế", "Phát âm nâng cao"],
-      image: tutorImage6,
-    },
-    {
-      id: 7,
-      name: "Lê Hà An",
-      role: "Giáo viên Ngôn ngữ SAT tại Song Nguyen Education",
-      score: "1500 SAT",
-      qualification: "Thạc sĩ Ngôn ngữ học ứng dụng",
-      certificates: ["Chứng chỉ Giảng dạy SAT", "CELTA"],
-      image: tutorImage7,
-    },
-    {
-      id: 8,
-      name: "Phạm Quỳnh Như",
-      role: "Giáo viên IELTS tại Song Nguyen Education",
-      score: "8.5 IELTS Overall",
-      qualification: "Cử nhân Sư phạm Anh",
-      certificates: ["TESOL", "Chứng chỉ Quản lý lớp học"],
-      image: tutorImage2,
-    },
-    {
-      id: 9,
-      name: "Ngô Minh Quân",
-      role: "Giáo viên Viết học thuật tại Song Nguyen Education",
-      score: "8.0 IELTS Writing",
-      qualification: "Cử nhân Ngôn ngữ Anh",
-      certificates: ["Chuyên gia Viết học thuật", "TESOL"],
-      image: tutorImage4,
-    },
-    {
-      id: 10,
-      name: "Đinh Hồng Phúc",
-      role: "Giáo viên luyện thi IELTS tại Song Nguyen Education",
-      score: "8.5 IELTS Overall",
-      qualification: "Thạc sĩ TESOL",
-      certificates: ["TESOL Quốc tế", "Đào tạo Giảng viên IELTS"],
-      image: tutorImage1,
-    },
-  ];
-  const loopTutors = [...tutors, ...tutors, ...tutors];
-
-  useEffect(() => {
-    const node = sectionRef.current;
-    if (!node) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsVisible(true);
-        }
-      },
-      { threshold: 0.2 }
-    );
-
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    const slider = sliderRef.current;
-    if (!slider) return;
-
-    const singleSetWidth = slider.scrollWidth / 3;
-    slider.scrollLeft = singleSetWidth;
-
-    const handleLoopScroll = () => {
-      if (slider.scrollLeft <= singleSetWidth * 0.5) {
-        slider.scrollLeft += singleSetWidth;
-      } else if (slider.scrollLeft >= singleSetWidth * 1.5) {
-        slider.scrollLeft -= singleSetWidth;
-      }
-    };
-
-    slider.addEventListener("scroll", handleLoopScroll, { passive: true });
-    return () => slider.removeEventListener("scroll", handleLoopScroll);
-  }, [tutors.length]);
-
-  useEffect(() => {
-    return () => {
-      if (momentumFrameRef.current !== null) {
-        cancelAnimationFrame(momentumFrameRef.current);
-      }
-    };
-  }, []);
-
-  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    const slider = sliderRef.current;
-    if (!slider) return;
-
-    if (momentumFrameRef.current !== null) {
-      cancelAnimationFrame(momentumFrameRef.current);
-      momentumFrameRef.current = null;
-    }
-
-    isDraggingRef.current = true;
-    pointerIdRef.current = event.pointerId;
-    slider.setPointerCapture(event.pointerId);
-    dragStartXRef.current = event.clientX;
-    dragStartScrollLeftRef.current = slider.scrollLeft;
-    lastPointerXRef.current = event.clientX;
-    lastPointerTimeRef.current = performance.now();
-    velocityRef.current = 0;
-  };
-
-  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    const slider = sliderRef.current;
-    if (!slider || !isDraggingRef.current) return;
-
-    const distance = event.clientX - dragStartXRef.current;
-    slider.scrollLeft = dragStartScrollLeftRef.current - distance;
-
-    const now = performance.now();
-    const elapsed = now - lastPointerTimeRef.current;
-    if (elapsed > 0) {
-      const deltaX = event.clientX - lastPointerXRef.current;
-      const instantVelocity = deltaX / elapsed;
-      velocityRef.current = velocityRef.current * 0.82 + instantVelocity * 0.18;
-      lastPointerXRef.current = event.clientX;
-      lastPointerTimeRef.current = now;
-    }
-  };
-
-  const handlePointerUp = (event?: React.PointerEvent<HTMLDivElement>) => {
-    const slider = sliderRef.current;
-    const expectedPointerId = pointerIdRef.current;
-
-    if (event && expectedPointerId !== null && event.pointerId !== expectedPointerId) {
-      return;
-    }
-
-    if (slider && expectedPointerId !== null) {
-      try {
-        slider.releasePointerCapture(expectedPointerId);
-      } catch {
-        // Capture may already be released.
-      }
-    }
-
-    isDraggingRef.current = false;
-    pointerIdRef.current = null;
-
-    if (!slider) return;
-
-    let momentum = -velocityRef.current * 26;
-    const minMomentum = 0.05;
-    const friction = 0.94;
-
-    const animateMomentum = () => {
-      if (Math.abs(momentum) < minMomentum || isDraggingRef.current) {
-        momentumFrameRef.current = null;
-        return;
-      }
-
-      slider.scrollLeft += momentum;
-      momentum *= friction;
-      momentumFrameRef.current = requestAnimationFrame(animateMomentum);
-    };
-
-    momentumFrameRef.current = requestAnimationFrame(animateMomentum);
-  };
-
-  return (
-    <section
-      id="Tutors"
-      ref={sectionRef}
-      className="relative overflow-hidden bg-[linear-gradient(180deg,#f9f7f2_0%,#f5f3ef_40%,#f7f6f3_100%)] px-4 py-16 md:px-8 md:py-24"
-    >
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-white/60 to-transparent" />
-      <div className="pointer-events-none absolute -left-24 top-24 h-64 w-64 rounded-full bg-[#ffdbd1]/40 blur-3xl" />
-      <div className="pointer-events-none absolute -right-20 bottom-8 h-72 w-72 rounded-full bg-[#d8e6ff]/35 blur-3xl" />
-
-      <div className={`w-full ${beVietnamPro.className}`}>
-        <div
-          className={`mx-auto max-w-3xl text-center transition-all duration-700 ${
-            isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
-          }`}
-        >
-          <h2 className="text-4xl font-extrabold tracking-tight text-[#1f293d] md:text-6xl">
-            Đội ngũ gia sư
-          </h2>
-          <p className="mt-6 text-xl font-semibold text-[#293247] md:text-2xl">
-            Song Nguyen gồm nhiều gia sư chất lượng cao
-          </p>
-          <p className="mt-4 text-base leading-8 text-[#4a5366] md:text-lg">
-            Những giáo viên giỏi kiến thức và truyền đạt, tận tâm với học viên,
-            luôn cải tiến để đem đến hiệu quả học tập tốt nhất.
-          </p>
-        </div>
-
-        <div className="relative mt-12">
-          <div
-            ref={sliderRef}
-            className="flex cursor-grab gap-5 overflow-x-auto pb-4 select-none touch-pan-y active:cursor-grabbing [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            onPointerCancel={handlePointerUp}
-            onPointerLeave={handlePointerUp}
-          >
-            {loopTutors.map((tutor, idx) => {
-              return (
-                <article
-                  key={`${tutor.id}-${idx}`}
-                  className={`min-w-[280px] flex-shrink-0 transition-all duration-700 sm:min-w-[300px] ${
-                    isVisible
-                      ? "translate-y-0 opacity-100"
-                      : "translate-y-12 opacity-0"
-                  }`}
-                  style={{
-                    transitionDelay: `${(idx % tutors.length) * 80}ms`,
-                  }}
-                >
-                  <div className="group relative overflow-hidden rounded-[22px] bg-white/75">
-                    <Image
-                      src={tutor.image}
-                      alt={tutor.name}
-                      draggable={false}
-                      className="h-[360px] w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]"
-                    />
-                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black/45 to-transparent" />
-                    <span className="absolute bottom-3 left-3 rounded-full bg-black/50 px-3 py-1 text-xs font-semibold text-white/95 backdrop-blur-sm md:text-sm">
-                      {tutor.score}
-                    </span>
-                    <div className="pointer-events-none absolute inset-0 flex items-end bg-gradient-to-t from-[#07142c]/85 via-[#07142c]/45 to-transparent opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100">
-                      <div className="w-full translate-y-4 px-4 pb-4 text-white transition-transform duration-300 ease-out group-hover:translate-y-0">
-                        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-white/85 md:text-[11px]">
-                          Trình độ
-                        </p>
-                        <p className="mt-1 text-sm font-bold leading-snug md:text-base">
-                          {tutor.qualification}
-                        </p>
-                        <p className="mt-3 text-xs font-semibold uppercase tracking-[0.08em] text-white/85 md:text-[11px]">
-                          Bằng cấp
-                        </p>
-                        <p className="mt-1 text-xs leading-5 text-white/95 md:text-sm">
-                          {tutor.certificates.join(" • ")}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <h3 className="mt-4 text-[26px] font-bold leading-tight text-[#2a2f3d] md:text-[30px]">
-                    {tutor.name}
-                  </h3>
-                  <p className="mt-2 text-sm leading-7 text-[#667085] md:text-base">
-                    {tutor.role}
-                  </p>
-                </article>
-              );
-            })}
-          </div>
-          <div className="pointer-events-none absolute bottom-0 left-0 top-0 w-10 bg-gradient-to-r from-[#f6f4ef] to-transparent md:w-16" />
-          <div className="pointer-events-none absolute bottom-0 right-0 top-0 w-10 bg-gradient-to-l from-[#f6f4ef] to-transparent md:w-16" />
-        </div>
-        <p className="mt-4 text-center text-sm font-medium text-[#6c7484] md:text-base">
-          Nhấn giữ và Kéo ngang để xem thêm gia sư
-        </p>
-      </div>
-    </section>
-  );
-}
-
 
 function AboutAndProcessSection({
   onOpenSignup,
@@ -1962,151 +1658,6 @@ function AboutAndProcessSection({
   );
 }
 
-function CountingSection() {
-  const [inView, setInView] = useState(false);
-  const sectionRef = useRef<HTMLElement | null>(null);
-
-  useEffect(() => {
-    const node = sectionRef.current;
-    if (!node) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setInView(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.25 }
-    );
-
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
-
-  const stats = [
-    {
-      id: 1,
-      kind: "number" as const,
-      value: 5000,
-      suffix: "+",
-      label: "GIA SƯ UY TÍN",
-      cardClass: "bg-white text-[#0f318f]",
-      labelClass: "text-[#434854]",
-    },
-    {
-      id: 2,
-      kind: "number" as const,
-      value: 98,
-      suffix: "%",
-      label: "HỌC SINH TIẾN BỘ",
-      cardClass: "bg-[#0b2f97] text-white",
-      labelClass: "text-white/90",
-    },
-    {
-      id: 3,
-      kind: "number" as const,
-      value: 12,
-      suffix: "+",
-      label: "NĂM KINH NGHIỆM",
-      cardClass: "bg-white text-[#0f318f]",
-      labelClass: "text-[#434854]",
-    },
-    {
-      id: 4,
-      kind: "text" as const,
-      value: "TPHCM",
-      label: "PHẠM VI HOẠT ĐỘNG",
-      cardClass: "bg-[#c6d5f2] text-[#5c6a86]",
-      labelClass: "text-[#5c6a86]",
-    },
-  ];
-
-  return (
-    <section
-      ref={sectionRef}
-      className="relative w-full overflow-hidden bg-[linear-gradient(180deg,#f8fbff_0%,#eef3ff_38%,#e9eef8_100%)] px-4 py-16 md:px-6 md:py-24"
-    >
-      <div className="pointer-events-none absolute -left-24 top-20 h-60 w-60 rounded-full bg-[#85a9ff]/25 blur-3xl" />
-      <div className="pointer-events-none absolute -right-28 bottom-16 h-72 w-72 rounded-full bg-[#7ec9ff]/25 blur-3xl" />
-
-      <div className="mx-auto grid w-full max-w-6xl items-center gap-8 lg:grid-cols-2 lg:gap-16">
-        <div
-          className={`transition-all duration-700 ${
-            inView ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"
-          } ${beVietnamPro.className}`}
-        >
-          <p className="mb-3 text-sm font-semibold tracking-[0.08em] text-[#6c7ea4] md:text-base">
-            Thành tựu Song Nguyen Education
-          </p>
-          <h2 className="max-w-[18ch] text-3xl font-extrabold leading-[1.12] text-[#112a68] max-[360px]:text-[26px] md:text-5xl">
-            Số liệu biết nói, minh chứng cho chất lượng đào tạo.
-          </h2>
-          <p className="mt-5 max-w-[42ch] text-base font-medium leading-8 text-[#4b5873] md:text-lg">
-            Chúng tôi tập trung vào kết quả thực tế: nâng cao năng lực học tập,
-            xây dựng tư duy và tạo hành trình tiến bộ bền vững cho từng học viên.
-          </p>
-
-          <div className="mt-8 grid grid-cols-2 gap-3 sm:gap-5">
-            {stats.map((item, idx) => (
-              <article
-                key={item.id}
-                className={`group flex min-h-[140px] sm:min-h-[200px] flex-col justify-center rounded-[20px] sm:rounded-[24px] border border-white/60 p-4 sm:p-8 shadow-[0_16px_40px_rgba(15,34,91,0.08)] transition-all duration-700 hover:-translate-y-1 hover:shadow-[0_24px_55px_rgba(15,34,91,0.16)] ${
-                  inView ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
-                } ${item.cardClass}`}
-                style={{ transitionDelay: `${120 + idx * 110}ms` }}
-              >
-                <h3 className="text-3xl sm:text-5xl font-extrabold tracking-tight md:text-6xl">
-                  {item.kind === "number" ? (
-                    <CountUpValue value={item.value} suffix={item.suffix} start={inView} />
-                  ) : (
-                    item.value
-                  )}
-                </h3>
-                <p
-                  className={`mt-2 sm:mt-5 max-w-[11ch] text-[13px] sm:text-2xl font-bold uppercase leading-tight tracking-[0.08em] transition-all duration-700 md:text-3xl ${
-                    inView ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"
-                  } ${item.labelClass}`}
-                  style={{ transitionDelay: `${220 + idx * 110}ms` }}
-                >
-                  {item.label}
-                </p>
-              </article>
-            ))}
-          </div>
-        </div>
-
-        <div
-          className={`relative mx-auto w-full max-w-[520px] flex flex-col items-center transition-all duration-700 ${
-            inView ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"
-          }`}
-          style={{ transitionDelay: "180ms" }}
-        >
-          <div className="relative overflow-hidden rounded-[34px] bg-[#dce7ff] p-3 shadow-[0_24px_60px_rgba(14,39,111,0.22)] w-full">
-            <Image
-              src={statsMainImage}
-              alt="Học viên trong lớp học"
-              className="h-[480px] w-full rounded-[26px] object-cover transition-transform duration-700 hover:scale-[1.03]"
-            />
-            <div className="pointer-events-none absolute inset-x-3 bottom-3 h-32 rounded-b-[26px] bg-gradient-to-t from-[#0b2f97]/55 to-transparent" />
-          </div>
-
-          <div className="absolute -bottom-4 left-0 w-[60%] overflow-hidden rounded-[20px] border border-white/70 bg-white/85 p-2 shadow-[0_18px_36px_rgba(15,34,91,0.18)] backdrop-blur-md md:-bottom-7 md:-left-7 md:w-[46%]">
-            <Image
-              src={statsSubImage}
-              alt="Gia sư hướng dẫn học viên"
-              className="h-36 w-full rounded-[14px] object-cover"
-            />
-            <p className="px-2 pb-1 pt-3 text-xs font-semibold uppercase tracking-[0.12em] text-[#29417b] md:text-sm">
-              Lộ Trình Cá Nhân Hóa
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 function ProjectFooter() {
   const [expandedCities, setExpandedCities] = useState<Record<string, boolean>>({
     hcm: false,
@@ -2176,13 +1727,17 @@ function ProjectFooter() {
             <div className="flex items-center gap-3">
               {/* Logo và tên */}
               {/* Nếu cần import logoImage thì bổ sung ở đầu file */}
-              <Image
-                src={logoImage}
-                alt="Song Nguyen Education"
-                width={62}
-                height={62}
-                className="h-14 w-14 rounded-full object-cover"
-              />
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/20 bg-white p-1 shadow-[0_8px_24px_rgba(0,0,0,0.22)]">
+                <Image
+                  src={logoImage}
+                  alt="Logo Song Nguyen Education"
+                  width={64}
+                  height={64}
+                  loading="eager"
+                  sizes="64px"
+                  className="h-full w-full object-contain"
+                />
+              </div>
               <div>
                 <p className="text-xl font-black uppercase tracking-[0.06em] text-white">Song Nguyen Education</p>
                 <p className="mt-1 text-sm font-medium text-[#9fb6e6]">Trung tâm đào tạo năng lực học thuật & kỹ năng học tập</p>
@@ -2290,48 +1845,5 @@ function ProjectFooter() {
         </div>
       </div>
     </footer>
-  );
-}
-
-function CountUpValue({
-  value,
-  suffix,
-  start,
-}: {
-  value: number;
-  suffix: string;
-  start: boolean;
-}) {
-  const [displayValue, setDisplayValue] = useState(0);
-
-  useEffect(() => {
-    if (!start) {
-      setDisplayValue(0);
-      return;
-    }
-
-    const duration = 1500;
-    const startTime = performance.now();
-    let frame = 0;
-
-    const tick = (now: number) => {
-      const progress = Math.min((now - startTime) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setDisplayValue(Math.round(value * eased));
-
-      if (progress < 1) {
-        frame = requestAnimationFrame(tick);
-      }
-    };
-
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [start, value]);
-
-  return (
-    <span>
-      {displayValue}
-      {suffix}
-    </span>
   );
 }

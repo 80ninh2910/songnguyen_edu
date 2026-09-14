@@ -46,6 +46,7 @@ import {
   resetTutorPasswordHandler,
   updateCenterTeacherHandler,
   updateClassHandler,
+  updateTutorActivityStatusHandler,
   updateTutorHandler,
 } from "./admin.handler.js";
 import {
@@ -75,6 +76,7 @@ import {
   SessionIdParamSchema,
   UpdateAdminAccountBodySchema,
   UpdateCenterTeacherBodySchema,
+  UpdateTutorActivityStatusBodySchema,
   UpdateTutorBodySchema,
   UpdateClassBodySchema,
 } from "./admin.schema.js";
@@ -275,6 +277,29 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
       },
     },
     resetTutorPasswordHandler,
+  );
+
+  app.patch(
+    "/tutors/:id/activity-status",
+    {
+      preHandler: requireAdmin,
+      schema: {
+        tags: ["Admin"],
+        summary: "Activate or deactivate a freelance/training tutor",
+        security: [{ bearerAuth: [] }],
+        params: fromZodSchema(IdParamSchema),
+        body: fromZodSchema(UpdateTutorActivityStatusBodySchema),
+        response: {
+          200: successSchema(anyDataSchema),
+          400: errorResponseSchema,
+          401: errorResponseSchema,
+          403: errorResponseSchema,
+          404: errorResponseSchema,
+          409: errorResponseSchema,
+        },
+      },
+    },
+    updateTutorActivityStatusHandler,
   );
 
   app.patch(

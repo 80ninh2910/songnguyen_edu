@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
+import { apiRequestWithAuth } from '@/lib/api';
 
 export default function TutorLayoutWrapper({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -22,6 +23,29 @@ export default function TutorLayoutWrapper({ children }: { children: React.React
       // Ignore malformed session state.
     }
   }, [pathname]);
+
+  useEffect(() => {
+    const checkSession = () => {
+      void apiRequestWithAuth<{ user: unknown }>('/auth/me').catch(() => undefined);
+    };
+
+    const checkVisibleSession = () => {
+      if (document.visibilityState === 'visible') {
+        checkSession();
+      }
+    };
+
+    checkSession();
+    const intervalId = window.setInterval(checkSession, 15_000);
+    window.addEventListener('focus', checkSession);
+    document.addEventListener('visibilitychange', checkVisibleSession);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', checkSession);
+      document.removeEventListener('visibilitychange', checkVisibleSession);
+    };
+  }, []);
 
   return (
     <div className="layout">

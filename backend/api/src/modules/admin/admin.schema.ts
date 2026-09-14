@@ -42,17 +42,22 @@ export const MemberIdParamSchema = z.object({
   memberId: z.string().uuid(),
 });
 
-export const CreateSessionBodySchema = z.object({
-  sessionDate: z.coerce.date(),
-  startTime: z.string().trim().min(1).optional(),
-  endTime: z.string().trim().min(1).optional(),
-  topic: z.string().trim().min(1).optional(),
-  notes: z.string().trim().min(1).optional(),
-  tutorId: z.string().uuid().optional(),
-});
+export const CreateSessionBodySchema = z
+  .object({
+    sessionDate: z.coerce.date(),
+    startTime: z.string().trim().regex(/^\d{2}:\d{2}$/, "Giờ bắt đầu không hợp lệ"),
+    endTime: z.string().trim().regex(/^\d{2}:\d{2}$/, "Giờ kết thúc không hợp lệ"),
+    topic: z.string().trim().min(3, "Chủ đề phải có ít nhất 3 ký tự").max(200),
+    notes: z.string().trim().max(1000).optional(),
+    tutorId: z.string().uuid().optional(),
+  })
+  .refine((value) => value.endTime > value.startTime, {
+    message: "Giờ kết thúc phải sau giờ bắt đầu",
+    path: ["endTime"],
+  });
 
 export const AdminListTutorsQuerySchema = PaginationQuerySchema.extend({
-  status: z.enum(["PENDING", "APPROVED", "REJECTED"]).optional(),
+  status: z.enum(["PENDING", "APPROVED", "REJECTED", "INACTIVE"]).optional(),
   search: z.string().trim().min(1).optional(),
   phone: z.string().trim().min(3).optional(),
   subject: z.string().trim().min(1).optional(),
@@ -83,7 +88,7 @@ const TutorDistrictsSchema = z
 export const CreateTutorBodySchema = z.object({
   fullName: z.string().trim().min(3).max(200),
   email: z.string().trim().email().max(200),
-  phone: z.string().trim().min(3).max(30).optional(),
+  phone: z.string().trim().min(9, "Số điện thoại phải có ít nhất 9 ký tự").max(30),
   subjects: TutorSubjectsSchema,
   districts: TutorDistrictsSchema,
   tutorType: z.enum(["GIA_SU_TU_DO", "GIA_SU_DAO_TAO"]).optional(),
@@ -92,7 +97,7 @@ export const CreateTutorBodySchema = z.object({
 export const CreateCenterTeacherBodySchema = z.object({
   fullName: z.string().trim().min(3).max(200),
   email: z.string().trim().email().max(200),
-  phone: z.string().trim().min(3).max(30).optional(),
+  phone: z.string().trim().min(9, "Số điện thoại phải có ít nhất 9 ký tự").max(30),
   subjects: TutorSubjectsSchema,
   districts: TutorDistrictsSchema,
   status: z.enum(["ACTIVE", "INACTIVE"]).optional(),
@@ -124,6 +129,10 @@ export const UpdateCenterTeacherBodySchema = z
     message: "At least one field is required",
   });
 
+export const UpdateTutorActivityStatusBodySchema = z.object({
+  status: z.enum(["ACTIVE", "INACTIVE"]),
+});
+
 export const RejectTutorBodySchema = z.object({
   reason: z.string().trim().min(3).max(500),
 });
@@ -143,13 +152,20 @@ export const AdminListClassRequestsQuerySchema = PaginationQuerySchema.extend({
     .optional(),
 });
 
-export const ConvertRequestBodySchema = z.object({
-  title: z.string().trim().min(3).max(200).optional(),
-  feePerHour: z.number().int().positive().optional(),
-  schedule: z.string().trim().min(3).max(200).optional(),
-  centerTeacherId: z.string().uuid().optional(),
-  classId: z.string().uuid().optional(),
-});
+export const ConvertRequestBodySchema = z
+  .object({
+    title: z.string().trim().min(3).max(200).optional(),
+    feePerHour: z.number().int().positive().optional(),
+    schedule: z.string().trim().min(1, "Lịch học là bắt buộc").max(200).optional(),
+    centerTeacherId: z.string().uuid().optional(),
+    classId: z.string().uuid().optional(),
+  })
+  .refine(
+    (value) =>
+      Boolean(value.classId) ||
+      Boolean(value.title && value.feePerHour && value.schedule),
+    { message: "Cần chọn lớp trung tâm hoặc nhập đủ tiêu đề, học phí và lịch học" },
+  );
 
 export const RejectRequestBodySchema = z.object({
   reason: z.string().trim().min(3).max(500),
@@ -170,7 +186,7 @@ export const CreateClassBodySchema = z.object({
   grade: z.string().trim().min(1).max(100),
   district: z.string().trim().min(1).max(100),
   feePerHour: z.number().int().positive(),
-  schedule: z.string().trim().min(3).max(200).optional(),
+  schedule: z.string().trim().min(3, "Lịch học là bắt buộc").max(200),
   sourceRequestId: z.string().uuid().optional(),
   classType: z
     .enum(["LOP_GIA_SU_TU_DO", "LOP_GIA_SU_DAO_TAO", "LOP_TRUNG_TAM"])
@@ -218,7 +234,7 @@ export const UpdateClassBodySchema = z
         "ANY",
       ])
       .optional(),
-    centerTeacherId: z.string().uuid().optional(),
+    centerTeacherId: z.string().uuid().nullable().optional(),
   })
   .refine((value) => Object.keys(value).length > 0, {
     message: "At least one field is required",

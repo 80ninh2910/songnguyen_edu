@@ -9,6 +9,8 @@ import {
   createAdminCenterTeacher,
   listAdminCenterTeachers,
   listAdminTutors,
+  updateAdminCenterTeacher,
+  updateAdminTutorActivityStatus,
   type AdminCenterTeacherSummary,
   type AdminCenterTeacherStatus,
   type AdminTutorStatus,
@@ -39,6 +41,7 @@ const STATUS_META: Record<
   APPROVED: { label: "ĐÃ DUYỆT", tone: "approved", dotColor: "#0058be" },
   PENDING: { label: "CHỜ DUYỆT", tone: "pending", dotColor: "#924700" },
   REJECTED: { label: "TỪ CHỐI", tone: "rejected", dotColor: "#ba1a1a" },
+  INACTIVE: { label: "TẠM DỪNG", tone: "rejected", dotColor: "#ba1a1a" },
 };
 
 const CENTER_TEACHER_STATUS_META: Record<
@@ -176,9 +179,15 @@ export default function TutorsPage() {
   const [tutorTypeFilter, setTutorTypeFilter] = useState("all");
 
   const [records, setRecords] = useState<AdminTutorSummary[]>([]);
+  const [updatingTutorId, setUpdatingTutorId] = useState<string | null>(null);
+  const [tutorStatusMessage, setTutorStatusMessage] = useState<string | null>(null);
   const [centerTeachers, setCenterTeachers] = useState<AdminCenterTeacherSummary[]>([]);
   const [centerTeachersLoading, setCenterTeachersLoading] = useState(false);
+  const [updatingCenterTeacherId, setUpdatingCenterTeacherId] = useState<
+    string | null
+  >(null);
   const [centerTeachersError, setCenterTeachersError] = useState<string | null>(null);
+  const [centerTeachersMessage, setCenterTeachersMessage] = useState<string | null>(null);
   const [meta, setMeta] = useState({
     page: 1,
     limit: PAGE_SIZE,
@@ -421,6 +430,78 @@ export default function TutorsPage() {
     setIsCreateTeacherOpen(true);
   };
 
+  const handleCenterTeacherStatusChange = async (
+    teacher: AdminCenterTeacherSummary,
+    status: AdminCenterTeacherStatus,
+  ) => {
+    if (status === teacher.status || updatingCenterTeacherId) return;
+
+    setUpdatingCenterTeacherId(teacher.id);
+    setCenterTeachersError(null);
+    setCenterTeachersMessage(null);
+
+    try {
+      const updated = await updateAdminCenterTeacher(teacher.id, { status });
+      setCenterTeachers((current) =>
+        current.map((item) => (item.id === updated.id ? updated : item)),
+      );
+      setCenterTeachersMessage(
+        `${teacher.fullName} đã được chuyển sang ${
+          status === "ACTIVE" ? "đang hoạt động" : "tạm dừng"
+        }.`,
+      );
+    } catch (err) {
+      setCenterTeachersError(
+        err instanceof Error
+          ? err.message
+          : "Không thể cập nhật trạng thái giáo viên trung tâm.",
+      );
+    } finally {
+      setUpdatingCenterTeacherId(null);
+    }
+  };
+
+  const handleTutorActivityStatusChange = async (
+    tutor: AdminTutorSummary,
+    activityStatus: "ACTIVE" | "INACTIVE",
+  ) => {
+    const currentActivityStatus = tutor.status === "APPROVED" ? "ACTIVE" : "INACTIVE";
+    if (activityStatus === currentActivityStatus || updatingTutorId) return;
+
+    if (
+      activityStatus === "INACTIVE" &&
+      !window.confirm(
+        `Tạm dừng ${tutor.fullName}? Tài khoản sẽ bị khóa và các phiên đang đăng nhập sẽ kết thúc.`,
+      )
+    ) {
+      return;
+    }
+
+    setUpdatingTutorId(tutor.id);
+    setError(null);
+    setTutorStatusMessage(null);
+
+    try {
+      const updated = await updateAdminTutorActivityStatus(tutor.id, activityStatus);
+      setRecords((current) =>
+        current.map((item) => (item.id === updated.id ? updated : item)),
+      );
+      setTutorStatusMessage(
+        `${tutor.fullName} đã được chuyển sang ${
+          activityStatus === "ACTIVE" ? "đang hoạt động" : "tạm dừng"
+        }.`,
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Không thể cập nhật trạng thái hoạt động của gia sư.",
+      );
+    } finally {
+      setUpdatingTutorId(null);
+    }
+  };
+
   const handleCloseCreateTeacher = () => {
     if (createTeacherLoading) return;
     setIsCreateTeacherOpen(false);
@@ -437,8 +518,18 @@ export default function TutorsPage() {
     const subjects = parseCsv(createTeacherForm.subjects);
     const districts = createTeacherForm.districts;
 
-    if (!fullName || !email) {
-      setCreateTeacherError("Vui lòng nhập họ tên và email.");
+    if (fullName.length < 3) {
+      setCreateTeacherError("Họ tên phải có ít nhất 3 ký tự.");
+      return;
+    }
+
+    if (!email) {
+      setCreateTeacherError("Email là trường bắt buộc.");
+      return;
+    }
+
+    if (phone.length < 9) {
+      setCreateTeacherError("Số điện thoại phải có ít nhất 9 ký tự.");
       return;
     }
 
@@ -454,7 +545,7 @@ export default function TutorsPage() {
       await createAdminCenterTeacher({
         fullName,
         email,
-        phone: phone || undefined,
+        phone,
         subjects,
         districts,
         status: createTeacherForm.status,
@@ -515,6 +606,12 @@ export default function TutorsPage() {
         </div>
       ) : null}
 
+      {tutorStatusMessage ? (
+        <div className="admin-panel" style={{ marginBottom: "1rem" }}>
+          <p style={{ margin: 0, color: "#166534" }}>{tutorStatusMessage}</p>
+        </div>
+      ) : null}
+
       <section className="tutors-top-grid">
         <div className="tutors-stats-grid">
           {STAT_CARDS.map((item) => (
@@ -556,6 +653,7 @@ export default function TutorsPage() {
                 <option value="APPROVED">Đang hoạt động</option>
                 <option value="PENDING">Chờ duyệt hồ sơ</option>
                 <option value="REJECTED">Đã từ chối</option>
+                <option value="INACTIVE">Tạm dừng</option>
               </select>
             </label>
 
@@ -676,11 +774,37 @@ export default function TutorsPage() {
 
                 <td>{record.districts.join(", ")}</td>
                 <td>
-                  <AdminStatusBadge
-                    label={STATUS_META[record.status].label}
-                    tone={STATUS_META[record.status].tone}
-                    dotColor={STATUS_META[record.status].dotColor}
-                  />
+                  <div
+                    onClick={(event) => event.stopPropagation()}
+                    onKeyDown={(event) => event.stopPropagation()}
+                    style={{ display: "grid", gap: "0.45rem" }}
+                  >
+                    <AdminStatusBadge
+                      label={STATUS_META[record.status].label}
+                      tone={STATUS_META[record.status].tone}
+                      dotColor={STATUS_META[record.status].dotColor}
+                    />
+                    {(record.tutorType === "GIA_SU_TU_DO" ||
+                      record.tutorType === "GIA_SU_DAO_TAO") &&
+                    (record.status === "APPROVED" || record.status === "INACTIVE") ? (
+                      <select
+                        aria-label={`Trạng thái hoạt động của ${record.fullName}`}
+                        className="tutors-select"
+                        disabled={updatingTutorId !== null}
+                        onChange={(event) =>
+                          void handleTutorActivityStatusChange(
+                            record,
+                            event.target.value as "ACTIVE" | "INACTIVE",
+                          )
+                        }
+                        style={{ minWidth: "9.5rem" }}
+                        value={record.status === "APPROVED" ? "ACTIVE" : "INACTIVE"}
+                      >
+                        <option value="ACTIVE">Đang hoạt động</option>
+                        <option value="INACTIVE">Tạm dừng</option>
+                      </select>
+                    ) : null}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -802,6 +926,12 @@ export default function TutorsPage() {
           </p>
         ) : null}
 
+        {centerTeachersMessage ? (
+          <p style={{ marginBottom: "1rem", color: "#166534" }}>
+            {centerTeachersMessage}
+          </p>
+        ) : null}
+
         <div className="admin-table-wrap">
           <table className="admin-table">
             <thead>
@@ -844,11 +974,29 @@ export default function TutorsPage() {
                     </td>
                     <td>{teacher.districts.join(", ")}</td>
                     <td>
-                      <AdminStatusBadge
-                        label={CENTER_TEACHER_STATUS_META[teacher.status].label}
-                        tone={CENTER_TEACHER_STATUS_META[teacher.status].tone}
-                        dotColor={CENTER_TEACHER_STATUS_META[teacher.status].dotColor}
-                      />
+                      <div style={{ display: "grid", gap: "0.45rem" }}>
+                        <AdminStatusBadge
+                          label={CENTER_TEACHER_STATUS_META[teacher.status].label}
+                          tone={CENTER_TEACHER_STATUS_META[teacher.status].tone}
+                          dotColor={CENTER_TEACHER_STATUS_META[teacher.status].dotColor}
+                        />
+                        <select
+                          aria-label={`Trạng thái hoạt động của ${teacher.fullName}`}
+                          className="tutors-select"
+                          disabled={updatingCenterTeacherId !== null}
+                          onChange={(event) =>
+                            void handleCenterTeacherStatusChange(
+                              teacher,
+                              event.target.value as AdminCenterTeacherStatus,
+                            )
+                          }
+                          style={{ minWidth: "9.5rem" }}
+                          value={teacher.status}
+                        >
+                          <option value="ACTIVE">Đang hoạt động</option>
+                          <option value="INACTIVE">Tạm dừng</option>
+                        </select>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -881,6 +1029,9 @@ export default function TutorsPage() {
                   <input
                     type="text"
                     value={createTeacherForm.fullName}
+                    minLength={3}
+                    maxLength={200}
+                    required
                     onChange={(event) =>
                       setCreateTeacherForm((prev) => ({
                         ...prev,
@@ -894,6 +1045,8 @@ export default function TutorsPage() {
                   <input
                     type="email"
                     value={createTeacherForm.email}
+                    maxLength={200}
+                    required
                     onChange={(event) =>
                       setCreateTeacherForm((prev) => ({
                         ...prev,
@@ -905,8 +1058,11 @@ export default function TutorsPage() {
                 <label className="admin-dialog-field">
                   Số điện thoại
                   <input
-                    type="text"
+                    type="tel"
                     value={createTeacherForm.phone}
+                    minLength={9}
+                    maxLength={30}
+                    required
                     onChange={(event) =>
                       setCreateTeacherForm((prev) => ({
                         ...prev,
@@ -935,6 +1091,8 @@ export default function TutorsPage() {
                   <input
                     type="text"
                     value={createTeacherForm.subjects}
+                    minLength={1}
+                    required
                     onChange={(event) =>
                       setCreateTeacherForm((prev) => ({
                         ...prev,

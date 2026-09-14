@@ -36,11 +36,13 @@ function refreshTokenKey(refreshToken: string): string {
 async function createSession(
   app: FastifyInstance,
   user: AuthUser,
+  sessionVersion?: number,
 ): Promise<AuthSession> {
   const basePayload = {
     sub: user.id,
     role: user.role,
     email: user.email,
+    ...(user.role === "TUTOR" ? { sessionVersion: sessionVersion ?? 0 } : {}),
   };
 
   const accessToken = app.jwt.sign(
@@ -125,6 +127,14 @@ export const authService = {
       );
     }
 
+    if (tutor.status === "INACTIVE") {
+      throw new AppError(
+        "TUTOR_ACCOUNT_INACTIVE",
+        403,
+        "Tài khoản gia sư đã bị khóa. Vui lòng liên hệ quản trị viên",
+      );
+    }
+
     if (tutor.status !== "APPROVED") {
       throw new AppError(
         "TUTOR_NOT_APPROVED",
@@ -143,13 +153,17 @@ export const authService = {
       );
     }
 
-    return createSession(app, {
-      id: tutor.id,
-      role: "TUTOR",
-      email: tutor.email,
-      fullName: tutor.fullName,
-      mustChangePassword: tutor.mustChangePassword ?? false,
-    });
+    return createSession(
+      app,
+      {
+        id: tutor.id,
+        role: "TUTOR",
+        email: tutor.email,
+        fullName: tutor.fullName,
+        mustChangePassword: tutor.mustChangePassword ?? false,
+      },
+      tutor.sessionVersion,
+    );
   },
 
   async refreshAccessToken(
@@ -176,6 +190,29 @@ export const authService = {
           "INVALID_REFRESH_TOKEN",
           401,
           "Phiên đăng nhập không hợp lệ hoặc đã hết hạn",
+        );
+      }
+    }
+
+    if (payload.role === "TUTOR") {
+      const tutor = await prisma.tutor.findUnique({
+        where: { id: payload.sub },
+        select: { status: true, sessionVersion: true },
+      });
+
+      if (!tutor || tutor.status !== "APPROVED") {
+        throw new AppError(
+          "TUTOR_ACCOUNT_INACTIVE",
+          401,
+          "Tài khoản gia sư đã bị khóa. Vui lòng liên hệ quản trị viên",
+        );
+      }
+
+      if (tutor.sessionVersion !== (payload.sessionVersion ?? 0)) {
+        throw new AppError(
+          "TUTOR_SESSION_REVOKED",
+          401,
+          "Phiên đăng nhập đã kết thúc. Vui lòng đăng nhập lại",
         );
       }
     }
@@ -224,6 +261,22 @@ export const authService = {
 
     if (!tutor) {
       return null;
+    }
+
+    if (tutor.status !== "APPROVED") {
+      throw new AppError(
+        "TUTOR_ACCOUNT_INACTIVE",
+        401,
+        "Tài khoản gia sư đã bị khóa. Vui lòng liên hệ quản trị viên",
+      );
+    }
+
+    if (tutor.sessionVersion !== (payload.sessionVersion ?? 0)) {
+      throw new AppError(
+        "TUTOR_SESSION_REVOKED",
+        401,
+        "Phiên đăng nhập đã kết thúc. Vui lòng đăng nhập lại",
+      );
     }
 
     return {

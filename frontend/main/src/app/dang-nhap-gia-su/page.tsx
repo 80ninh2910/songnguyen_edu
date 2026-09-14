@@ -60,6 +60,11 @@ export default function LoginPage() {
   return (
     <div className="login-page">
         <div className="login-card">
+          <Link href="/" className="home-link" aria-label="Về trang chủ">
+            <i className="fas fa-arrow-left" aria-hidden="true"></i>
+            Về trang chủ
+          </Link>
+
           {/* Header */}
           <div className="login-header">
             <h1>Đăng nhập dành cho Gia sư</h1>

@@ -65,7 +65,7 @@ export type AdminLoginResponse = {
   };
 };
 
-export type AdminTutorStatus = "PENDING" | "APPROVED" | "REJECTED";
+export type AdminTutorStatus = "PENDING" | "APPROVED" | "REJECTED" | "INACTIVE";
 
 export type AdminTutorSummary = {
   id: string;
@@ -647,7 +647,20 @@ export async function convertAdminClassRequest(
   });
 
   if (!response.ok) {
-    throw new Error("Không thể tạo lớp từ yêu cầu này.");
+    const errorPayload = await parseJson<{
+      error?: {
+        message?: string;
+        details?: Array<{ message?: string }>;
+      };
+    }>(response).catch(() => null);
+    const validationMessage = errorPayload?.error?.details?.find(
+      (detail) => detail.message,
+    )?.message;
+    throw new Error(
+      validationMessage ??
+        errorPayload?.error?.message ??
+        "Không thể tạo lớp từ yêu cầu này.",
+    );
   }
 
   const data =
@@ -766,7 +779,7 @@ export async function createAdminClass(payload: {
   sourceRequestId?: string;
   classType?: AdminClassType;
   tutorType?: AdminTutorType;
-  centerTeacherId?: string | null;
+  centerTeacherId?: string;
   members?: AdminClassMemberInput[];
 }): Promise<{ id: string }> {
   const response = await adminFetch("/admin/classes", {
@@ -865,6 +878,28 @@ export async function updateAdminTutor(
       throw new Error("Email gia sư đã tồn tại.");
     }
     throw new Error("Không thể cập nhật hồ sơ gia sư.");
+  }
+
+  const data = await parseJson<ApiSuccess<AdminTutorDetail>>(response);
+  return data.data;
+}
+
+export async function updateAdminTutorActivityStatus(
+  id: string,
+  status: "ACTIVE" | "INACTIVE",
+): Promise<AdminTutorDetail> {
+  const response = await adminFetch(`/admin/tutors/${id}/activity-status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+
+  if (!response.ok) {
+    const payload = await parseJson<{ error?: { message?: string } }>(response).catch(
+      () => null,
+    );
+    throw new Error(
+      payload?.error?.message ?? "Không thể cập nhật trạng thái hoạt động của gia sư.",
+    );
   }
 
   const data = await parseJson<ApiSuccess<AdminTutorDetail>>(response);

@@ -3,6 +3,7 @@ import { Be_Vietnam_Pro } from "next/font/google";
 
 import styles from "./page.module.css";
 import statsMainImage from "@/components/assets/21.jpg";
+import TuitionPdfLauncher from "@/components/TuitionPdfLauncher";
 
 const beVietnamPro = Be_Vietnam_Pro({
   subsets: ["latin", "vietnamese"],
@@ -12,7 +13,7 @@ const beVietnamPro = Be_Vietnam_Pro({
 const tuitionPlans = [
   {
     level: "Tiểu học",
-    price: "150.000",
+    price: "140.000",
     unit: "VNĐ/buổi",
     bullets: [
       "Khởi động vững nền tảng học tập.",
@@ -22,7 +23,7 @@ const tuitionPlans = [
   },
   {
     level: "THCS (Cấp 2)",
-    price: "200.000",
+    price: "180.000",
     unit: "VNĐ/buổi",
     highlighted: true,
     bullets: [
@@ -33,7 +34,7 @@ const tuitionPlans = [
   },
   {
     level: "THPT (Cấp 3)",
-    price: "250.000",
+    price: "220.000",
     unit: "VNĐ/buổi",
     bullets: [
       "Luyện thi lớp 10, thi học kỳ và tốt nghiệp.",
@@ -56,6 +57,7 @@ export default function HocPhiPage() {
             Chúng tôi tin rằng mọi học sinh đều xứng đáng được tiếp cận nền giáo dục chất lượng cao.
             Bảng giá được thiết kế rõ ràng, minh bạch và phù hợp với từng giai đoạn học tập.
           </p>
+          <TuitionPdfLauncher />
         </section>
 
         <section className={styles.pricingGrid}>

@@ -44,13 +44,13 @@ const memberIdParamSchema = {
 
 const createSessionBodySchema = {
   type: "object",
-  required: ["sessionDate"],
+  required: ["sessionDate", "startTime", "endTime", "topic"],
   properties: {
     sessionDate: { type: "string", format: "date" },
-    startTime: { type: "string" },
-    endTime: { type: "string" },
-    topic: { type: "string" },
-    notes: { type: "string" },
+    startTime: { type: "string", pattern: "^\\d{2}:\\d{2}$" },
+    endTime: { type: "string", pattern: "^\\d{2}:\\d{2}$" },
+    topic: { type: "string", minLength: 3, maxLength: 200 },
+    notes: { type: "string", maxLength: 1000 },
   },
 };
 
@@ -137,6 +137,27 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
 
     if (!request.user || request.user.role !== "TUTOR") {
       throw new AppError("FORBIDDEN", 403, "Không có quyền truy cập");
+    }
+
+    const tutor = await prisma.tutor.findUnique({
+      where: { id: request.user.sub },
+      select: { status: true, sessionVersion: true },
+    });
+
+    if (!tutor || tutor.status !== "APPROVED") {
+      throw new AppError(
+        "TUTOR_ACCOUNT_INACTIVE",
+        401,
+        "Tài khoản gia sư đã bị khóa. Vui lòng liên hệ quản trị viên",
+      );
+    }
+
+    if (tutor.sessionVersion !== (request.user.sessionVersion ?? 0)) {
+      throw new AppError(
+        "TUTOR_SESSION_REVOKED",
+        401,
+        "Phiên đăng nhập đã kết thúc. Vui lòng đăng nhập lại",
+      );
     }
   };
 
@@ -805,11 +826,19 @@ export async function registerTutorRoutes(app: FastifyInstance): Promise<void> {
 
       const body = request.body as {
         sessionDate: string;
-        startTime?: string;
-        endTime?: string;
-        topic?: string;
+        startTime: string;
+        endTime: string;
+        topic: string;
         notes?: string;
       };
+
+      if (body.endTime <= body.startTime) {
+        throw new AppError(
+          "INVALID_SESSION_TIME",
+          400,
+          "Giờ kết thúc phải sau giờ bắt đầu",
+        );
+      }
 
       const sessionDate = parseSessionDate(body.sessionDate);
 

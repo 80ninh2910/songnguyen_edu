@@ -96,8 +96,18 @@ export function TutorForm({
     event.preventDefault();
     setError(null);
 
-    if (!values.fullName.trim() || !values.email.trim()) {
-      setError("Vui lòng nhập đầy đủ họ tên và email.");
+    if (values.fullName.trim().length < 3) {
+      setError("Họ tên phải có ít nhất 3 ký tự.");
+      return;
+    }
+
+    if (!values.email.trim()) {
+      setError("Email là trường bắt buộc.");
+      return;
+    }
+
+    if (values.phone.trim().length < 9) {
+      setError("Số điện thoại phải có ít nhất 9 ký tự.");
       return;
     }
 
@@ -112,7 +122,7 @@ export function TutorForm({
     await onSubmit({
       fullName: values.fullName.trim(),
       email: values.email.trim(),
-      phone: values.phone.trim() || undefined,
+      phone: values.phone.trim(),
       subjects,
       districts,
       tutorType: values.tutorType,
@@ -144,6 +154,8 @@ export function TutorForm({
             className="settings-input"
             id="tutor-fullName"
             onChange={handleChange("fullName")}
+            minLength={3}
+            maxLength={200}
             required
             type="text"
             value={values.fullName}
@@ -155,6 +167,7 @@ export function TutorForm({
             className="settings-input"
             id="tutor-email"
             onChange={handleChange("email")}
+            maxLength={200}
             required
             type="email"
             value={values.email}
@@ -167,6 +180,9 @@ export function TutorForm({
             id="tutor-phone"
             onChange={handleChange("phone")}
             placeholder="VD: 0901 234 567"
+            minLength={9}
+            maxLength={30}
+            required
             type="tel"
             value={values.phone}
           />

@@ -6,9 +6,9 @@ import { apiRequestWithAuth, getStoredAccessToken } from '@/lib/api';
 
 type CreateSessionPayload = {
   sessionDate: string;
-  startTime?: string;
-  endTime?: string;
-  topic?: string;
+  startTime: string;
+  endTime: string;
+  topic: string;
   notes?: string;
 };
 
@@ -46,17 +46,27 @@ export default function CreateSessionPage() {
       return;
     }
 
-    if (!form.sessionDate) {
-      setError('Vui lòng chọn ngày dạy.');
+    if (!form.sessionDate || !form.startTime || !form.endTime || !form.topic.trim()) {
+      setError('Vui lòng nhập đầy đủ ngày dạy, giờ bắt đầu, giờ kết thúc và chủ đề.');
+      return;
+    }
+
+    if (form.topic.trim().length < 3) {
+      setError('Chủ đề buổi học phải có ít nhất 3 ký tự.');
+      return;
+    }
+
+    if (form.endTime <= form.startTime) {
+      setError('Giờ kết thúc phải sau giờ bắt đầu.');
       return;
     }
 
     const payload: CreateSessionPayload = {
       sessionDate: form.sessionDate,
-      startTime: form.startTime || undefined,
-      endTime: form.endTime || undefined,
-      topic: form.topic || undefined,
-      notes: form.notes || undefined,
+      startTime: form.startTime,
+      endTime: form.endTime,
+      topic: form.topic.trim(),
+      notes: form.notes?.trim() || undefined,
     };
 
     setIsSubmitting(true);
@@ -109,6 +119,7 @@ export default function CreateSessionPage() {
               type="time"
               value={form.startTime}
               onChange={(event) => updateField('startTime', event.target.value)}
+              required
             />
           </div>
           <div className="session-form-field">
@@ -117,6 +128,7 @@ export default function CreateSessionPage() {
               type="time"
               value={form.endTime}
               onChange={(event) => updateField('endTime', event.target.value)}
+              required
             />
           </div>
           <div className="session-form-field session-form-field--full">
@@ -126,6 +138,9 @@ export default function CreateSessionPage() {
               value={form.topic}
               onChange={(event) => updateField('topic', event.target.value)}
               placeholder="Ví dụ: Chương 3 - Phương trình bậc 2"
+              minLength={3}
+              maxLength={200}
+              required
             />
           </div>
           <div className="session-form-field session-form-field--full">
@@ -135,6 +150,7 @@ export default function CreateSessionPage() {
               onChange={(event) => updateField('notes', event.target.value)}
               placeholder="Ghi chu nhanh ve muc tieu buoi hoc..."
               rows={4}
+              maxLength={1000}
             />
           </div>
         </div>
