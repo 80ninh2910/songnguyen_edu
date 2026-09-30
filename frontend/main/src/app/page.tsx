@@ -658,9 +658,7 @@ function ParentRegistrationForm({
     }
 
     const maxDays = studentForm.sessionsPerWeek
-      ? studentForm.sessionsPerWeek === "5"
-        ? 7
-        : Number(studentForm.sessionsPerWeek)
+      ? Number(studentForm.sessionsPerWeek)
       : 7;
     if (activeWeekdays.length >= maxDays) {
       alert(`Bạn chỉ có thể chọn tối đa ${maxDays} ngày theo số buổi mỗi tuần.`);
@@ -858,12 +856,23 @@ function ParentRegistrationForm({
                 <select
                   ref={subjectRef}
                   value={studentForm.subject}
-                  onChange={(e) => setStudentForm((prev) => ({ ...prev, subject: e.target.value }))}
+                  onChange={(e) => {
+                    const subject = e.target.value;
+                    setStudentForm((prev) => ({
+                      ...prev,
+                      subject,
+                      level: "",
+                      sessionsPerWeek: "",
+                      pricingPackage: "",
+                    }));
+                    setActiveWeekdays([]);
+                    setPreferredTimes({});
+                  }}
                   className={errorInputClass(!!errors.subject)}
                 >
                   <option value="">Môn học</option>
                   {subjectOptions.map((item) => (
-                    <option key={item} value={item}>{item}</option>
+                    <option key={item.value} value={item.value}>{item.label}</option>
                   ))}
                 </select>
                 <select
@@ -929,12 +938,21 @@ function ParentRegistrationForm({
                 <select
                   ref={levelRef}
                   value={studentForm.level}
-                  onChange={(e) => setStudentForm((prev) => ({ ...prev, level: e.target.value }))}
+                  onChange={(e) => {
+                    setStudentForm((prev) => ({
+                      ...prev,
+                      level: e.target.value,
+                      sessionsPerWeek: "",
+                      pricingPackage: "",
+                    }));
+                    setActiveWeekdays([]);
+                    setPreferredTimes({});
+                  }}
                   className={errorInputClass(!!errors.level)}
                 >
                   <option value="">Lớp / Cấp độ</option>
                   {levelOptions.map((item) => (
-                    <option key={item} value={item}>{item}</option>
+                    <option key={item.value} value={item.value}>{item.label}</option>
                   ))}
                 </select>
                 <select
@@ -955,20 +973,39 @@ function ParentRegistrationForm({
                   onChange={(e) => {
                     const val = e.target.value;
                     setStudentForm((prev) => ({ ...prev, sessionsPerWeek: val }));
-                    const maxDays = val ? (val === "5" ? 7 : Number(val)) : 7;
-                    setActiveWeekdays((prev) => prev.slice(0, maxDays));
+                    const maxDays = val ? Number(val) : 7;
+                    const remainingDays = activeWeekdays.slice(0, maxDays);
+                    setActiveWeekdays(remainingDays);
+                    setPreferredTimes((prev) =>
+                      Object.fromEntries(
+                        remainingDays.flatMap((day) => prev[day] ? [[day, prev[day]]] : []),
+                      ),
+                    );
                   }}
                   className={`${errorInputClass(!!errors.sessionsPerWeek)} lg:col-span-1`}
                 >
                   <option value="">Số buổi / tuần</option>
-                  <option value="1">1 buổi</option>
-                  <option value="2">2 buổi</option>
-                  <option value="3">3 buổi</option>
-                  <option value="4">4 buổi</option>
-                  <option value="5">5+ buổi</option>
+                  {sessionOptions.map((item) => (
+                    <option key={item.value} value={item.value}>{item.label}</option>
+                  ))}
                 </select>
+                {packageOptions.length > 0 && (
+                  <select
+                    ref={pricingPackageRef}
+                    value={studentForm.pricingPackage}
+                    onChange={(e) =>
+                      setStudentForm((prev) => ({ ...prev, pricingPackage: e.target.value }))
+                    }
+                    className={errorInputClass(!!errors.pricingPackage)}
+                  >
+                    <option value="">Gói học phí</option>
+                    {packageOptions.map((item) => (
+                      <option key={item.value} value={item.value}>{item.label}</option>
+                    ))}
+                  </select>
+                )}
               </div>
-              {(errors.phone || errors.subject || errors.location || errors.level || errors.studentCount || errors.sessionsPerWeek || errors.studentName || errors.parentName || errors.monthlyBudget) && (
+              {(errors.phone || errors.subject || errors.location || errors.level || errors.studentCount || errors.sessionsPerWeek || errors.pricingPackage || errors.studentName || errors.parentName) && (
                 <p className="mt-3 text-sm font-semibold text-[#cc1f1f]">Vui lòng điền đầy đủ thông tin học viên.</p>
               )}
             </div>
@@ -1051,33 +1088,60 @@ function ParentRegistrationForm({
                     </div>
 
                     <div
-                      ref={timeSlotsRef}
+                      ref={scheduleTimesRef}
                       tabIndex={-1}
-                      className={`mt-3 grid grid-cols-3 gap-2 focus:outline-none focus:ring-2 focus:ring-[#8ab4ff]/60 ${
+                      className={`mt-3 space-y-2 focus:outline-none focus:ring-2 focus:ring-[#8ab4ff]/60 ${
                         errors.timeSlots ? "rounded-xl border border-[#e44b4b] p-1" : ""
                       }`}
                     >
-                      {timeSlots.map((slot) => {
-                        const active = activeTimeSlots.includes(slot);
+                      {activeWeekdays.length === 0 ? (
+                        <p className="rounded-xl bg-[#edf3ff] px-3 py-2 text-sm font-semibold text-[#5870a3]">
+                          Chọn ngày học để nhập giờ bắt đầu và kết thúc.
+                        </p>
+                      ) : activeWeekdays.map((dayKey) => {
+                        const day = weekDays.find((item) => item.key === dayKey);
+                        const time = preferredTimes[dayKey] ?? { startTime: "", endTime: "" };
                         return (
-                          <button
-                            key={slot}
-                            type="button"
-                            onClick={() => toggleTimeSlot(slot)}
-                            className={`rounded-xl px-3 py-2 text-sm font-bold transition-all duration-300 max-[360px]:text-xs ${
-                              active
-                                ? "bg-[#1848b5] text-white shadow-[0_8px_18px_rgba(24,72,181,0.3)]"
-                                : "bg-[#edf3ff] text-[#365ca5] hover:bg-[#dfe9ff]"
-                            }`}
+                          <div
+                            key={dayKey}
+                            className="grid grid-cols-[72px_1fr_1fr] items-end gap-2 rounded-xl bg-[#edf3ff] p-2"
                           >
-                            {slot}
-                          </button>
+                            <span className="pb-3 text-sm font-bold text-[#365ca5]">{day?.label ?? dayKey}</span>
+                            <label className="text-xs font-semibold text-[#5870a3]">
+                              Bắt đầu
+                              <input
+                                type="time"
+                                value={time.startTime}
+                                onChange={(event) =>
+                                  setPreferredTimes((prev) => ({
+                                    ...prev,
+                                    [dayKey]: { ...time, startTime: event.target.value },
+                                  }))
+                                }
+                                className="mt-1 h-10 w-full rounded-lg border border-[#c8d7f2] bg-white px-2 text-sm text-[#243b72]"
+                              />
+                            </label>
+                            <label className="text-xs font-semibold text-[#5870a3]">
+                              Kết thúc
+                              <input
+                                type="time"
+                                value={time.endTime}
+                                onChange={(event) =>
+                                  setPreferredTimes((prev) => ({
+                                    ...prev,
+                                    [dayKey]: { ...time, endTime: event.target.value },
+                                  }))
+                                }
+                                className="mt-1 h-10 w-full rounded-lg border border-[#c8d7f2] bg-white px-2 text-sm text-[#243b72]"
+                              />
+                            </label>
+                          </div>
                         );
                       })}
                     </div>
 
                     <div className="mt-4 rounded-xl border border-[#d7e3f8] bg-[#f6f9ff] px-3 py-2 text-sm font-medium text-[#2a4b8c]">
-                      Đã chọn: {activeWeekdays.length} ngày, {activeTimeSlots.length} khung giờ
+                      Đã chọn: {activeWeekdays.length} ngày
                     </div>
                     {(errors.weekdays || errors.timeSlots) && (
                       <p className="mt-2 text-sm font-semibold text-[#cc1f1f]">Hãy chọn lịch học đầy đủ.</p>
