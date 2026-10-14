@@ -306,15 +306,15 @@ export default function FaqPage() {
           <aside className={styles.categoryCard}>
             <p className={styles.categoryTag}>Danh mục</p>
             <ul>
-              <li><a href="#faq-phu-huynh">Dành cho Phụ huynh &amp; Học sinh</a></li>
-              <li><a href="#faq-gia-su">Dành cho Gia sư</a></li>
-              <li><a href="#faq-ho-tro">Kỹ thuật, Bảo mật &amp; Hỗ trợ chung</a></li>
-              <li><a href="/hoc-phi">Tham khảo học phí</a></li>
+              <li><a className={styles.categoryLearner} href="#faq-phu-huynh">Dành cho Phụ huynh &amp; Học sinh</a></li>
+              <li><a className={styles.categoryTutor} href="#faq-gia-su">Dành cho Gia sư</a></li>
+              <li><a className={styles.categorySupport} href="#faq-ho-tro">Kỹ thuật, Bảo mật &amp; Hỗ trợ chung</a></li>
+              <li><a className={styles.categoryTuition} href="/hoc-phi">Tham khảo học phí</a></li>
             </ul>
           </aside>
 
           <div className={styles.faqColumns}>
-            <section id="faq-phu-huynh" className={styles.faqGroup}>
+            <section id="faq-phu-huynh" className={`${styles.faqGroup} ${styles.learnerGroup}`}>
               <h2>I. Dành cho Phụ huynh &amp; Học sinh</h2>
               {learnerFaqSections.map((section) => (
                 <div className={styles.faqSubsection} id={section.id} key={section.id}>
@@ -324,7 +324,7 @@ export default function FaqPage() {
               ))}
             </section>
 
-            <section id="faq-gia-su" className={styles.faqGroup}>
+            <section id="faq-gia-su" className={`${styles.faqGroup} ${styles.tutorGroup}`}>
               <h2>II. Dành cho Gia sư</h2>
               {tutorFaqSections.map((section) => (
                 <div className={styles.faqSubsection} id={section.id} key={section.id}>
@@ -334,7 +334,7 @@ export default function FaqPage() {
               ))}
             </section>
 
-            <section id="faq-ho-tro" className={styles.faqGroup}>
+            <section id="faq-ho-tro" className={`${styles.faqGroup} ${styles.supportGroup}`}>
               <h2>III. Kỹ thuật, Bảo mật &amp; Hỗ trợ chung</h2>
               {generalFaq.map((item) => <FaqDetails item={item} key={item.question} />)}
             </section>

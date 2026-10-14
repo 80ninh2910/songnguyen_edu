@@ -14,13 +14,14 @@
 .heroSection {
   position: relative;
   overflow: hidden;
-  border: 1px solid #d6deef;
+  border: 1px solid rgba(255, 255, 255, 0.28);
   border-radius: 24px;
   min-height: 240px;
   background:
-    linear-gradient(rgba(24, 42, 82, 0.35), rgba(24, 42, 82, 0.35)),
-    radial-gradient(circle at 78% 30%, rgba(255, 255, 255, 0.4), transparent 35%),
-    linear-gradient(135deg, #a5b5d5 0%, #c3cfdf 32%, #b4c2d8 58%, #d3dae6 100%);
+    radial-gradient(circle at 82% 24%, rgba(103, 232, 249, 0.34), transparent 32%),
+    radial-gradient(circle at 18% 92%, rgba(129, 140, 248, 0.3), transparent 38%),
+    linear-gradient(135deg, #172554 0%, #1d4ed8 52%, #0e7490 100%);
+  box-shadow: 0 18px 48px rgba(30, 64, 175, 0.18);
 }
 
 .heroOverlay {
@@ -56,11 +57,12 @@
 }
 
 .categoryCard {
-  border: 1px solid #d5dff4;
+  border: 1px solid #dbe4f2;
   border-radius: 16px;
-  background: #f8fbff;
+  background: rgba(255, 255, 255, 0.88);
   padding: 16px;
   scroll-margin-top: 100px;
+  box-shadow: 0 10px 30px rgba(30, 64, 175, 0.07);
 }
 
 .categoryTag {
@@ -82,15 +84,46 @@
 }
 
 .categoryCard a {
+  --nav-accent: #64748b;
+  --nav-soft: #f8fafc;
+
   display: block;
   border-radius: 10px;
-  border: 1px solid #dbe5f9;
-  background: #ffffff;
-  padding: 10px 12px;
-  color: #2a4376;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid var(--nav-accent);
+  background: var(--nav-soft);
+  padding: 10px 12px 10px 11px;
+  color: #334155;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 700;
   text-decoration: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.categoryCard a:hover {
+  border-color: var(--nav-accent);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+  transform: translateX(2px);
+}
+
+.categoryCard .categoryLearner {
+  --nav-accent: #2563eb;
+  --nav-soft: #eff6ff;
+}
+
+.categoryCard .categoryTutor {
+  --nav-accent: #0f766e;
+  --nav-soft: #f0fdfa;
+}
+
+.categoryCard .categorySupport {
+  --nav-accent: #d97706;
+  --nav-soft: #fffbeb;
+}
+
+.categoryCard .categoryTuition {
+  --nav-accent: #7c3aed;
+  --nav-soft: #f5f3ff;
 }
 
 .faqColumns {
@@ -99,16 +132,51 @@
 }
 
 .faqGroup {
-  border: 1px solid #d7e0f3;
+  --section-accent: #2563eb;
+  --section-strong: #1e40af;
+  --section-soft: #eff6ff;
+  --section-border: #bfdbfe;
+  --section-shadow: rgba(37, 99, 235, 0.1);
+
+  border: 1px solid var(--section-border);
   border-radius: 16px;
-  background: #f8fbff;
+  background: #ffffff;
   padding: 16px;
   scroll-margin-top: 100px;
+  box-shadow: 0 12px 32px var(--section-shadow);
+}
+
+.learnerGroup {
+  --section-accent: #2563eb;
+  --section-strong: #1e40af;
+  --section-soft: #eff6ff;
+  --section-border: #bfdbfe;
+  --section-shadow: rgba(37, 99, 235, 0.1);
+}
+
+.tutorGroup {
+  --section-accent: #0f766e;
+  --section-strong: #115e59;
+  --section-soft: #f0fdfa;
+  --section-border: #99f6e4;
+  --section-shadow: rgba(15, 118, 110, 0.1);
+}
+
+.supportGroup {
+  --section-accent: #d97706;
+  --section-strong: #92400e;
+  --section-soft: #fffbeb;
+  --section-border: #fde68a;
+  --section-shadow: rgba(217, 119, 6, 0.1);
 }
 
 .faqGroup h2 {
-  margin: 0 0 10px;
-  color: #1c3f86;
+  margin: 0 0 16px;
+  border-left: 5px solid var(--section-accent);
+  border-radius: 10px;
+  background: var(--section-soft);
+  padding: 12px 14px;
+  color: var(--section-strong);
   font-size: 24px;
   line-height: 1.2;
   font-weight: 800;
@@ -124,17 +192,31 @@
 
 .faqSubsection h3 {
   margin: 0 0 10px;
-  color: #355a9f;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--section-soft), transparent 82%);
+  padding: 7px 10px;
+  color: var(--section-strong);
   font-size: 16px;
   line-height: 1.4;
   font-weight: 800;
 }
 
 .faqGroup details {
-  border: 1px solid #d8e2f6;
+  border: 1px solid #e2e8f0;
   border-radius: 10px;
   background: #ffffff;
   padding: 10px 12px;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.faqGroup details:hover {
+  border-color: var(--section-border);
+}
+
+.faqGroup details[open] {
+  border-color: var(--section-accent);
+  background: var(--section-soft);
+  box-shadow: 0 8px 20px var(--section-shadow);
 }
 
 .faqGroup details + details {
@@ -144,7 +226,7 @@
 .faqGroup summary {
   list-style: none;
   cursor: pointer;
-  color: #2e4a80;
+  color: #334155;
   font-size: 14px;
   line-height: 1.45;
   font-weight: 700;
@@ -156,10 +238,17 @@
   content: "+";
   position: absolute;
   right: 0;
-  top: -1px;
-  color: #5e79a9;
-  font-size: 18px;
-  font-weight: 400;
+  top: 0;
+  display: grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--section-accent);
+  color: #ffffff;
+  font-size: 15px;
+  line-height: 1;
+  font-weight: 600;
 }
 
 .faqGroup details[open] summary::after {
@@ -192,12 +281,12 @@
 }
 
 .answer strong {
-  color: #344d7d;
+  color: var(--section-strong);
   font-weight: 700;
 }
 
 .answer a {
-  color: #245cca;
+  color: var(--section-accent);
   font-weight: 700;
   text-decoration: none;
 }
@@ -273,6 +362,11 @@
   .faqGrid {
     grid-template-columns: 260px 1fr;
     align-items: start;
+  }
+
+  .categoryCard {
+    position: sticky;
+    top: 92px;
   }
 
   .heroSection,
